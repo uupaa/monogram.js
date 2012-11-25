@@ -1,0 +1,189 @@
+#summary mm.color - parse and arrange color
+#sidebar TableOfContents
+
+== mm.color ==
+mm.color は色を表す文字列やオブジェクトを受け取り、色の相互変換を行う mm.Class.Color のインスタンスを生成し返します。
+
+mm.color(_color_:!NamedColorString/RGBAHash/HSLAHash/HSVAHash/!ColorArray/Color/Number = 0):Color
+
+|| !*TypedName*        || *Type* || *Subject* ||
+|| !*NamedColorString* || String || "#000", "#000000" and !NamedColor( "black", "skyblue", ...) ||
+|| *RGBAHash*          || Hash   || { r:!RedColorNumber, g:!GreenColorNumber, b:!BlueColorNumber } or { r:!RedColorNumber, g:!GreenColorNumber, b:!BlueColorNumber, a:!AlpheRatioNumber } ||
+|| *HSLAHash*          || Hash   || { h:!HueNumber, s:!SaturationNumber, l:!LightnessNumber } or { h:!HueNumber, s:!SaturationNumber, l:!LightnessNumber, a:!AlpheRatioNumber } ||
+|| *HSVAHash*          || Hash   || { h:!HueNumber, s:!SaturationNumber, v:!ValueNumber } or { h:!HueNumber, s:!SaturationNumber, v:!ValueNumber, a:!AlpheRatioNumber } ||
+|| !*ColorArray*       || Array  || `[`!RedColorNumber, !GreenColorNumber, !BlueColorNumber`]` or `[`!RedColorNumber, !GreenColorNumber, !BlueColorNumber, !AlpheRatioNumber`]` ||
+|| !*RedColorNumber*   || Number || 0 ~ 255 ||
+|| !*GreenColorNumber* || Number || 0 ~ 255 ||
+|| !*BlueColorNumber*  || Number || 0 ~ 255 ||
+|| !*AlpheRatioNumber* || Number || 0.0 ~ 1.0 ||
+|| !*HueNumber*        || Number || 0.0 ~ 360.0 ||
+|| !*SaturationNumber* || Number || 0.0 ~ 100.0 ||
+|| !*LightnessNumber*  || Number || 0.0 ~ 100.0 ||
+|| !*ValueNumber*      || Number || 0.0 ~ 100.0 ||
+
+{{{
+mm.color().toString("rgba")             // -> "rgba(0,0,0,1)"  引数が空なら黒になります
+mm.color("#fff").toString("rgba")       // -> "rgba(255,255,255,1)"  CSS色文字列が指定できます
+mm.color("#ffffff").toString("rgba")    // -> "rgba(255,255,255,1)"  CSS色文字列が指定できます
+mm.color("skyblue").toString("rgba")    // -> "rgba(135,206,235,1)"  CSS色文字列が指定できます
+mm.color(0xffffff).toString("rgba")     // -> "rgba(255,255,255,1)"  数値を指定すると対応するカラーコードに変換します
+mm.color([255, 255, 255, 0]).toString("rgba")   // -> "rgba(255,255,255,0)"  [R,G,B,A]の配列で色を指定できます
+mm.color(mm.color(0xffffff)).toString("rgba")   // -> "rgba(255,255,255,1)"  色をコピーします
+mm.color("hsla(360,2%,2%,1)").toString("rgba")  // -> "rgba(5,5,5,1)"  CSS色文字列が指定できます
+mm.color({ h: 360, s: 2, l: 2, a: 1 }).toString("rgba")     // -> "rgba(5,5,5,1)"  HSLAHash で色を指定できます
+mm.color({ h: 360, s: 2, v: 2, a: 1 }).toString("rgba")     // -> "rgba(255,255,255,1)"  HSVAHash で色を指定できます
+mm.color({ r: 255, g: 255, b: 255, a: 1 }).toString("rgba") // -> "rgba(255,255,255,1)"  RGBAHash で色を指定できます
+}}}
+
+=== mm.color.addIf ===
+mm.color.addIf(_userColor_:Hash) は、ユーザ独自の色を辞書に追加します。既に存在する色は*上書きしません*。
+
+==== Code ===
+{{{
+// mm.color.addIf - add user color (not override)
+function mm_color_addIf(userColor) { // @param Hash: { name: value, ... }
+    var name, value, _db = _namedColorDB;
+
+    for (name in userColor) {
+        value = userColor[name];
+        name = name.toLowerCase().trim();
+        name in _db || (_db[name] = mm.color(value).array); // not override
+    }
+}
+}}}
+
+==== Example ===
+{{{
+var userColor = {
+        OREORE_BLACK: { r:   5, g:   5, b:   5, a: 0.2 },
+        OREORE_BLUE:  { r:   5, g:   5, b: 200, a: 0.2 },
+        OREORE_PINK:  { r: 250, g: 192, b: 203, a: 0.2 }
+    };
+
+mm.color.addIf(userColor);
+
+mm.color("OREORE_BLACK") + "" // -> "rgba(5,5,5,0.2);
+mm.color("OREORE_BLUE") + ""  // -> "rgba(5,5,200,0.2)"
+mm.color("OREORE_PINK") + ""  // -> "rgba(250,192,203,0.2)"
+}}}
+
+=== mm.color.cache ===
+mm.color.cache(_use_:Boolean = undefined, _autogc_:Boolean = undefined, _maxsize_:Boolean = undefined):Hash は、
+キャッシュの設定と、現在の設定を取得します。現在の設定は Hash { use, size, autogc, maxsize } で返します。
+
+|| *use*     || Boolean || キャッシュON/OFF の設定です。true なら、色文字列のパース結果をキャッシュし再利用します。デフォルトは true です ||
+|| *autogc*  || Boolean || キャッシュサイズの自動調整の設定です。true なら、キャッシュサイズが maxsize を超えた時にクリアします。デフォルトは true です ||
+|| *maxsize* || Number  || キャッシュサイズの最大値の設定です。デフォルトは 4096 です ||
+|| *size*    || Number  || 現在のキャッシュサイズです。キャッシュクリアでゼロになります ||
+
+=== Code ===
+{{{
+// mm.color.cache - config cache and get current state
+function mm_color_cache(use,       // @param Boolean(= undefined): use cache
+                        autogc,    // @param Boolean(= undefined): use auto gc
+                        maxsize) { // @param Number(= undefined): set max size
+                                   // @return Hash: current state. { use, size, autogc, maxsize }
+    use     == null || (_cache.use = use);
+    autogc  == null || (_cache.autogc = autogc);
+    maxsize == null || (_cache.maxsize = maxsize);
+
+    // return current state
+    return { use: _cache.use, size: _cache.size,
+             autogc: _cache.autogc, maxsize: _cache.maxsize };
+}
+}}}
+
+==== Example ===
+{{{
+mm.color.cache().size           // 現在のキャッシュサイズを取得
+mm.color.cache({ use: false })  // キャッシュOFF
+}}}
+
+=== mm.color.cache.clear ===
+mm.color.cache.clear() は、キャッシュをクリアします。
+
+==== Code ====
+{{{
+// mm.color.cache.cache - clear cache
+function mm_color_cache_clear() {
+    _cache.db = {};
+    _cache.size = 0;
+}
+}}}
+
+==== Example ===
+{{{
+mm.color.cache.clear();         // キャッシュクリア
+}}}
+
+=== mm.color.random ===
+mm.color.random(_alpha_:Number = 1):Color は、Math.random() を使ったランダムな色を生成します。
+
+{{{
+// mm.color.random - create random color
+function mm_color_random(alpha) { // @param Number(= 1): alpha ratio
+                                  // @return Color:
+
+    var n = (Math.random() * 0xffffff) | 0;
+
+    return new Color([n >> 16, (n >> 8) & 255, n & 255,
+                      alpha === 0 ? 0 : (alpha || 1)]);
+}
+}}}
+
+==== Example ===
+{{{
+mm.color.random(0.5).toString() // -> "rgb(??, ??, ??, 0.5)"
+}}}
+
+== mm.Class.Color ==
+mm.Class.Color(_color_:ColorArray) は色の相互変換とフィルター機能を提供します。
+
+=== Properties and Methods ===
+mm.Class.Color のプロパティは変更できません。値を代入するとエラーになります。
+
+|| Color#r     || Red   (0 ~ 255) (READ ONLY) ||
+|| Color#g     || Green (0 ~ 255) (READ ONLY) ||
+|| Color#b     || Blue  (0 ~ 255) (READ ONLY) ||
+|| Color#a     || Alpha (0 ~ 255) (READ ONLY) ||
+|| Color#hex   || "#rrggbb"       (READ ONLY) ||
+|| Color#num   || 0x000000        (READ ONLY) ||
+|| Color#rgba  || "rgba(r,g,b,a)" (READ ONLY) ||
+|| Color#array || [r, g, b, a]    (READ ONLY) ||
+|| Color#hsla():HSLAHash || 現在の色を Hash { h, s, l, a } に変換し返します ||
+|| Color#gray():Color || 現在の色をグレースケール化した新しい色を返します ||
+|| Color#sepia():Color || 現在の色をセピア化した新しい色を返します ||
+|| Color#comple():Color || 現在の色の補色を返します ||
+|| Color#arrange(_hue_:Number = 0, _saturation_:Number = 0, _lightness_:Number = 0):Color || 現在の色を HSV でアレンジした新しい色を返します。h には -360～360, s と v には +100 ～ -100 の値を指定できます ||
+|| Color#floatArray(_withoutAlpha_:Boolean = false):FloatColorArray || 現在の色を 0.0 ～ 1.0 の値の配列 `[`R, G, B, A`]`で返します。 _withoutAlpha_ が true なら `[`R, G, B`]` を返します ||
+|| Color#toString(format = "auto"):ColorString || 現在の色を様々なフォーマットで文字列化し返します ||
+
+|| Color#toString("auto") || "rgba(r,g,b,a)" または "#rrggbb" を返します。IE6, IE7, IE8 で "#rrggbb" を返します ||
+|| Color#toString("#")    || "#rrggbb" を返します ||
+|| Color#toString("hex")  || "#rrggbb" を返します ||
+|| Color#toString("ahex") || "#aarrggbb" を返します ||
+|| Color#toString("rgb")  || "rgb(r,g,b)" を返します ||
+|| Color#toString("rgba") || "rgb(r,g,b,a)" を返します ||
+
+==== Example ====
+{{{
+mm.color("red").hsla()                     // -> { h: 0, s: 50, l: 100, a: 1 }
+mm.color("skyblue") + ""                   // -> "rgba(135,206,235,1)"
+mm.color("skyblue").gray() + ""            // -> "rgba(206,206,206,1)"
+mm.color("skyblue").sepia() + ""           // -> "rgba(225,188,150,1)"
+mm.color("skyblue").comple() + ""          // -> "rgba(120,49,20,1)"
+mm.color("skyblue").comple().comple() + "" // -> "rgba(135,206,235,1)"
+mm.color("skyblue").arrange(-360,0,0) + "" // -> "rgba(137,207,235,1)"
+mm.color("skyblue").arrange(180,0,0) + ""  // -> "rgba(235,166,137,1)"
+mm.color("skyblue").arrange(0,-50,0) + ""  // -> "rgba(172,192,201,1)"
+mm.color("skyblue").arrange(0,0,-50) + ""  // -> "rgba(17,76,100,1)"
+mm.color("skyblue").arrange(90,10,10) + "" // -> "rgba(232,177,247,1)"
+mm.color("skyblue").floatArray()           // -> [0.53, 0.81, 0.92, 1]
+mm.color("skyblue").floatArray(true)       // -> [0.53, 0.81, 0.92]
+mm.color("skyblue").toString()             // -> "rgba(135,206,235,1)"
+mm.color("skyblue").toString("#")          // -> "#87ceeb"
+mm.color("skyblue").toString("ahex")       // -> "#ff87ceeb"
+mm.color("skyblue").toString("rgb")        // -> "rgb(135,206,235)"
+mm.color("skyblue").toString("rgba")       // -> "rgba(135,206,235,1)"
+}}}
+
