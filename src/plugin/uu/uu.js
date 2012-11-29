@@ -11,8 +11,6 @@ function _defineLibraryAPIs(mix) {
                                         // uu(["E>F>G", contextNode], ...):NodeArray
                                         // uu(node):mmm
                                         // uu([node, ...]):mmm
-        // --- environment / information ---
-        docs:       "http://code.google.com/p/mofmof-js/wiki/", // uu.docs
         // --- node builder ---
         node:       uu_node,            // uu.node(node, args):node
         head:       function(/* ... */) { return uu_node(document.head, arguments); },
@@ -58,17 +56,18 @@ function _polyfillAndExtend(wiz, HTMLElement, HTMLDocument) {
     });
     var extras = {
         on:         HTMLElement_on,     // node#on(type, fn):this
-        one:        HTMLElement_one,    // node#one(type, fn):this
         off:        HTMLElement_off,    // node#off(type = "", fn = null):this
+        one:        HTMLElement_one,    // node#one(type, fn):this
         add:        HTMLElement_add,    // node#add(node):this
-        cut:        HTMLElement_cut,    // node#cut():this
+        cut:        HTMLElement_dis,    // node#cut():this [DEPRECATED] -> node#dis
+        dis:        HTMLElement_dis,    // node#dis():this
         top:        HTMLElement_top,    // node#top(node):this
         has:        HTMLElement_has,    // node#has(node:Node/CSSQueryString):Boolean
         find:       HTMLElement_find,   // node#find(query:CSSQueryString, from = 0, to = length):NodeArray++
-                                        // node#find("div").cut()   -> cut all
+                                        // node#find("div").dis()   -> dis all
                                         // node#find("div").clear() -> clear all children
-        clear:      HTMLElement_clear,  // node#clear():this
         path:       HTMLElement_path,   // node#path():CSSQueryString
+        clear:      HTMLElement_clear,  // node#clear():this
         addClass:   HTMLElement_addClass,     // node#addClass("class"):this
         hasClass:   HTMLElement_hasClass,     // node#hasClass("class"):Boolean
         toggleClass: HTMLElement_toggleClass, // node#toggleClass("class"):Boolean
@@ -192,11 +191,10 @@ var HTML_TAGS = // HTML tags, exclude <html><head><body>
 //    _dispatch_db = {}; // { readyEventType: [[low order], [mid order], [high order]], ... }
 
 // --- implement ---
-// uu - factory
 function uu_factory(mix           // @arg CSSQueryString/CSSQueryStringAndContextArray/Node/NodeArray: css-selector
                     /*, ... */) { // @var_args Mix:
                                   // @ret NodeArray:
-                                  // @help: uu#uu.factory
+                                  // @help: uu
                                   // @desc: css-selector or wrap object
 
     // 1. uu(node, uu.p())           -> node.add(uu.p()) -> [node]
@@ -227,10 +225,9 @@ function uu_factory(mix           // @arg CSSQueryString/CSSQueryStringAndContex
     return rv;
 }
 
-// uu.query
 function uu_query(query) { // @arg CSSQueryString/CSSQueryStringAndContextNodeArray: "E>F>G" or ["E>F>G", context]
                            // @ret NodeArray: [node, ...]
-                           // @help: uu#uu.query
+                           // @help: uu.query
                            // @desc: query node
 //{@debug
     mm.allow("query", query, "String/Array");
@@ -240,13 +237,12 @@ function uu_query(query) { // @arg CSSQueryString/CSSQueryStringAndContextNodeAr
                                 : document.find(query);
 }
 
-// uu.node - node builder
 function uu_node(node,   // @arg Node:
                  args) { // @arg Arguments/MixArray(= undefined): [Node/String/Hash, ...]
                          // @this: { clone }
                          //     this.clone - Boolean: true is apply cloneNode(true)
                          // @ret Node:
-                         // @help: uu#uu.node
+                         // @help: uu.node
                          // @desc: node builder
 
     //  [1][Node]            uu.div(uu.p())                           -> <div><p></p></div>
@@ -311,10 +307,9 @@ function uu_node(node,   // @arg Node:
     return node;
 }
 
-// uu.uid
 function uu_uid(node) { // @arg Node:
                         // @ret Number: node unique id
-                        // @help: uu#uid
+                        // @help: uu.uid
                         // @desc: create node unique id
 
     var mark = "data-uuuid", // node["data-uuuid"]
@@ -326,11 +321,11 @@ function uu_uid(node) { // @arg Node:
     return rv;
 }
 
-// uu.dump
 function uu_dump(node,    // @arg Node(= <html>):
                  space,   // @arg String(= 4):
                  depth) { // @arg Number(= 5): max depth, 0 is infinity
                           // @ret String:
+                          // @desc: uu.dump
                           // @desc: Dump Node Tree
 //{@debug
     mm.allow("node",  node,  "Node/String/undefined");
@@ -347,12 +342,12 @@ function uu_dump(node,    // @arg Node(= <html>):
            (space ? " "  : "") + _uu_dump(node, space, depth, 1);
 }
 
-// inner - mm.dump impl
 function _uu_dump(mix,    // @arg Node: parentNode
                   space,  // @arg Number: space
                   depth,  // @arg Number: max depth
                   nest) { // @arg Number: nest count from 1
                           // @ret String:
+                          // @inner: uu.dump impl
 
     function _dumpArray(mix) {
         if (!mix.length) {
@@ -442,7 +437,6 @@ function _uu_dump(mix,    // @arg Node: parentNode
     return "";
 }
 
-// uu.vendor
 function uu_vendor(sample) { // @arg String: "user-select" or "userSelect"
                              // @ret Hash: { base, prefixed }
                              //     return.base - String: "userSelect"
@@ -461,13 +455,12 @@ function uu_vendor(sample) { // @arg String: "user-select" or "userSelect"
     return { base: rv, prefixed: VENDOR_PREFIX + rv.up(0) };
 }
 
-// uu.attr - attribute accessor
 function uu_attr(node,    // @arg Node/CSSQueryString:
-                 key,     // @arg String/Hash(= undefined): "key"
-                 value) { // @arg String(= undefined): "value"
+                 key,     // @complex_arg String/Hash(= undefined): "key"
+                 value) { // @complex_arg String(= undefined): "value"
                           // @ret String/Hash/Node:
-                          // @help: uu#uu.attr
-                          // @desc: node attribute accessor, complex argeuments
+                          // @help: uu.attr
+                          // @desc: node attribute accessor
 
     //  [1][get items]  uu.attr(node)                   -> { key: "value", ... }
     //  [2][get item]   uu.attr(node, key)              -> "value"
@@ -489,11 +482,10 @@ function uu_attr(node,    // @arg Node/CSSQueryString:
     return uu_attr_set(node, key);
 }
 
-// uu.attr.set
 function uu_attr_set(node,   // @arg Node/CSSQueryString:
                      hash) { // @arg Hash: { key: value, ... }
                              // @ret Node:
-                             // @help: uu#uu.attr.set
+                             // @help: uu.attr.set
                              // @desc: setAttribute
 //{@debug
     mm.allow("node", node, "Node/String");
@@ -514,13 +506,12 @@ function uu_attr_set(node,   // @arg Node/CSSQueryString:
     return node;
 }
 
-// uu.css - css and StyleSheet accessor
 function uu_css(node,    // @arg Node/CSSQueryString:
-                key,     // @arg String/Hash(= void): CSS Property Keyword or "px"
-                value) { // @arg String(= void): value
+                key,     // @complex_arg String/Hash(= void): CSS Property Keyword or "px"
+                value) { // @complex_arg String(= void): value
                          // @ret Hash/String/Node:
-                         // @help: uu#uu.css
-                         // @desc: css style accessor, complex argeuments
+                         // @help: uu.css
+                         // @desc: css and StyleSheet accessor
 
     //  [1][get computed items] uu.css(node)              -> { key: value, ... }
     //  [2][mix items]          uu.css(node, { key: value, ... }) -> node
@@ -545,11 +536,10 @@ function uu_css(node,    // @arg Node/CSSQueryString:
     return uu_css_set(node, key);
 }
 
-// uu.css.set
 function uu_css_set(node,   // @arg Node/CSSQueryString:
                     hash) { // @arg Hash: { key: value, ... }
                             // @ret Node:
-                            // @help: uu#uu.css.set
+                            // @help: uu.css.set
                             // @desc: set css properties
 //{@debug
     mm.allow("node", node, "Node/String");
@@ -583,15 +573,14 @@ function uu_css_set(node,   // @arg Node/CSSQueryString:
     return node;
 }
 
-// uu.style
-function uu_style() {
+function uu_style() { // @desc: uu.style
+    // TODO: impl.
 }
 
-// uu.style.create
 function uu_style_create(id,      // @arg String: node id
                          rules) { // @arg CSSRuleString: "E { prop: value } E { ... }"
                                   // @ret Node: <style id="arguments.id">
-                                  // @help: uu#uu.style.create
+                                  // @help: uu.style.create
                                   // @desc: add <style> rules
 //{@debug
     mm.allow("id",    id,    "String");
@@ -620,11 +609,10 @@ function uu_style_create(id,      // @arg String: node id
     return rv;
 }
 
-// uu.style.add
 function uu_style_add(id,      // @arg String: node id
                       rules) { // @arg CSSRuleString: "E { prop: value } E { ... }"
                                // @ret Node: <style id="arguments.id">
-                               // @help: uu#uu.style.add
+                               // @help: uu.style.add
                                // @desc: add <style> rules
     mm.deny("id", "TODO: NOT IMPL", "string");
 }
@@ -671,9 +659,8 @@ function uu_boot_ie678(fn_that) {
 }
 //}@ie
 
-// uu.boot
 function uu_boot(fn_that) { // @arg Function/FunctionAndThatArray: fn or [fn, that]
-                            // @help: uu#uu.boot
+                            // @help: uu.boot
                             // @desc: boot loader (DOMContentLoaded event handler)
     function _callback() {
         var fn   = fn_that[0] || fn_that,
@@ -688,9 +675,8 @@ function uu_boot(fn_that) { // @arg Function/FunctionAndThatArray: fn or [fn, th
     }
 }
 
-// uu.main
 function uu_main(fn_that) { // @arg Function/FunctionAndThatArray: fn or [fn, that]
-                            // @help: uu#uu.main
+                            // @help: uu.main
                             // @desc: window.onload event handler
     var fn   = fn_that[0] || fn_that,
         that = fn_that[1] || null;
@@ -711,7 +697,7 @@ function uu_page(path          // @param String(= location.href):
                                //          pattern - PatternString/RegExp:
                                //          callback - Function: callback
                                //          missMatch - Function: miss matched callback
-                               // @help: uu#uu.ready
+                               // @help: uu#uu.page
                                // @see: http://code.google.com/p/x3-js/wiki/x3#x3.ready
                                // @desc: url dispatcher
     // uu.page("", "#a$",   function() { mm.log("page a"); },
@@ -729,10 +715,10 @@ function uu_page(path          // @param String(= location.href):
     pattern(); // miss match
 };
 
-// HTMLElement.prototype.on
 function HTMLElement_on(type, // @arg String: event type
                         fn) { // @arg Function: callback
                               // @ret Node: this
+                              // @help: HTMLElement#on
                               // @desc: node.addEventListener alias
     // remove the existing event data
     this.__EVENT__ = _eventWalker(this.__EVENT__ || [], function(t, f) {
@@ -744,10 +730,10 @@ function HTMLElement_on(type, // @arg String: event type
     return this;
 }
 
-// HTMLElement.prototype.one
 function HTMLElement_one(type, // @arg String: event type
                          fn) { // @arg Function: callback
                                // @ret Node: this
+                               // @help: HTMLElement#one
                                // @desc: one time event handler
     // remove the existing event data
     var that = this;
@@ -765,10 +751,10 @@ function HTMLElement_one(type, // @arg String: event type
     return this;
 }
 
-// HTMLElement.prototype.off
 function HTMLElement_off(type, // @arg String(= ""): event type
                          fn) { // @arg Function(= null): callback
                                // @ret Node: this
+                               // @help: HTMLElement#off
                                // @desc: node.removeEventListener alias
     // [1] node.off()            -> remove all events
     // [2] node.off("click")     -> remove all click events
@@ -791,10 +777,10 @@ function HTMLElement_off(type, // @arg String(= ""): event type
     return this;
 }
 
-// inner - HTMLElement_on, HTMLElement_off helper
 function _eventWalker(ary,  // @arg Array: [<type, fn>, <type, fn>, ...]
                       fn) { // @arg Function: callback(type, fn)
                             // @ret Array: [<type, fn>, <type, fn>, ...]
+                            // @inner: HTMLElement_on, HTMLElement_off helper
     var rv = [], i = 0, iz = ary.length;
 
     for (; i < iz; i += 2) {
@@ -805,33 +791,33 @@ function _eventWalker(ary,  // @arg Array: [<type, fn>, <type, fn>, ...]
     return rv;
 }
 
-// HTMLElement.prototype.add
 function HTMLElement_add(node) { // @arg Node: child node
                                  // @ret this:
+                                 // @help: HTMLElement#add
                                  // @desc: appendChild
     node && this.appendChild(node);
     return this;
 }
 
-// HTMLElement.prototype.cut
-function HTMLElement_cut() { // @ret this:
-                             // @desc: to cut a parent-child connection
+function HTMLElement_dis() { // @ret this:
+                             // @help: HTMLElement#dis
+                             // @desc: cut a parent-child connection (disown parent)
     if (this.parentNode) {
         this.parentNode.removeChild(this);
     }
     return this;
 }
 
-// HTMLElement.prototype.top
 function HTMLElement_top(node) { // @ret this:
+                                 // @help: HTMLElement#top
                                  // @desc: insert to top
     node && this.insertBefore(node, this.firstChild);
     return this;
 }
 
-// HTMLElement.prototype.has
 function HTMLElement_has(node) { // @arg Node/CSSQueryString:
                                  // @ret Boolean:
+                                 // @help: HTMLElement#has
                                  // @desc: has node
 //{@debug
     mm.allow("node", node, "Node/String");
@@ -848,11 +834,11 @@ function HTMLElement_has(node) { // @arg Node/CSSQueryString:
     return !!this.querySelector(node);
 }
 
-// HTMLElement.prototype.find
 function HTMLElement_find(query, // @arg CSSQueryString:
                           from,  // @arg Number(= 0):
                           to) {  // @arg Number(= length):
                                  // @ret NodeArray:
+                                 // @help: HTMLElement#find
                                  // @desc: find nodes
     var rv;
 
@@ -861,23 +847,24 @@ function HTMLElement_find(query, // @arg CSSQueryString:
     } else {
         rv = this.querySelectorAll(query).toArray(from, to); // return NodeArray
     }
-    rv.cut = NodeArray_cut;
-    rv.clear = NodeArray_clear;
+    rv.cut   = NodeArray_dis;    // [DEPRECATED]
+    rv.dis   = NodeArray_dis;    // node#find(...).dis()
+    rv.clear = NodeArray_clear;  // node#find(...).clear()
     return rv;
 }
 
-function NodeArray_cut() { // @ret NodeArray:
-    return NodeArray_each(this, "cut");
+function NodeArray_dis() { // @ret NodeArray:
+    return NodeArray_each(this, "dis");
 }
 
 function NodeArray_clear() { // @ret NodeArray:
     return NodeArray_each(this, "clear");
 }
 
-// inner -
 function NodeArray_each(ary,      // @arg NodeArray:
                         method) { // @arg String:
                                   // @ret NodeArray:
+                                  // @inner: each to NodeArray
     var i = ary.length;
 
     while (i--) {
@@ -886,8 +873,8 @@ function NodeArray_each(ary,      // @arg NodeArray:
     return ary;
 }
 
-// HTMLElement.prototype.clear
 function HTMLElement_clear() { // @ret this:
+                               // @help: HTMLElement#clear
                                // @desc: clear all children
     while (this.lastChild) {
         this.removeChild(this.lastChild);
@@ -895,7 +882,6 @@ function HTMLElement_clear() { // @ret this:
     return this;
 }
 
-// HTMLElement.prototype.path
 function HTMLElement_path() { // @ret CSSQueryString: "body>div:nth-child(5)"
                               // @help: HTMLElement#path
                               // @desc: get CSSQueryString
@@ -925,25 +911,25 @@ function HTMLElement_path() { // @ret CSSQueryString: "body>div:nth-child(5)"
     return rv.reverse().join(">").toLowerCase();
 }
 
-// HTMLElement#addClass
 function HTMLElement_addClass(name) { // @arg ClassNameString:
                                       // @ret Node: this
+                                      // @help: HTMLElement#addClass
     name = name.trim();
     this.hasClass(name) || (this.className += " " + name);
     return this;
 }
 
-// HTMLElement#removeClass
 function HTMLElement_removeClass(name) { // @arg ClassNameString:
                                          // @ret Node: this
+                                         // @help: HTMLElement#removeClass
     name = name.trim();
     this.className = (" " + this.className + " ").replace(" " + name + " ", "").trim();
     return this;
 }
 
-// HTMLElement#toggleClass
 function HTMLElement_toggleClass(name) { // @arg ClassNameString:
                                          // @ret Boolean: true is removed, false is added
+                                         // @help: HTMLElement#toggleClass
     name = name.trim();
     var rv = this.hasClass(name);
 
@@ -951,9 +937,9 @@ function HTMLElement_toggleClass(name) { // @arg ClassNameString:
     return !rv;
 }
 
-// HTMLElement#hasClass
 function HTMLElement_hasClass(name) { // @arg ClassNameString:
                                       // @ret Boolean: ture is has
+                                      // @help: HTMLElement#hasClass
     name = name.trim();
     return (" " + this.className + " ").indexOf(" " + name + " ") >= 0;
 }
