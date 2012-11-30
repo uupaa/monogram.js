@@ -29,7 +29,7 @@ function _defineLibraryAPIs(mix) {
                                         //          tick:Function = undefined):Await
         // --- messaging ---
         Msg:        Msg,                // mm.Msg()
-        imsg:       {},                 // mm.imsg - Msg instance pool
+        msg:        {},                 // mm.msg - Msg pool
         // --- mixin ---
         arg:        mm_arg,             // mm.arg(arg:Object/Function/undefined, defaults:Object):Object
         mix:        mm_mix,             // mm.mix(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
