@@ -47,8 +47,8 @@ function _defineLibraryAPIs(mix) {
         each:       mm_each,            // mm.each(data:Object/Function/Array/Hash, fn:Function):void
         // --- generate ---
         uid:        mm_uid,             // mm.uid(group:String = ""):Integer
-        copy:       mm_copy,            // mm.copy(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
         cast:       mm_cast,            // mm.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
+        copy:       mm_copy,            // mm.copy(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
         pair:       mm_pair,            // mm.pair(key:Object/Integer/String, value:Mix):Object
         pack:       mm_pack,            // mm.pack(data:Object/Function/Array/Hash, glue:String = ":", joint:String = ";"):String
         wrap:       mm_wrap,            // mm.wrap(mix:Mix):Function
@@ -193,8 +193,7 @@ function _extendNativeObjects(mix, wiz) {
 //[ES]  from:       Array_from,         // Array.from(list:FakeArray):Array
         range:      Array_range,        // Array.range(begin:Integer, end:Integer, filterOrStep:Function/Integer = 1):Array
         toArray:    Array_toArray,      // Array.toArray(mix:Mix/Array):Array
-//[ES]  isArray:    Array_isArray,      // Array.isArray(mix:Mix):Boolean
-        isCodedArray:Array_isCodedArray // Array.isCodedArray(mix:Mix):Boolean
+//[ES]  isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
     });
     wiz(Array.prototype, {
         // --- match ---
@@ -231,8 +230,10 @@ function _extendNativeObjects(mix, wiz) {
                                         // see: NodeList.prototype.toArray
                                         //      HTMLCollection.prototype.toArray
  */
-        decode:     Array_decode,       // [].decode(code:String = "utf16",
-                                        //           startIndex:Integer = 0, endIndex:Integer = undefined):String
+        toUTF8Array:    Array_toUTF8Array,      // [utf16].toUTF8Array():UTF8Array
+        toUTF16Array:   Array_toUTF16Array,     // [utf8].toUTF16Array():UTF16Array
+        toUTF16String:  Array_toUTF16String,    // [utf8].toUTF16String():String
+        toBase64String: Array_toBase64String,   // [byte].toBase64String():Base64String
         // --- calculate ---
         or:         Array_or,           // [].or(merge:Array):Array
         and:        Array_and,          // [].and(compare:Array):Array
@@ -284,12 +285,16 @@ function _extendNativeObjects(mix, wiz) {
         unique:     String_unique,      // "abcabc".unique():String
         // --- iterate ---
         // --- generate ---
-        encode:     String_encode,      // "".encode(code:String = "base64"):CodedArray/String
-        decode:     String_decode,      // "".decode(code:String = "base64"):String
 //[ES]  repeat:     String_repeat,      // "".repeat(count:Integer):String
         unpack:     String_unpack,      // "key:value".unpack(glue:String = ":", joint:String = ";"):Object
         numbers:    String_numbers,     // "1,2,3".numbers(joint:String = ","):NumberArray
 //[ES]  reverse:    String_reverse,     // "".reverse():String
+        toBase64:   String_toBase64,    // "".toBase64(safe:Boolean = false):Base64String
+        fromBase64: String_fromBase64,  // "".fromBase64():String
+        toEntity:   String_toEntity,    // "".toEntity():HTMLEntityString
+        fromEntity: String_fromEntity,  // "".fromEntity():String
+        toUTF8Array:String_toUTF8Array, // "".toUTF8Array():UTF8Array
+        toUTF16Array:String_toUTF16Array,// "".toUTF16Array():UTF16Array
         // --- calculate ---
         // --- enumerate ---
         count:      String_count,       // "abc".count():Object
@@ -301,6 +306,7 @@ function _extendNativeObjects(mix, wiz) {
         exec:       String_exec,        // "".exec():Mix/undefined
         stream:     String_stream       // "".stream(methods:Object/Array, delay:String/Integer = 0):Object
     });
+
 //  mix(Number, {
 //[ES]  isNaN:      Number_isNaN,       // Number.isNaN(mix:Mix):Boolean
 //[ES]  isFinite:   Number_isFinite,    // Number.isFinite(mix:Mix):Boolean
@@ -1220,7 +1226,7 @@ function mm_allow(name,         // @arg String: argument name, function spec
                   judge,        // @arg Function/Boolean/InterfaceNameString/TypeNameString:
                                 //          types: "Primitive/Global/List/Node/Hash/Class"
                                 //                 "null/undefined/Boolean/Number/Integer/String"
-                                //                 "Date/Object/Array/Function/RegExp/CodedArray"
+                                //                 "Date/Object/Array/Function/RegExp/Array"
                   __negate__) { // @hidden Boolean(= false):
                                 // @help: mm.allow
                                 // @desc: raise an assertion in a type mismatch
@@ -1313,7 +1319,6 @@ function _judgeType(mix, type) {
          : type === "class"     ? !!mix.__CLASS__
          : type === "integer"   ? Number.isInteger(mix)
          : type === "primitive" ? mix == null || typeof mix !== "object"
-         : type === "codedarray"? Array.isCodedArray(mix)
          : type === mm_type(mix);
 }
 
@@ -1750,12 +1755,6 @@ function Array_toArray(mix) { // @arg Mix/Array:
     return Array.isArray(mix) ? mix : [mix];
 }
 
-function Array_isCodedArray(mix) { // @arg Mix:
-                                   // @ret Boolean:
-                                   // @help: Array.isCodedArray
-    return Array.isArray(mix) && !!mix.code;
-}
-
 function Array_match(fn,     // @arg Function:
                      that) { // @arg this(= undefined): fn this
                              // @ret Mix/undefined:
@@ -1829,65 +1828,117 @@ function Array_clean(only) { // @arg String(= ""): typeof filter. "number", "str
     return rv;
 }
 
-function Array_decode(code,       // @arg String(= "utf16"):
-                      startIndex, // @arg Integer(= 0):
-                      endIndex) { // @arg Integer(= undefined):
-                                  // @ret String:
-                                  // @this CodedArray: [mix, ...] + { code: String }
-                                  // @help: Array#decode
-                                  // @desc: decode CodedArray to String
-    switch ((this.code || code || "utf16").toLowerCase()) {
-    case "utf8":  return _Array_fromUTF8(this, startIndex, endIndex);
-    case "utf16": return _Array_fromUTF16(this, startIndex, endIndex);
-    }
-    return "";
-}
+function Array_toUTF8Array() { // @ret UTF8Array:
+                               // @help: Array#toUTF8Array
+                               // @desc: convert UTF16Array to UTF8Array
+                               // @see: https://gist.github.com/4185267
+    var rv = [], i = 0, iz = this.length, c = 0, d = 0, u = 0;
 
-function _Array_fromUTF8(data,       // @arg Array:
-                         startIndex, // @arg Integer(= 0):
-                         endIndex) { // @arg Integer(= undefined):
-    var rv = [], c = 0,
-        i  = startIndex || 0,
-        iz =   endIndex || data.length;
-
-    if (iz > data.length) {
-        iz = data.length;
-    }
-
-    for (; i < iz; ++i) {
-        c = data[i];
-        if (c < 0x80) {         // 0x00 - 0x7F (1 byte)
-            rv.push(c);
-        } else if (c < 0xE0) {  // 0xC0 - 0xD0 (2 bytes)
-            rv.push( (c & 0x1f) <<  6 | (data[++i] & 0x3f) );
-        } else if (c < 0xF0) {  // 0xE0 - 0xEF (3 bytes)
-            rv.push( (c & 0x0f) << 12 | (data[++i] & 0x3f) <<  6 |
-                                        (data[++i] & 0x3f) );
-        } else if (c < 0xF8) {  // 0xE0 - 0xE7 (4 bytes)
-            rv.push( (c & 0x07) << 18 | (data[++i] & 0x3f) << 12 |
-                                        (data[++i] & 0x3f) <<  6 |
-                                        (data[++i] & 0x3f) );
+    while (i < iz) {
+        c = this[i++];
+        if (c <= 0x7F) { // [1]
+            // 00000000 0zzzzzzz
+            rv.push(c);                                       // 0zzz zzzz (1st)
+        } else if (c <= 0x07FF) { // [2]
+            // 00000yyy yyzzzzzz
+            rv.push(c >>>  6 & 0x1f | 0xc0,                   // 110y yyyy (1st)
+                    c        & 0x3f | 0x80);                  // 10zz zzzz (2nd)
+        } else if (c <= 0xFFFF) { // [3] or [5]
+            if (c >= 0xD800 && c <= 0xDBFF) { // [5] Surrogate Pairs
+                // 110110UU UUwwwwxx 110111yy yyzzzzzz
+                d = this[i++];
+                u = (c >>> 6 & 0x0f) + 1; // 0xUUUU+1 -> 0xuuuuu
+                rv.push(
+                     u >>>  2 & 0x07 | 0xf0,                  // 1111 0uuu (1st)
+                    (u <<   4 & 0x30 | 0x80) | c >>> 2 & 0xf, // 10uu wwww (2nd)
+                    (c <<   4 & 0x30 | 0x80) | d >>> 6 & 0xf, // 10xx yyyy (3rd)
+                     d        & 0x3f | 0x80);                 // 10zz zzzz (4th)
+            } else {
+                // xxxxyyyy yyzzzzzz
+                rv.push(c >>> 12 & 0x0f | 0xe0,               // 1110 xxxx (1st)
+                        c >>>  6 & 0x3f | 0x80,               // 10yy yyyy (2nd)
+                        c        & 0x3f | 0x80);              // 10zz zzzz (3rd)
+            }
+        } else if (c <= 0x10FFFF) { // [4]
+            // 000wwwxx xxxxyyyy yyzzzzzz
+            rv.push(c >>> 18 & 0x07 | 0xf0,                   // 1111 0www (1st)
+                    c >>> 12 & 0x3f | 0x80,                   // 10xx xxxx (2nd)
+                    c >>>  6 & 0x3f | 0x80,                   // 10yy yyyy (3rd)
+                    c        & 0x3f | 0x80);                  // 10zz zzzz (4th)
         }
     }
-    return _Array_fromUTF16(rv); // Array#utf16
+    return rv;
 }
 
-function _Array_fromUTF16(data,       // @arg Array:
-                          startIndex, // @arg Integer(= 0):
-                          endIndex) { // @arg Integer(= undefined):
-    var rv = [], i = 0, iz = data.length, bulkSize = 10240;
+function Array_toUTF16Array() { // @ret UTF16Array:
+                                // @help: Array#toUTF16Array
+                                // @desc: convert UTF8Array to UTF16Array
+                                // @see: https://gist.github.com/4185267
+    var rv = [], i = 0, iz = this.length,
+        c = 0, d = 0, e = 0, f = 0,
+        u = 0, w = 0, x = 0, y = 0, z = 0;
 
-    // pre slice
-    if (startIndex !== void 0 ||
-          endIndex !== void 0) {
-
-        data = data.slice(startIndex || 0, Math.max(endIndex || iz, iz));
-        iz = data.length;
+    while (i < iz) {
+        c = this[i++];
+        if (c < 0x80) {         // [1] 0x00 - 0x7F (1 byte)
+            rv.push(c);
+        } else if (c < 0xE0) {  // [2] 0xC2 - 0xDF (2 byte)
+            d = this[i++];
+            rv.push( (c & 0x1F) <<  6 | d & 0x3F );
+        } else if (c < 0xF0) {  // [3] 0xE0 - 0xE1, 0xEE - 0xEF) (3 bytes)
+            d = this[i++];
+            e = this[i++];
+            rv.push( (c & 0x0F) << 12 | (d & 0x3F) <<  6 | e & 0x3F );
+        } else if (c < 0xF5) {  // [4] 0xF0 - 0xF4 (4 bytes)
+            d = this[i++];
+            e = this[i++];
+            f = this[i++];
+            u = (((c & 0x07) << 2) | ((d >> 4) & 0x03)) - 1;
+            w = d & 0x0F;
+            x = (e >> 4) & 0x03;
+            z = f & 0x3F;
+            rv.push( 0xD8 | (u << 6) | (w << 2) | x,
+                     0xDC | (y << 4) | z );
+        }
     }
+    return rv;
+}
+
+function Array_toUTF16String() { // @ret String:
+                                 // @help: Array#toUTF16String
+                                 // @desc: UTF16Array to String
+    var rv = [], i = 0, iz = this.length, bulkSize = 10240;
 
     // avoid String.fromCharCode.apply(null, BigArray) exception
     for (; i < iz; i += bulkSize) {
-        rv.push( String.fromCharCode.apply(null, data.slice(i, i + bulkSize)) );
+        rv.push( String.fromCharCode.apply(null, this.slice(i, i + bulkSize)) );
+    }
+    return rv.join("");
+}
+
+function Array_toBase64String(safe) { // @arg Boolean(= false):
+                                      // @ret Base64String:
+                                      // @this ByteArray:
+                                      // @help: Array#toBase64
+                                      // @desc: ByteArray to Base64String
+    _base64_db || _initBase64();
+
+    var rv = [], ary = this, // this is IntegerArray
+        c = 0, i = 0, iz = ary.length,
+        pad = [0, 2, 1][iz % 3],
+        chars = _base64_db.chars;
+
+    --iz;
+    while (i < iz) {
+        c =  (ary[i++] << 16) | (ary[i++] <<  8) | ary[i++]; // 24bit
+        rv.push(chars[(c >> 18) & 0x3f], chars[(c >> 12) & 0x3f],
+                chars[(c >>  6) & 0x3f], chars[ c        & 0x3f]);
+    }
+    pad > 1 && (rv[rv.length - 2] = "=");
+    pad > 0 && (rv[rv.length - 1] = "=");
+    if (safe) {
+        return rv.join("").replace(/\=+$/g, "").replace(/\+/g, "-").
+                                                replace(/\//g, "_");
     }
     return rv.join("");
 }
@@ -2425,155 +2476,53 @@ function String_unique() { // @ret String:
     return this.split("").unique().join("");
 }
 
-function String_encode(code) { // @arg String(= "base64"): "utf16", "utf8",
-                               //                          "base64", "safe64", "entity"
-                               // @ret CodedArray/String: [mix, ...] + { code: String }
-                               // @help: String#encode
-                               // @desc: encode String to CodedArray
-//{@debug
-    mm.allow("code", code, ["", "utf16", "utf8", "base64", "safe64",
-                            "entity"].has((code || "").toLowerCase()));
-//}@debug
-
-    switch ((code || "base64").toLowerCase()) {
-    case "utf8":  return _String_toUTF8Array(this);   // [...] + { code: "utf8" }
-    case "utf16": return _String_toUTF16Array(this);  // [...] + { code: "utf16" }
-    case "base64":return _String_toBase64Array(this); // String
-    case "safe64":return _String_toBase64Array(this). // String
-                            replace(/\=+$/g, "").replace(/\+/g, "-").
-                                                 replace(/\//g, "_");
-    case "entity":return _String_toHTMLEntity(this);  // String
-    }
-    return "";
+function String_toUTF8Array() { // @ret UTF8Array: [...]
+                                // @help: String#toUTF8Array
+                                // @desc: String to UTF8Array
+    return this.toUTF16Array().toUTF8Array(); // String#toUTF16Array, Array#toUTF8Array
 }
 
-function String_decode(code) { // @arg String(= "base64"): "base64", "safe64", "entity"
-                               // @ret String:
-                               // @help: String#decode
-                               // @desc: decode String to String
-//{@debug
-    mm.allow("code", code, ["", "base64", "safe64",
-                            "entity"].has((code || "").toLowerCase()));
-//}@debug
-
-    switch ((code || "base64").toLowerCase()) {
-    case "base64":
-    case "safe64":return _String_fromBase64(this); // String
-    case "entity":return _String_fromHTMLEntity(this); // String
-    }
-    return "";
-}
-
-function _String_toUTF16Array(data) { // @arg String:
-                                      // @ret CodedArray: [...] + { code: "utf16" }
-                                      // @inner convert String to UTF16IntegerArray
-    var rv = [], i = 0, iz = data.length;
+function String_toUTF16Array() { // @arg String:
+                                 // @ret UTF16Array: [...]
+                                 // @help String#toUTF16Array
+                                 // @desc convert String to UTF16Array
+    var rv = [], i = 0, iz = this.length;
 
     for (; i < iz; ++i) {
-        rv[i] = data.charCodeAt(i) & 0x1fffff;
+        rv[i] = this.charCodeAt(i);
     }
-    rv.code = "utf16";
     return rv;
 }
 
-function _String_toUTF8Array(data) { // @arg String:
-                                     // @ret CodedArray: [...] + { code: "utf8" }
-                                     // @inner: String to UTF8IntegerArray
-    // RFC3629 - UTF-8, a transformation format of ISO 10646 -
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | Code             | Representation    | 1st byte  | 2nd byte  | 3rd byte  | 4th byte  |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | 0x0000 -  0x007F | 00000000 0zzzzzzz | 0zzz zzzz |           |           |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | 0x0080 -  0x07FF | 00000yyy yyzzzzzz | 110y yyyy | 10zz zzzz |           |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | 0x0800 -  0xD7FF | xxxxyyyy yyzzzzzz | 1110 xxxx | 10yy yyyy | 10zz zzzz |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | 0xD800 -  0xDBFF | 110110vv vvwwwwxx | 1111 0uuu | 10uu wwww | 10xx yyyy | 10zz zzzz |
-    // |                  | 110111yy yyzzzzzz |           |           |           |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // | 0xE000 -  0xFFFF | xxxxyyyy yyzzzzzz | 1110 xxxx | 10yy yyyy | 10zz zzzz |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    // |0x10000 -0x10FFFF | 00000000 000xxxyy | 1111 0xxx | 10yy yyyy | 10zz zzzz | 10ww wwww |
-    // |                  | yyyyzzzz zzwwwwww |           |           |           |           |
-    // +------------------+-------------------+-----------+-----------+-----------+-----------+
-    var rv = [], i = 0, iz = data.length, c = 0, next, u;
-
-    for (; i < iz; ++i) {
-        c = data.charCodeAt(i);
-        if (c < 0x80) { // 1 byte
-            rv.push(c);
-        } else if (c < 0x0800) { // 2 bytes
-            rv.push(c >>>  6 & 0x1f | 0xc0, c        & 0x3f | 0x80);
-        } else if (c >= 0xD800 && c <= 0xE000) { // 4bytes
-            next = data.charCodeAt(i + 1);
-            if (next >= 0xDC00 && next <= 0xDFFF) {
-                u = (c >>> 6 & 0x0f) + 1;
-                rv.push( u >>> 2 & 0x07 | 0xf0,
-                        (u  << 4 & 0x30 | 0x80) |    c >>> 2 & 0xf,
-                        (c  << 4 & 0x30 | 0x80) | next >>> 6 & 0xf,
-                            next & 0x3f | 0x80);
-            } else {
-                throw new URIError("BAD_ARG");
-            }
-        } else if (c < 0x10000) { // 3 bytes
-            rv.push(c >>> 12 & 0x0f | 0xe0, c >>>  6 & 0x3f | 0x80,
-                                            c        & 0x3f | 0x80);
-        } else if (c < 0x110000) { // 4 bytes
-            rv.push(c >>> 18 & 0x07 | 0xf0, c >>> 12 & 0x3f | 0x80,
-                    c >>>  6 & 0x3f | 0x80, c        & 0x3f | 0x80);
-        }
-    }
-    rv.code = "utf8";
-    return rv;
+function String_toBase64(safe) { // @arg Boolean(= false):
+                                 // @ret Base64String:
+                                 // @help: String#toBase64
+                                 // @desc: String to Base64String
+    return this.toUTF16Array().toUTF8Array().toBase64String(safe);
 }
 
-function _String_toBase64Array(data) { // @arg String:
-                                       // @ret String:
-                                       // @inner: String to UTF8Base64String
+function String_fromBase64() { // @ret String:
+                               // @help: String#fromBase64
+                               // @desc: decode Base64String to String
     _base64_db || _initBase64();
 
-    var rv = [], ary = data.encode("utf8"),
-        c = 0, i = -1, iz = ary.length,
-        pad = [0, 2, 1][iz % 3],
-        chars = _base64_db.chars;
-
-    --iz;
-    while (i < iz) {
-        c = (ary[++i] << 16) | (ary[++i] << 8) | (ary[++i]); // 24bit
-        rv.push(chars[(c >> 18) & 0x3f], chars[(c >> 12) & 0x3f],
-                chars[(c >>  6) & 0x3f], chars[ c        & 0x3f]);
-    }
-    pad > 1 && (rv[rv.length - 2] = "=");
-    pad > 0 && (rv[rv.length - 1] = "=");
-    return rv.join("");
-}
-
-function _String_fromBase64(data) { // @arg UTF8Base64String/UTF8Safe64String:
-                                    // @ret String:
-                                    // @inner: decode Base64String to String
-    _base64_db || _initBase64();
-
-    var rv = [],
-        c = 0, i = -1,
-        ary = data.split(""),
-        iz = data.length - 1,
+    var rv = [], c = 0, i = 0, ary = this.split(""),
+        iz = this.length - 1,
         codes = _base64_db.codes;
 
     while (i < iz) {                // 00000000|00000000|00000000 (24bit)
-        c = (codes[ary[++i]] << 18) // 111111  |        |
-          | (codes[ary[++i]] << 12) //       11|1111    |
-          | (codes[ary[++i]] <<  6) //         |    1111|11
-          |  codes[ary[++i]];       //         |        |  111111
+        c = (codes[ary[i++]] << 18) // 111111  |        |
+          | (codes[ary[i++]] << 12) //       11|1111    |
+          | (codes[ary[i++]] <<  6) //         |    1111|11
+          |  codes[ary[i++]];       //         |        |  111111
                                     //    v        v        v
         rv.push((c >> 16) & 0xff,   // --------
                 (c >>  8) & 0xff,   //          --------
                  c        & 0xff);  //                   --------
     }
-    rv.length -= [0, 0, 2, 1][data.replace(/\=+$/, "").length % 4]; // cut tail
+    rv.length -= [0, 0, 2, 1][this.replace(/\=+$/, "").length % 4]; // cut tail
 
-    rv.code = "utf8";
-    return rv.decode();
+    return rv.toUTF16Array().toUTF16String();
 }
 
 function _initBase64() { // @inner: init base64
@@ -2582,7 +2531,8 @@ function _initBase64() { // @inner: init base64
 
     _base64_db = {
         chars: base.split(""),              // ["A", "B", ... "/"]
-        codes: { "=": 0, "-": 62, "_": 63 } // URLSafe64 chars("-", "_")
+        codes: { "=": 0, "-": 62, "_": 63 } // { 65: 0, 66: 1 }
+                                            // charCode and URLSafe64 chars("-", "_")
     };
 
     for (; i < 64; ++i) {
@@ -2590,28 +2540,28 @@ function _initBase64() { // @inner: init base64
     }
 }
 
-function _String_toHTMLEntity(data) { // @arg String:
-                                      // @ret String:
-                                      // @inner convert String to HTML Entity
+function String_toEntity() { // @ret HTMLEntityString:
+                             // @help: String#toEntity
+                             // @desc: convert String to HTML Entity
     function _toEntity(code) {
         var hash = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 
         return hash[code];
     }
 
-    return data.replace(/[&<>"]/g, _toEntity);
+    return this.replace(/[&<>"]/g, _toEntity);
 }
 
-function _String_fromHTMLEntity(data) { // @arg String:
-                                        // @ret String:
-                                        // @inner: decode String from HTML Entity
+function String_fromEntity() { // @ret String:
+                               // @help: String#fromEntity
+                               // @desc: decode String from HTML Entity
     function _fromEntity(code) {
         var hash = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"' };
 
         return hash[code];
     }
 
-    return data.replace(/&(?:amp|lt|gt|quot);/g, _fromEntity).
+    return this.replace(/&(?:amp|lt|gt|quot);/g, _fromEntity).
                 replace(/\\u([0-9a-f]{4})/g, function(m, hex) { // \u0000 ~ \uffff
                     return String.fromCharCode(parseInt(hex, 16));
                 });
@@ -3817,6 +3767,7 @@ mm.help.add("http://code.google.com/p/monogram-js/wiki/",
 mm.help.add("http://code.google.com/p/monogram-js/wiki/",
             "mm,Class,Hash,Await,Msg".split(","));
 
+/*
 //{@prof
 global.prof && global.prof.add(
     'mm.api(version:Integer = 0):Object/Function',
@@ -3846,7 +3797,9 @@ global.prof && global.prof.add(
     'Array.range(begin:Integer, end:Integer, filterOrStep:Function/Integer/undefined = 1):Array',
     'Array#at(format:String):String',
     'Array#clean(only:String/undefined = ""):Array',
-    'Array#decode(code:String/undefined = "utf16", startIndex:Integer/undefined = 0, endIndex:Integer/undefined = undefined):String',
+    'Array#toUTF8Array():Array',
+    'Array#toUTF16Array():Array',
+    'Array#toUTF16String():String',
     'Array#first(index:Integer/undefined = 0):Mix/undefined',
     'Array#last(lastIndex:Integer/undefined = 0):Mix/undefined',
     'Array#clamp(low:Number, high:Number):Array',
@@ -3866,8 +3819,12 @@ global.prof && global.prof.add(
     'String#low(index:Integer/undefined):String',
     'String#has(find:String, anagram:Boolean/undefined = false):Boolean',
     'String#numbers(joint:String/undefined = ","):Array',
-    'String#encode(code:String/undefined = "base64"):Array/String',
-    'String#decode(code:String/undefined = "base64"):String',
+    'String#toUTF8Array():Array',
+    'String#toUTF16Array():Array',
+    'String#toBase64(safe:Boolean = false):String',
+    'String#fromBase64():String',
+    'String#toEntity():String',
+    'String#fromEntity():String',
     'String#overflow(maxLength:Integer, ellipsis:String/undefined = "...", affect:String/undefined = "left"):String',
     'Number#to(end:Integer, filterOrStep:Function/Integer/undefined = 1):Array',
     'Number#pad(digits:Integer/undefined = 2, radix:Integer/undefined = 10):String',
@@ -3892,6 +3849,7 @@ global.prof && global.prof.add(
     'mm.url.parseQuery(query:String):Object'
 );
 //}@prof
+ */
 
 })(this.self || global);
 
