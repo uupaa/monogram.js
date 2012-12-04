@@ -2911,10 +2911,9 @@ function Function_await(waits,  // @arg Integer: wait count
                                 //      state - Integer: 200(success), 400(error)
                                 // @help: Await#await
                                 // @desc: create Await instance
-//{@debug
-    if (waits < 1) { throw new Error("BAD_ARG"); }
-//}@debug
-
+    if (!waits) {
+        return this({ ok: true, args: [], state: 200 });
+    }
     return new Await(this, waits, tick);
 }
 
