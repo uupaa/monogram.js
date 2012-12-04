@@ -40,8 +40,8 @@ function _defineLibraryAPIs(mix) {
         some:       mm_some,            // mm.some(data:Object/Function/Array/Hash, fn:Function):Boolean
         every:      mm_every,           // mm.every(data:Object/Function/Array/Hash, fn:Function):Boolean
         match:      mm_match,           // mm.match(data:Object/Function/Array/Hash, fn:Function):Mix/undefined
+        filter:     mm_filter,          // mm.filter(data:Object/Function/Array/Hash, fn:Function):Array
         // --- format ---
-        // --- filter ---
         // --- iterate ---
         map:        mm_map,             // mm.map(data:Object/Function/Array/Hash, fn:Function):Array
         each:       mm_each,            // mm.each(data:Object/Function/Array/Hash, fn:Function):void
@@ -433,11 +433,12 @@ function _defineHashPrototype(wiz) {
         mix:        function(extend, override) {
                                       mm_mix(this, extend.valueOf(), override); return this; /* @help: Hash#mix */ },
         // --- match ---
-        has:        function(find)  { return Object_has(this, find.valueOf());   /* @help: Hash#has  */ },
-        like:       function(value) { return Object_like(this, value.valueOf()); /* @help: Hash#like */ },
-        some:       function(fn)    { return Object_some(this, fn);   /* @help: Hash#some  */ },
-        every:      function(fn)    { return Object_every(this, fn);  /* @help: Hash#every */ },
-        match:      function(fn)    { return Object_match(this, fn);  /* @help: Hash#match */ },
+        has:        function(find)  { return Object_has(this, find.valueOf());  /* @help: Hash#has   */ },
+        like:       function(value) { return Object_like(this, value.valueOf());/* @help: Hash#like  */ },
+        some:       function(fn)    { return Object_some(this, fn);             /* @help: Hash#some  */ },
+        every:      function(fn)    { return Object_every(this, fn);            /* @help: Hash#every */ },
+        match:      function(fn)    { return Object_filter(this, fn, true);     /* @help: Hash#match */ },
+        filter:     function(fn)    { return Object_filter(this, fn, false);    /* @help: Hash#filter*/ },
         // --- iterate ---
         map:        function(fn)    { return Object_map(this, fn);    /* @help: Hash#map   */ },
         each:       function(fn)    {        Object_each(this, fn);   /* @help: Hash#each  */ },
@@ -833,7 +834,16 @@ function mm_match(data, // @arg Object/Function/Array/Hash: data
                         // @help: mm.match
                         // @desc: return value if the return fn(value, key) is truthy
     return !mm && typeof data.match === "function" ? data.match(fn)
-                                                   : Object_match(data, fn);
+                                                   : Object_filter(data, fn, true);
+}
+
+function mm_filter(data, // @arg Object/Function/Array/Hash: data
+                   fn) { // @arg Function: fn(value, key)
+                         // @ret Array:
+                         // @help: mm.filter
+                         // @desc: return array if the return fn(value, key) is truthy
+    return !mm && typeof data.filter === "function" ? data.filter(fn)
+                                                    : Object_filter(data, fn, false);
 }
 
 function mm_count(data) { // @arg Object/Function/Array/Hash: data
@@ -1926,6 +1936,7 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                       // @desc: ByteArray to Base64String
     _base64_db || _initBase64();
 
+debugger;
     var rv = [], ary = this, // this is IntegerArray
         c = 0, i = 0, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
@@ -1933,7 +1944,9 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
 
     --iz;
     while (i < iz) {
-        c =  (ary[i++] << 16) | (ary[i++] <<  8) | ary[i++]; // 24bit
+        c =  ((ary[i++] & 0xff) << 16) |
+             ((ary[i++] & 0xff) <<  8) |
+              (ary[i++] & 0xff); // 24bit
         rv.push(chars[(c >> 18) & 0x3f], chars[(c >> 12) & 0x3f],
                 chars[(c >>  6) & 0x3f], chars[ c        & 0x3f]);
     }
@@ -3463,18 +3476,23 @@ function Object_every(obj,  // @arg Object/Function:
     return true;
 }
 
-function Object_match(obj,  // @arg Object/Function:
-                      fn) { // @arg Function: fn(value, key)
-                            // @ret Mix/undefined:
-    var key, keys = Object.keys(obj), i = 0, iz = keys.length;
+function Object_filter(obj,     // @arg Object/Function:
+                       fn,      // @arg Function: fn(value, key)
+                       match) { // @arg Boolean(= false): true is Object_match
+                                //                        false is Object_filter
+                                // @ret Array/undefined:
+    var rv = [], key, keys = Object.keys(obj), i = 0, iz = keys.length;
 
     for (; i < iz; ++i) { // uupaa-looper
         key = keys[i];
         if ( fn(obj[key], key) ) {
-            return obj[key];
+            rv.push( obj[key] );
+            if (match) {
+                return obj[key];
+            }
         }
     }
-    return;
+    return match ? void 0 : rv;
 }
 
 function Object_clean(data,   // @arg Object/Function:
