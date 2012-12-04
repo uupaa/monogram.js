@@ -1936,7 +1936,6 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                       // @desc: ByteArray to Base64String
     _base64_db || _initBase64();
 
-debugger;
     var rv = [], ary = this, // this is IntegerArray
         c = 0, i = 0, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
