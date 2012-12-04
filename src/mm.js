@@ -225,11 +225,7 @@ function _extendNativeObjects(mix, wiz) {
         // --- generate ---
         copy:       Array_copy,         // [].copy(deep:Boolean = false):Array
         clean:      Array_clean,        // [].clean(only:String = ""):DenseArray
-/*
-        toArray:    function() { return this; },
-                                        // see: NodeList.prototype.toArray
-                                        //      HTMLCollection.prototype.toArray
- */
+        toArray:    Array_toArray,      // [].toArray():Array
         toUTF8Array:    Array_toUTF8Array,      // [utf16].toUTF8Array():UTF8Array
         toUTF16Array:   Array_toUTF16Array,     // [utf8].toUTF16Array():UTF16Array
         toUTF16String:  Array_toUTF16String,    // [utf8].toUTF16String():String
@@ -1828,6 +1824,13 @@ function Array_clean(only) { // @arg String(= ""): typeof filter. "number", "str
     return rv;
 }
 
+function Array_toArray() { // @ret Array:
+                           // @help: Array#toArray
+                           // @desc: array to array
+                           // @see: NodeList#toArray, HTMLCollection#toArray
+    return this;
+}
+
 function Array_toUTF8Array() { // @ret UTF8Array:
                                // @help: Array#toUTF8Array
                                // @desc: convert UTF16Array to UTF8Array
@@ -1885,7 +1888,7 @@ function Array_toUTF16Array() { // @ret UTF16Array:
         } else if (c < 0xE0) {  // [2] 0xC2 - 0xDF (2 byte)
             d = this[i++];
             rv.push( (c & 0x1F) <<  6 | d & 0x3F );
-        } else if (c < 0xF0) {  // [3] 0xE0 - 0xE1, 0xEE - 0xEF) (3 bytes)
+        } else if (c < 0xF0) {  // [3] 0xE0 - 0xE1, 0xEE - 0xEF (3 bytes)
             d = this[i++];
             e = this[i++];
             rv.push( (c & 0x0F) << 12 | (d & 0x3F) <<  6 | e & 0x3F );
@@ -2870,7 +2873,7 @@ function Function_nickname(defaultName) { // @arg String(= ""): default nickname
                                           // @ret String: function name
                                           // @help: Function#nickname
                                           // @desc: get function name
-   var name = this.name || (this + "").split("(")[0].trim().slice(9); // )
+   var name = this.name || (this + "").split("\x28")[0].trim().slice(9);
 
     return name ? name.replace(/^mm_/, "mm.") // mm_like -> mm.like
                 : defaultName; // [IE][Opera<11]
@@ -3730,7 +3733,7 @@ function _detectEnv(rv) { // @inner:
 
     rv.ua       = ua;
     rv.lang     = (nav.language || nav.browserLanguage || "").split("-", 1)[0]; // "en-us" -> "en"
-    rv.secure   =  global.location.protocol === "https:";
+    rv.secure   = global.location.protocol === "https:";
 //{@ie
     if (rv.ie) {
         rv.ie8  = !!document.querySelector;
@@ -3765,90 +3768,6 @@ mm.help.add("http://code.google.com/p/monogram-js/wiki/",
             "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
 mm.help.add("http://code.google.com/p/monogram-js/wiki/",
             "mm,Class,Hash,Await,Msg".split(","));
-
-/*
-//{@prof
-global.prof && global.prof.add(
-    'mm.api(version:Integer = 0):Object/Function',
-    'mm.Class(specs:String, properties:Object = undefined, statics:Object = undefined):Function',
-    'mm.arg(arg:Object/Function/undefined = undefined, defaults:Object):Object',
-    'mm.map(data:Object/Function/Array/Hash, fn:Function):Array',
-    'mm.each(data:Object/Function/Array/Hash, fn:Function):void',
-    'mm.some(data:Object/Function/Array/Hash, fn:Function):Boolean',
-    'mm.every(data:Object/Function/Array/Hash, fn:Function):Boolean',
-    'mm.match(data:Object/Function/Array/Hash, fn:Function):Mix/undefined',
-    'mm.count(data:Object/Function/Array/Hash):Object',
-    'mm.keys(data:Object/Function/Array/Hash/Style/Node/Global):Array',
-    'mm.values(data:Object/Function/Array/Hash/Style/Node/Global):Array',
-    'mm.uid(group:String/undefined = ""):Integer',
-    'mm.copy(mix:Mix, depth:Integer/undefined = 0, hook:Function/undefined = undefined):Mix/null',
-    'mm.conv(from:String, to:String):Object',
-    'mm.dump(mix:Mix, spaces:Integer/undefined = 4, depth:Integer/undefined = 5):String',
-    'mm.pair(key:Object/Integer/String, value:Mix):Object',
-    'mm.pack(data:Object/Function/Array/Hash, glue:String/undefined = ":", joint:String/undefined = ";"):String',
-    'mm.clean(data:Object/Function/Array/Hash, only:String/undefined):Object',
-    'mm.logg(label:String/Function, mode:Integer/undefined = 0):Object',
-    'Msg#send(msg:String, ...):Array',
-    'Msg#post(msg:String, ...):this',
-    'Date.from(date:Date/String):Date/null',
-    'Date#diff(diffDate:Date/Integer):Object',
-    'Date#format(format:String/undefined = "I"):String',
-    'Array.range(begin:Integer, end:Integer, filterOrStep:Function/Integer/undefined = 1):Array',
-    'Array#at(format:String):String',
-    'Array#clean(only:String/undefined = ""):Array',
-    'Array#toUTF8Array():Array',
-    'Array#toUTF16Array():Array',
-    'Array#toUTF16String():String',
-    'Array#first(index:Integer/undefined = 0):Mix/undefined',
-    'Array#last(lastIndex:Integer/undefined = 0):Mix/undefined',
-    'Array#clamp(low:Number, high:Number):Array',
-    'Array#nsort(desc:Boolean/undefined = false):Array',
-    'Array#average(median:Boolean/undefined = false):Number',
-    'Array#or(merge:Array):Array',
-    'Array#and(compare:Array):Array',
-    'Array#xor(compare:Array):Array',
-    'Array#fill(value:Primitive/Array/Date = undefined, from:Integer/undefined = 0, to:Integer/undefined = 0):Array',
-    'Array#reject(fn:Function):Array',
-    'Array#select(fn:Function):Array',
-    'String#trims(chr:String):String',
-    'String#insert(str:String, index:Integer/undefined = 0):String',
-    'String#remove(str:String, index:Integer/undefined = 0):String',
-    'String#unpack(glue:String/undefined = ":", joint:String/undefined = ";"):Object',
-    'String#up(index:Integer/undefined):String',
-    'String#low(index:Integer/undefined):String',
-    'String#has(find:String, anagram:Boolean/undefined = false):Boolean',
-    'String#numbers(joint:String/undefined = ","):Array',
-    'String#toUTF8Array():Array',
-    'String#toUTF16Array():Array',
-    'String#toBase64(safe:Boolean = false):String',
-    'String#fromBase64():String',
-    'String#toEntity():String',
-    'String#fromEntity():String',
-    'String#overflow(maxLength:Integer, ellipsis:String/undefined = "...", affect:String/undefined = "left"):String',
-    'Number#to(end:Integer, filterOrStep:Function/Integer/undefined = 1):Array',
-    'Number#pad(digits:Integer/undefined = 2, radix:Integer/undefined = 10):String',
-    'Number#xor(value:Integer/undefined):Integer',
-    'Number#wait(fn_that:Function/Array):Integer',
-    'Number#times(fn_that:Function/Array):Array',
-    'Number#clamp(low:Number, high:Number):Number',
-    'Number#frac(range:Integer/undefined = 256):Number',
-    'Function#help.add(url:String, word:String/Array/RegExp):void',
-    'Function#nickname(defaultName:String/undefined):String',
-    'RegExp#esc(str:String):String',
-    'RegExp#flag(command:String/undefined):RegExp',
-    'Function#await(waits:Integer, tick:Function/undefined = undefined):this',
-    'Await#missable(count:Integer):this',
-    'Array#test(label:String/undefined = "", arg:Mix = undefined):this',
-    'String#stream(methods:Object, delay:String/Integer = 0):Object',
-    'Array#async(callback:Function/undefined = undefined, wait:Integer/undefined = 0, unit:Integer/undefined = 0):Array',
-    'mm.url(url:Object/String/undefined = ""):String/Object',
-    'mm.url.resolve(url:String):String',
-    'mm.url.normalize(url:String):String',
-    'mm.url.buildQuery(obj:Object, joint:String/undefined = "&"):String',
-    'mm.url.parseQuery(query:String):Object'
-);
-//}@prof
- */
 
 })(this.self || global);
 
