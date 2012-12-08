@@ -24,9 +24,6 @@ function _defineLibraryAPIs(mix) {
                                         //          statics:Object = undefined):Function
         // --- key / value store ---
         Hash:       Hash,               // mm.Hash(obj:Object):Hash
-        // --- messaging ---
-        Msg:        Msg,                // mm.Msg()
-        msg:        {},                 // mm.msg - Msg pool
         // --- mixin ---
         arg:        mm_arg,             // mm.arg(arg:Object/Function/undefined, defaults:Object):Object
         mix:        mm_mix,             // mm.mix(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
@@ -72,8 +69,6 @@ function _defineLibraryAPIs(mix) {
         alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
         deny:       mm_deny,            // mm.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
         allow:      mm_allow,           // mm.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-        perf:       mm_perf,            // mm.perf():Object
-        pollution:  mm_pollution,       // mm.pollution():StringArray
         // --- type detection ---
         type:   mix(mm_type, {          // mm.type(mix:Mix):String
             alias:  mm_type_alias       // mm.type.alias(obj:Object):void
@@ -92,15 +87,6 @@ function _defineLibraryAPIs(mix) {
             nest:   0                   // mm.logg.nest - Number: nest level
         })
     });
-    // --- url ---
-//{@url
-    mm.url = mix(mm_url, {              // mm.url(url:URLObject/URLString = ""):URLString/URLObject
-        resolve:    mm_url_resolve,     // mm.url.resolve(url:URLString):URLString
-        normalize:  mm_url_normalize,   // mm.url.normalize(url:URLString):URLString
-        buildQuery: mm_url_buildQuery,  // mm.url.buildQuery(obj:URLObject, joint:String = "&"):URLQueryString
-        parseQuery: mm_url_parseQuery   // mm.url.parseQuery(query:URLString/URLQueryString):URLQueryObject
-    });
-//}@url
     // --- environment ---
     mm.env = _detectEnv({
         ua:         "",                 // mm.env.ua     - String: user agent
@@ -256,7 +242,6 @@ function _extendNativeObjects(mix, wiz) {
     wiz(String.prototype, {
         // --- match ---
         has:        String_has,         // "".has(find:String, anagram:Boolean = false):Boolean
-        isURL:      String_isURL,       // "".isURL(isRelative:Boolean = false):Boolean
         // --- format ---
         at:         String_at,          // "@@".at(...:Mix):String
         up:         String_up,          // "".up(index:Integer = undedefind):String
@@ -322,78 +307,14 @@ function _extendNativeObjects(mix, wiz) {
     });
     wiz(RegExp, {
         esc:        RegExp_esc,         // RegExp.esc(str:String):EscapedString
-        FILE:       /^(file:)\/{2,3}(?:localhost)?([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/i,
-                    //                 localhost    /dir/f.ext ?key=value    #hash
-                    //  [1]                         [2]        [3]          [4]
-        URL:        /^(\w+:)\/\/((?:([\w:]+)@)?([^\/:]+)(?::(\d*))?)([^ :?#]*)(?:(\?[^#]*))?(?:(#.*))?$/,
-                    //  https://    user:pass@    server   :port    /dir/f.ext   ?key=value     #hash
-                    //  [1]         [3]           [4]       [5]     [6]         [7]            [8]
-        PATH:       /^([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/,
-                    //  /dir/f.ext   key=value    hash
-                    //  [1]          [2]          [3]
         DATE:       /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.(\d*))?Z$/
                     // [1]y    [2]m   [3]d   [4]h   [5]m   [6]s       [7]ms
-
     });
     wiz(RegExp.prototype, {
         flag:       RegExp_flag         // /regexp/.flag(flag:String):RegExp
     });
 
     Math.PI2 = Math.PI * 2;             // Math.PI2
-
-//{@easing
-    // This code block base idea from Robert Penner's easing equations.
-    //      (c) 2001 Robert Penner, all rights reserved.
-    //      http://www.robertpenner.com/easing_terms_of_use.html
-    var fn,
-        easing = {
-            linear: "(c*t/d+b)", // linear(t, b, c, d,  q1, q1, q3, q4)
-                                 //     t:Number - current time (from 0)
-                                 //     b:Number - beginning value
-                                 //     c:Number - change in value(delta value), (end - begin)
-                                 //     d:Number - duration(unit: ms)
-                                 // q1~q4:Number - tmp arg
-        // --- Quad ---
-            inquad: "(q1=t/d,c*q1*q1+b)",
-           outquad: "(q1=t/d,-c*q1*(q1-2)+b)",
-         inoutquad: "(q1=t/(d*0.5),q1<1?c*0.5*q1*q1+b:-c*0.5*((--q1)*(q1-2)-1)+b)",
-        // --- Cubic ---
-           incubic: "(q1=t/d,c*q1*q1*q1+b)",
-          outcubic: "(q1=t/d-1,c*(q1*q1*q1+1)+b)",
-        inoutcubic: "(q1=t/(d*0.5),q1<1?c*0.5*q1*q1*q1+b:c*0.5*((q1-=2)*q1*q1+2)+b)",
-        outincubic: "(q1=t*2,q2=c*0.5,t<d*0.5?(q3=q1/d-1,q2*(q3*q3*q3+1)+b)" +
-                                            ":(q3=(q1-d)/d,q2*q3*q3*q3+b+q2))",
-        // --- Quart ---
-           inquart: "(q1=t/d,c*q1*q1*q1*q1+b)",
-          outquart: "(q1=t/d-1,-c*(q1*q1*q1*q1-1)+b)",
-        inoutquart: "(q1=t/(d*0.5),q1<1?c*0.5*q1*q1*q1*q1+b" +
-                                      ":-c*0.5*((q1-=2)*q1*q1*q1-2)+b)",
-        outinquart: "(q1=t*2,q2=c*0.5,t<d*0.5?(q3=q1/d-1,-q2*(q3*q3*q3*q3-1)+b)" +
-                                            ":(q4=q1-d,q3=q4/d,q2*q3*q3*q3*q3+b+q2))",
-        // --- Back ---
-            inback: "(q1=t/d,q2=1.70158,c*q1*q1*((q2+1)*q1-q2)+b)",
-           outback: "(q1=t/d-1,q2=1.70158,c*(q1*q1*((q2+1)*q1+q2)+1)+b)",
-         inoutback: "(q1=t/(d*0.5),q2=1.525,q3=1.70158," +
-                        "q1<1?(c*0.5*(q1*q1*(((q3*=q2)+1)*q1-q3))+b)" +
-                            ":(c*0.5*((q1-=2)*q1*(((q3*=q2)+1)*q1+q3)+2)+b))",
-         outinback: "(q1=t*2,q2=c*0.5," +
-                        "t<d*0.5?(q3=q1/d-1,q4=1.70158,q2*(q3*q3*((q4+1)*q3+q4)+1)+b)" +
-                               ":(q3=(q1-d)/d,q4=1.70158,q2*q3*q3*((q4+1)*q3-q4)+b+q2))",
-        // --- Bounce ---
-          inbounce: "(q1=(d-t)/d,q2=7.5625,q3=2.75,c-(q1<(1/q3)?(c*(q2*q1*q1)+0)" +
-                    ":(q1<(2/q3))?(c*(q2*(q1-=(1.5/q3))*q1+.75)+0):q1<(2.5/q3)" +
-                    "?(c*(q2*(q1-=(2.25/q3))*q1+.9375)+0)" +
-                    ":(c*(q2*(q1-=(2.625/q3))*q1+.984375)+0))+b)",
-         outbounce: "(q1=t/d,q2=7.5625,q3=2.75,q1<(1/q3)?(c*(q2*q1*q1)+b)" +
-                    ":(q1<(2/q3))?(c*(q2*(q1-=(1.5/q3))*q1+.75)+b):q1<(2.5/q3)" +
-                    "?(c*(q2*(q1-=(2.25/q3))*q1+.9375)+b)" +
-                    ":(c*(q2*(q1-=(2.625/q3))*q1+.984375)+b))"
-    };
-    for (fn in easing) {
-        Math[fn] = new Function("t,b,c,d,q1,q2,q3,q4", "return " + easing[fn]);
-        Math[fn].src = easing[fn];
-    }
-//}@easing
 }
 
 // --- Class Hash ------------------------------------------
@@ -449,22 +370,6 @@ function _defineHashPrototype(wiz) {
         toString:   function()      { return mm_dump(this, -1, 100); }
     }, true); // override (Object#valueOf, Object#toString)
 }
-
-// --- Messaging -------------------------------------------
-function Msg() {
-    this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
-    this._broadcast   = []; // broadcast address
-    Object.defineProperty(this, "__CLASS__",     { value: "msg" });
-    Object.defineProperty(this, "__CLASS_UID__", { value: mm_uid("mm.class") });
-}
-Msg.prototype = {
-    bind:           Msg_bind,           // Msg#bind(...):this
-    unbind:         Msg_unbind,         // Msg#unbind(...):this
-    list:           Msg_list,           // Msg#list():ClassNameStringArray
-    to:             Msg_to,             // Msg#to(...):WrapperedObject
-    post:           Msg_post,           // Msg#post(msg:String, ...):this
-    send:           Msg_send            // Msg#send(msg:String, ...):ResultArray
-};
 
 // --- library scope vars ----------------------------------
 var _mm_uid_db = {},
@@ -1286,45 +1191,6 @@ function _judgeType(mix, type) {
          : type === mm_type(mix);
 }
 
-function mm_perf() { // @ret Object: { processing, redirect, appcache, dns, dom, load, fetch }
-                     //       processing - Number: Processing time
-                     //       redirect - Number: redirect elapsed
-                     //       appcache - Number: Application cache elapsed
-                     //       dns      - Number: DomainLookup elapsed
-                     //       dom      - Number: DOMContentLoaded event elapsed
-                     //       load     - Number: window.load event elapsed
-                     //       fetch    - Number: fetchStart to window.load event finished
-                     // @help: mm.perf
-                     // @desc: calc performance data
-
-    var tm = (global.performance || 0).timing || 0;
-
-    if (!tm) {
-        return { processing: 0, redirect: 0, appcache: 0,
-                 dns: 0, dom: 0, load: 0, fetch: 0 };
-    }
-    return {
-        processing: tm.loadEventStart - tm.responseEnd,
-        redirect:   tm.redirectEnd - tm.redirectStart,
-        appcache:   tm.domainLookupStart - tm.fetchStart,
-        dns:        tm.domainLookupEnd - tm.domainLookupStart,
-        dom:        tm.domContentLoadedEventEnd - tm.domContentLoadedEventStart,
-        load:       tm.loadEventEnd - tm.loadEventStart,
-        fetch:      tm.loadEventEnd - tm.fetchStart
-    };
-}
-
-function mm_pollution() { // @ret StringArray: [key, ...]
-                          // @help: mm.pollution
-                          // @desc: detect global object pollution
-    if (mm_pollution._keys) {
-        return mm_pollution._keys.xor( Object.keys(global) ); // Array#xor
-    }
-    mm_pollution._keys = Object.keys(global);
-    return [];
-}
-
-
 // --- type / detect ---
 function mm_type(mix) { // @arg Mix: search
                         // @ret TypeLowerCaseString:
@@ -1502,127 +1368,6 @@ function mm_logg(label,  // @arg String/Function: label (group name)
         --mm_logg.nest;
         _mm_log_db.length > mm_log.limit && mm_log_dump();
     }
-}
-
-// --- Messaging ---
-function Msg_bind(ooo) { // @var_args Instance: register drain instance
-                         // @ret this:
-                         // @throw: Error("NOT_DELIVERABLE")
-                         // @help: Msg#bind
-                         // @desc: register the drain(destination of the message) instance
-    Array.prototype.slice.call(arguments).forEach(function(instance) {
-        if (instance &&
-            instance.__CLASS_UID__ && typeof instance.msgbox === "function") {
-
-            this._deliverable[instance.__CLASS_UID__] = instance; // overwrite
-        } else {
-            throw new Error("NOT_DELIVERABLE");
-        }
-    }, this);
-
-    // update broadcast address
-    this._broadcast = mm_values(this._deliverable);
-    return this;
-}
-
-function Msg_unbind(ooo) { // @var_args Instance: drain instance. undefined is unbind all instance
-                           // @ret this:
-                           // @help: Msg#unbind
-                           // @desc: unregister drain instance
-    var args = arguments.length ? Array.prototype.slice.call(arguments)
-                                : this._broadcast;
-
-    args.each(function(instance) {
-        if (instance.__CLASS_UID__) {
-            delete this._deliverable[instance.__CLASS_UID__];
-        }
-    }, this);
-
-    // update broadcast address
-    this._broadcast = mm_values(this._deliverable);
-    return this;
-}
-
-function Msg_list() { // @ret ClassNameStringArray: [className, ...]
-                      // @help: Msg#list
-                      // @desc: get registered instance list
-    return mm.map(this._deliverable, function(instance) {
-        return instance.__CLASS__;
-    });
-}
-
-function Msg_to(ooo) { // @var_args Instance: delivery to address.
-                       //            undefined   is Broadcast
-                       //            Instance    is Unicast
-                       //            instance... is Multicast
-                       // @ret WrapperedObject: { that, addr, deli, post, send }
-                       // @help: Msg#to
-                       // @desc: set destination address
-    var deli = {}, i;
-
-    for (i in this._deliverable) {
-        deli[i] = this._deliverable[i];
-    }
-    return {
-        that: this,
-        addr: arguments.length ? Array.prototype.slice.call(arguments)
-                               : this._broadcast.concat(), // shallow copy
-        deli: deli,
-        post: Msg_post,
-        send: Msg_send
-    };
-}
-
-function Msg_send(msg,   // @arg String: msg
-                  ooo) { // @var_args Mix: msgbox args. msgbox(msg, arg, ...)
-                         // @ret Array: [result, ...], "NOT_DELIVERABLE" is ERROR
-                         // @help: Msg#send
-                         // @desc: send a message synchronously
-    var rv = [], instance,
-        addr = (this.addr || this._broadcast).concat(), i = 0, iz = addr.length,
-        args = Array.prototype.slice.call(arguments),
-        deli = this.deli || this._deliverable;
-
-    for (; i < iz; ++i) {
-        instance = deli[ addr[i].__CLASS_UID__ ];
-
-        if (instance && instance.msgbox) {
-            rv[i] = instance.msgbox.apply(instance, args);
-        } else {
-            rv[i] = "NOT_DELIVERABLE";
-            if (instance) {
-                mm_log(msg + " is not deliverable. " + instance.__CLASS__);
-            }
-        }
-    }
-    return rv;
-}
-
-function Msg_post(msg,   // @arg String: msg
-                  ooo) { // @var_args Mix: msgbox args. msgbox(msg, arg, ...)
-                         // @ret this:
-                         // @help: Msg#post
-                         // @desc: post a message asynchronously
-    var addr = (this.addr || this._broadcast).concat(), // shallow copy
-        args = Array.prototype.slice.call(arguments),
-        deli = this.deli || this._deliverable;
-
-    0..wait(function() {
-        var instance, i = 0, iz = addr.length;
-
-        for (; i < iz; ++i) {
-            instance = deli[ addr[i].__CLASS_UID__ ];
-
-            if (instance && instance.msgbox) {
-                instance.msgbox.apply(instance, args);
-            } else {
-                if (instance) {
-                    mm_log(msg + " is not deliverable. " + instance.__CLASS__);
-                }
-            }
-        }
-    });
-    return this.that || this;
 }
 
 function Date_from(date) { // @arg Date/String:
@@ -2217,17 +1962,6 @@ function String_has(find,      // @arg String: find string or find characters
                                // @desc: String has character(s) and anagram matching
     return anagram ? this.split("").has(find.split("")) // Array#has delegation
                    : this.indexOf(find) >= 0;
-}
-
-function String_isURL(isRelative) { // @arg Boolean(= false):
-                                    // @ret Boolean: true is absolute/relative url
-                                    // @desc: is absolute url or relative url
-                                    // @help: String#isURL
-    if (isRelative) {
-        return RegExp.URL.test("http://a.a/" + this.replace(/^\/+/, ""));
-    }
-    return /^(https?|wss?):/.test(this) ? RegExp.URL.test(this)
-                                        : RegExp.FILE.test(this);
 }
 
 function String_count() { // @ret Object: found count or { char: char-count, ... }
@@ -3215,182 +2949,6 @@ function Object_pack(obj,     // @arg Object:
     return rv.join(joint || ";");
 }
 
-// --- url -------------------------------------------------
-//{@url
-function mm_url(url) { // @arg URLObject/URLString(= ""): "https://..."
-                       //      URLObject: { protocol, host, pathname, search, fragment }
-                       // @ret URLString/URLObject:
-                       // @desc: get current URL, parse URL, build URL
-                       // @help: mm.url
-   return !url ? global.location.href
-         : typeof url === "string" ? _url_parse(url)
-                                   : _url_build(url);
-}
-
-function _url_build(obj) { // @arg URLObject/Object: need { protocol, host, pathname, search, fragment }
-                           // @ret URLString: "{protocol}//{host}{pathname}?{search}#{fragment}"
-                           // @inner: build URL
-    return [obj.protocol,
-            obj.protocol ? (obj.protocol === "file:" ? "///" : "//") : "",
-            obj.host     || "", obj.pathname || "/",
-            obj.search   || "", obj.fragment || ""].join("");
-}
-
-function _url_parse(url) { // @arg URLString: abs or rel,
-                           //                   "http://user:pass@example.com:8080/dir1/dir2/file.ext?a=b&c=d#fragment"
-                           // @ret URLObject: { href, protocol, scheme, secure, host,
-                           //                   auth, hostname, port, pathname, dir, file,
-                           //                   search, query, fragment, ok }
-                           //     href     - String:  "http://user:pass@example.com:8080/dir1/dir2/file.ext?a=b;c=d#fragment"
-                           //     protocol - String:  "http:"
-                           //     scheme   - String:  "http:"
-                           //     secure   - Boolean: false
-                           //     host     - String:  "user:pass@example.com:8080". has auth
-                           //     auth     - String:  "user:pass"
-                           //     hostname - String:  "example.com"
-                           //     port     - Number:  8080
-                           //     pathname - String:  "/dir1/dir2/file.ext"
-                           //     dir      - String:  "/dir1/dir2"
-                           //     file     - String:  "file.ext"
-                           //     search   - String:  "?a=b&c=d"
-                           //     query    - URLQueryObject: { a: "b", c: "d" }
-                           //     fragment - String:  "#fragment"
-                           //     ok       - Boolean: true is valid url
-                           // @inner: parse URL
-
-    function _extends(obj) { // @arg URLObject:
-                             // @ret URLObject:
-        var ary = obj.pathname.split("/");
-
-        obj.href       = obj.href     || "";
-        obj.protocol   = obj.protocol || "";
-        obj.scheme     = obj.protocol;        // [alias]
-        obj.secure     = obj.secure   || false;
-        obj.host       = obj.host     || "";
-        obj.auth       = obj.auth     || "";
-        obj.hostname   = obj.hostname || "";
-        obj.port       = obj.port     || 0;
-        obj.pathname   = obj.pathname || "";
-        obj.file       = ary.pop();
-        obj.dir        = ary.join("/") + "/";
-        obj.search     = obj.search   || "";
-        obj.query      = mm_url_parseQuery(obj.search);
-        obj.fragment   = obj.fragment || "";
-        obj.ok         = obj.ok       || true;
-        return obj;
-    }
-
-    var m, ports = { "http:": 80, "https": 443, "ws:": 81, "wss:": 816 };
-
-    m = RegExp.FILE.exec(url);
-    if (m) {
-        return _extends({
-            href: url, protocol: m[1], pathname: m[2],
-                       search:   m[3], fragment: m[4] });
-    }
-    m = RegExp.URL.exec(url);
-    if (m) {
-        return _extends({
-            href: url, protocol: m[1],
-                       secure:   m[1] === "https:" || m[1] === "wss:",
-                       host:     m[2], auth:   m[3],
-                       hostname: m[4], port:   m[5] ? +m[5] : (ports[m[1]] || 0),
-                       pathname: m[6], search: m[7],
-                       fragment: m[8] });
-    }
-    m = RegExp.PATH.exec(url);
-    if (m) {
-        return _extends({
-            href: url, pathname: m[1], search: m[2], fragment: m[3] });
-    }
-    return _extends({ href: url, pathname: url, ok: false });
-}
-
-function mm_url_resolve(url) { // @arg URLString: relative URL or absolute URL
-                               // @ret URLString: absolute URL
-                               // @desc: convert relative URL to absolute URL
-                               // @help: mm.url.resolve
-    if (/^(https?|file|wss?):/.test(url)) { // is absolute url?
-        return url;
-    }
-    var a = global.document.createElement("a");
-
-    a.setAttribute("href", url);    // <a href="hoge.htm">
-    return a.cloneNode(false).href; // -> "http://example.com/hoge.htm"
-}
-
-function mm_url_normalize(url) { // @arg URLString:
-                                 // @ret URLString:
-                                 // @help: mm.url.normalize
-                                 // @desc: path normalize
-    var rv = [], path, obj = _url_parse(url),
-        dots = /^\.+$/,
-        dirs = obj.dir.split("/"),
-        i = 0, iz = dirs.length;
-
-    // normalize("dir/.../a.file") -> "/dir/a.file"
-    // normalize("../../../../a.file") -> "/a.file"
-    for (; i < iz; ++i) {
-        path = dirs[i];
-        if (path === "..") {
-            rv.pop();
-        } else if (!dots.test(path)) {
-            rv.push(path);
-        }
-    }
-    // tidy slash "///" -> "/"
-    obj.pathname = ("/" + rv.join("/") + "/").replace(/\/+/g, "/") + obj.file;
-    return _url_build(obj); // rebuild
-}
-
-function mm_url_buildQuery(obj,     // @arg URLQueryObject: { key1: "a", key2: "b", key3: [0, 1] }
-                           joint) { // @arg String(= "&"): joint string "&" or "&amp;" or ";"
-                                    // @ret URLQueryString: "key1=a&key2=b&key3=0&key3=1"
-                                    // @help: mm.url.buileQuery
-                                    // @desc: build query string
-    joint = joint || "&";
-
-    return mm.map(obj, function(value, key) {
-        key = global.encodeURIComponent(key);
-
-        return Array.toArray(value).map(function(v) {
-            return key + "=" + global.encodeURIComponent(v); // "key3=0;key3=1"
-        }).join(joint);
-    }).join(joint); // "key1=a;key2=b;key3=0;key3=1"
-}
-
-function mm_url_parseQuery(query) { // @arg URLString/URLQueryString: "key1=a;key2=b;key3=0;key3=1"
-                                    // @ret URLQueryObject: { key1: "a", key2: "b", key3: ["0", "1"] }
-                                    // @help: mm.url.parseQuery
-                                    // @desc: parse query string
-    function _parse(_, key, value) {
-        var k = global.encodeURIComponent(key),
-            v = global.encodeURIComponent(value);
-
-        if (rv[k]) {
-            if (Array.isArray(rv[k])) {
-                rv[k].push(v);
-            } else {
-                rv[k] = [rv[k], v];
-            }
-        } else {
-            rv[k] = v;
-        }
-        return "";
-    }
-
-    var rv = {};
-
-    if (query.indexOf("?") >= 0) {
-        query = query.split("?")[1].split("#")[0];
-    }
-    query.replace(/&amp;|&|;/g, ";"). // "&amp;" or "&" or ";" -> ";"
-          replace(/(?:([^\=]+)\=([^\;]+);?)/g, _parse);
-
-    return rv;
-}
-//}@url
-
 // --- env -------------------------------------------------
 // http://code.google.com/p/monogram-js/wiki/UserAgentStrings
 // http://googlewebmastercentral-ja.blogspot.com/2011/05/android.html
@@ -3437,7 +2995,7 @@ _defineHashPrototype(mm_wiz);
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
             "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "mm,Class,Hash,Await,Msg".split(","));
+            "mm,Class,Hash,Await".split(","));
 
 })(this.self || global);
 

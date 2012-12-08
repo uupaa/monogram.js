@@ -12,6 +12,7 @@ function _extendNativeObjects() {
         })
     });
 }
+
 // --- library scope vars ----------------------------------
 var _help_db = []; // [ <url, rex>, ... ]
 
