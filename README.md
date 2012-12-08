@@ -4,6 +4,7 @@ monogram.js
 monogram.js - Write once, run anywhere :) JavaScript Library
 
 ====
+```html
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <script src="polyfill.es.js"></script>
 <script src="polyfill.uri.js"></script>
@@ -23,4 +24,5 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <script src="dev.prof.js"></script>
 </head><body>
 </body></html>
+```
 
