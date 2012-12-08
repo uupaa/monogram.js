@@ -13,7 +13,7 @@ function _extendNativeObjects() {
     });
 }
 // --- library scope vars ----------------------------------
-var _mm_help_db = []; // [ <url, rex>, ... ]
+var _help_db = []; // [ <url, rex>, ... ]
 
 // --- implement -------------------------------------------
 function Function_help(that) { // @arg this:
@@ -37,7 +37,7 @@ function Function_help_url(fn) { // @arg Function/undefined:
 }
 
 function _findHelp(help) {
-    var ary = _mm_help_db, i = 0, iz = ary.length, url, rex, m;
+    var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
 
     for (; i < iz; i += 2) {
         url = ary[i];
@@ -62,7 +62,7 @@ function Function_help_add(url,    // @arg URLString: help url string
     if (Array.isArray(word)) {
         word = RegExp("^(" + word.join("|") + ")(?:([#\\.])([\\w\\,]+))?$");
     }
-    _mm_help_db.push(url, word);
+    _help_db.push(url, word);
 }
 
 function wiz(object, extend, override) {
