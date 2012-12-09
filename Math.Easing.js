@@ -5,7 +5,7 @@
 //      http://www.robertpenner.com/easing_terms_of_use.html
 
 //{@easing
-(function(global) { // @arg Global: window or global
+(function() {
 
 // --- header ----------------------------------------------
 
@@ -63,6 +63,6 @@ for (fn in easing) {
     Math[fn].src = easing[fn];
 }
 
-})(this.self || global);
+})();
 //}@easing
 

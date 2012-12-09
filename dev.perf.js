@@ -1,4 +1,5 @@
-// mm.perf.js: Performance API
+// dev.perf.js: Performance API
+// @need: mm.js
 
 //{@perf
 (function(global) { // @arg Global: window or global

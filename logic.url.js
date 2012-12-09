@@ -1,4 +1,5 @@
-// mm.url.js: url helper API
+// logic.url.js: url helper API
+// @need: mm.js
 
 //{@url
 (function(global) { // @arg Global: window or global

@@ -9,6 +9,7 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <!-- polyfill -->
 <script src="polyfill.es.js"></script>
 <script src="polyfill.uri.js"></script>
+<script src="polyfill.help.js"></script>
 <script src="polyfill.json.js"></script>
 <script src="polyfill.ruby.js"></script>
 <!-- end polyfill -->
@@ -22,8 +23,11 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <script src="Math.Matrix2D.js"></script>
 
 <script src="logic.url.js"></script>
+<script src="logic.test.js"></script>
+<script src="logic.async.js"></script>
 <script src="logic.await.js"></script>
 <script src="logic.effect.js"></script>
+<script src="logic.stream.js"></script>
 <script src="logic.messageing.js"></script>
 
 <script src="codec.md5.js"></script>
@@ -35,7 +39,6 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <!-- end you like -->
 
 <!-- for developer -->
-<script src="dev.help.js"></script>
 <script src="dev.prof.js"></script>
 <script src="dev.perf.js"></script>
 <script src="dev.pollution.js"></script>

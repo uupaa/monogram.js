@@ -1,8 +1,8 @@
-// base64.js: extend Base64 methods
-// @need: utf.js
+// codec.base64.js: extend Base64 methods
+// @need: codec.utf.js
 
 //{@base64
-(function(global) { // @arg Global: window or global
+(function() {
 
 // --- header ----------------------------------------------
 function _extendNativeObjects() {
@@ -99,6 +99,6 @@ function wiz(object, extend, override) {
 // --- export --------------------------------
 _extendNativeObjects();
 
-})(this.self || global);
+})();
 //}@base64
 

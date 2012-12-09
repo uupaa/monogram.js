@@ -1,4 +1,4 @@
-// await.js: extend Await methods
+// logic.await.js: extend Await methods
 
 //{@await
 (function(global) { // @arg Global: window or global
@@ -131,7 +131,9 @@ function wiz(object, extend, override) {
 // --- export --------------------------------
 _extendNativeObjects();
 
-(function(){}).help.add("http://code.google.com/p/mofmof-js/wiki/", ["Await"]);
+if (Await.help) {
+    Await.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Await"]);
+}
 
 })(this.self || global);
 //}@await

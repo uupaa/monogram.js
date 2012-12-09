@@ -1,26 +1,36 @@
+// codec.sha1.js:
+// @need: codec.utf.js
+
 //{@sha1
 (function() {
 
-mm.sha1 = mm_sha1; // mm.sha1(data:String/ByteCodedArray/Array):SHA1CodedArray
+// --- header --------------------------------
+function _extendNativeObjects() {
+    wiz(Array.prototype, {
+        toSHA1Array:    Array_toSHA1Array   // [].toSHA1Array():SHA1Array
+    });
+    wiz(String.prototype, {
+        toSHA1Array:    String_toSHA1Array  // "".toSHA1Array():SHA1Array
+    });
+}
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function mm_sha1(data) { // @arg String/ByteCodedArray/Array:
-                         // @ret SHA1CodedArray: [...] + { code: "sha1", toString }
-                         // @help: mm.sha1
-                         // @desc: encode sha1 hash
-//{@debug
-    mm.allow("data", data, "String/CodedArray/Array");
-//}@debug
-
-    return Array.isCodedArray(data) ||
-           Array.isArray(data) ? _crypto(data)
-                               : _crypto(data.encode("utf8"));
+function Array_toSHA1Array() { // @ret SHA1Array: [...]
+                               // @help: Array#toSHA1Array
+                               // @desc: encode sha1 hash
+    return _crypto(this.valueOf());
 }
 
-function _crypto(data) { // @arg ByteCodedArray/Array:
-                         // @ret SHA1CodedArray: [...] + { code: "sha1", toString }
+function String_toSHA1Array() { // @ret SHA1Array: [...]
+                                // @help: String#toSHA1Array
+                                // @desc: encode sha1 hash
+    return _crypto(this.toUTF8Array());
+}
+
+function _crypto(data) { // @arg Byterray:
+                         // @ret SHA1Array: [...]
                          // @inner:
 
     var rv = data, hash, i = rv.length, iz, e = i, a, b, c, d;
@@ -55,15 +65,6 @@ function _crypto(data) { // @arg ByteCodedArray/Array:
         rv[i + 1] = c;
         rv[i    ] = d;
     }
-    rv.code = "sha1";
-    rv.toString = function() {
-        var i = 0, iz = rv.length;
-
-        for (; i < iz; ++i) {
-            rv[i] = (rv[i] + 0x100).toString(16).slice(-2);
-        }
-        return rv.join("");
-    };
     return rv;
 }
 
@@ -113,6 +114,17 @@ function _SHA1(data) { // @arg ByteArray:
     }
     return [a, b, c, d, e];
 }
+
+function wiz(object, extend, override) {
+    for (var key in extend) {
+        (override || !(key in object)) && Object.defineProperty(object, key, {
+            configurable: true, writable: true, value: extend[key]
+        });
+    }
+}
+
+// --- export --------------------------------
+_extendNativeObjects();
 
 })();
 //}@sha1

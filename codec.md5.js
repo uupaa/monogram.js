@@ -1,7 +1,18 @@
+// codec.md5.js
+// @need: codec.utf.js
+
 //{@md5
 (function() {
 
-mm.md5 = mm_md5; // mm.md5(data:String/ByteCodedArray/Array):MD5CodedArray
+// --- header --------------------------------
+function _extendNativeObjects() {
+    wiz(Array.prototype, {
+        toMD5Array:     Array_toMD5Array    // [].toMD5Array():MD5Array
+    });
+    wiz(String.prototype, {
+        toMD5Array:     String_toMD5Array   // "".toMD5Array():MD5Array
+    });
+}
 
 // --- library scope vars ----------------------------------
 var _MD5_A = [  0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf,
@@ -27,21 +38,20 @@ var _MD5_A = [  0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf,
                 0,  7, 14,  5, 12,  3, 10,  1,  8, 15,  6, 13,  4, 11,  2,  9];
 
 // --- implement -------------------------------------------
-function mm_md5(data) { // @arg String/ByteCodedArray/Array:
-                        // @ret MD5CodedArray: [...] + { code: "md5", toString }
-                        // @help: mm.md5
-                        // @desc: encode md5 hash
-//{@debug
-    mm.allow("data", data, "String/CodedArray/Array");
-//}@debug
-
-    return Array.isCodedArray(data) ||
-           Array.isArray(data) ? _crypto(data)
-                               : _crypto(data.encode("utf8"));
+function Array_toMD5Array() { // @ret MD5Array: [...]
+                              // @help: Array#toMD5Array
+                              // @desc: encode md5 hash
+    return _crypto(this.valueOf());
 }
 
-function _crypto(data) { // @arg ByteCodedArray/Array:
-                         // @ret CodedArray: [...] + { code: "md5", toString }
+function String_toMD5Array() { // @ret MD5Array: [...]
+                               // @help: String#toMD5Array
+                               // @desc: encode md5 hash
+    return _crypto(this.toUTF8Array());
+}
+
+function _crypto(data) { // @arg ByteArray
+                         // @ret MD5Array: [...]
                          // @inner:
 
     var rv = data, hash, i = rv.length, iz, e = i;
@@ -66,15 +76,6 @@ function _crypto(data) { // @arg ByteCodedArray/Array:
                 hash[i] >> 16 & 0xff,
                 hash[i] >> 24 & 0xff);
     }
-    rv.code = "md5";
-    rv.toString = function() {
-        var i = 0, iz = rv.length;
-
-        for (; i < iz; ++i) {
-            rv[i] = (rv[i] + 0x100).toString(16).slice(-2);
-        }
-        return rv.join("");
-    };
     return rv;
 }
 
@@ -125,6 +126,17 @@ function _MD5(data) { // @arg ByteArray:
     }
     return [a, b, c, d];
 }
+
+function wiz(object, extend, override) {
+    for (var key in extend) {
+        (override || !(key in object)) && Object.defineProperty(object, key, {
+            configurable: true, writable: true, value: extend[key]
+        });
+    }
+}
+
+// --- export --------------------------------
+_extendNativeObjects();
 
 })();
 //}@md5

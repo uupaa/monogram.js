@@ -1,4 +1,5 @@
-// mm.Msg.js: Messaging API
+// logic.messaging.js: Messaging API
+// @need: mm.js
 
 //{@msg
 (function(global) { // @arg Global: window or global

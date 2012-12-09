@@ -1,32 +1,32 @@
+// codec.crc32.js
+
 //{@crc32
 (function() {
 
-mm.crc32 = mm_crc32;    // mm.crc32(data:ByteCodedArray/Array, crc:Integer = 0):Integer
+// --- header ---------------------------------------------
+function _extendNativeObjects() {
+    wiz(Array.prototype, {
+        calcCRC32:      Array_calcCRC32     // [].calcCRC32(crc:Integer = 0):Integer
+    });
+}
 
 // --- library scope vars ----------------------------------
 var _CRC32_TABLE;
 
 // --- implement -------------------------------------------
-function mm_crc32(data,  // @arg ByteCodedArray/Array: [...] + { code: byte }
-                  crc) { // @arg Integer(= 0): previous computed CRC32
-                         // @ret Integer:
-                         // @see: via http://www.ietf.org/rfc/rfc1952.txt
-                         // @help: mm.CRC32
-                         // @desc: encode CRC32
-
-//{@debug
-    mm.allow("data", data, "CodedArray/Array");
-    mm.allow("crc",  crc,  "Integer/undefined");
-//}@debug
-
+function Array_calcCRC32(crc) { // @arg Integer(= 0): previous computed CRC32
+                                // @ret Integer:
+                                // @see: via http://www.ietf.org/rfc/rfc1952.txt
+                                // @help: Array#calcCRC32
+                                // @desc: encode CRC32
     var table = _CRC32_TABLE || (_CRC32_TABLE = _initCRC32()),
-        c = (crc || 0).xor(0xffffffff),
-        i = 0, iz = data.length;
+        c = ((crc || 0) ^ 0xffffffff) >>> 0, // xor
+        i = 0, iz = this.length;
 
     for (; i < iz; ++i) {
-        c = (c >>> 8) ^ table[(c ^ data[i]) & 0xff];
+        c = (c >>> 8) ^ table[(c ^ this[i]) & 0xff];
     }
-    return c.xor(0xffffffff);
+    return (c ^ 0xffffffff) >>> 0; // xor
 }
 
 function _initCRC32() { // @inner: create CRC32 table
@@ -41,6 +41,17 @@ function _initCRC32() { // @inner: create CRC32 table
     }
     return rv;
 }
+
+function wiz(object, extend, override) {
+    for (var key in extend) {
+        (override || !(key in object)) && Object.defineProperty(object, key, {
+            configurable: true, writable: true, value: extend[key]
+        });
+    }
+}
+
+// --- export --------------------------------
+_extendNativeObjects();
 
 })();
 //}@crc32

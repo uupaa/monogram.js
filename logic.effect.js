@@ -1,5 +1,7 @@
-//{@fx
+// logic.effect.js: Mass effect API
+// @need: mm.js, Math.Easing.js
 
+//{@fx
 (function(global) {
 
 function _defineLibraryAPIs(mix) {

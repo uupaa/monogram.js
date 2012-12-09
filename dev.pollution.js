@@ -1,4 +1,5 @@
-// mm.pollution.js: pollution detection API
+// dev.pollution.js: pollution detection API
+// @need: mm.js
 
 //{@perf
 (function(global) { // @arg Global: window or global

@@ -202,13 +202,11 @@ function _extendNativeObjects(mix, wiz) {
 //[ES]  forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
 //[ES]  reduce:     Array_reduce,       // [].reduce(fn:Function, init:Mix):Mix
 //[ES]  reduceRight:Array_reduceRight,  // [].reduceRight(fn:Function, init:Mix):Mix
-        sync:       Array_sync,         // [].sync():ModArray { each, map, some, every }
-        async:      Array_async,        // [].async(callback:Function, wait:Integer = 0,
-                                        //          unit:Integer = 1000):ModArray { each, map, some, every }
         // --- generate ---
         copy:       Array_copy,         // [].copy(deep:Boolean = false):Array
         clean:      Array_clean,        // [].clean(only:String = ""):DenseArray
-        toArray:    Array_toArray,      // [].toArray():Array
+//      toArray:    Array_toArray,      // [].toArray():Array
+        toHexString:Arrra_toHexString,  // [].toHexString():String
         // --- calculate ---
         or:         Array_or,           // [].or(merge:Array):Array
         and:        Array_and,          // [].and(compare:Array):Array
@@ -230,14 +228,9 @@ function _extendNativeObjects(mix, wiz) {
         dump:       Array_dump,         // [].dump():String
         choice:     Array_choice,       // [].choice():Mix
         freeze:     Array_freeze,       // [].freeze():ConstArray
-        stream:     Array_stream,       // [].stream(delay:String/Integer = 0):Object
         shuffle:    Array_shuffle,      // [].shuffle():DenseArray
         first:      Array_first,        // [].first(lastIndex:Integer = 0):Mix/undefined
-        last:       Array_last,         // [].last(index:Integer = 0):Mix/undefined
-        // --- test ---
-        test:   mix(Array_test, {       // [ test case, ... ].test(label:String = "", arg = undefined):void
-            tick:   null                // Array#.test.tick({ok,msg,name,pass,miss}) - Tick Callback Function
-        })
+        last:       Array_last          // [].last(index:Integer = 0):Mix/undefined
     });
     wiz(String.prototype, {
         // --- match ---
@@ -273,8 +266,7 @@ function _extendNativeObjects(mix, wiz) {
         remove:     String_remove,      // "".remove(str:String, index:Integer = 0):String
         // --- utility ---
         crlf:       String_crlf,        // "\r\n".crlf(trim:Boolean = false):StringArray
-        exec:       String_exec,        // "".exec():Mix/undefined
-        stream:     String_stream       // "".stream(methods:Object/Array, delay:String/Integer = 0):Object
+        exec:       String_exec         // "".exec():Mix/undefined
     });
 
 //  mix(Number, {
@@ -1464,6 +1456,17 @@ function Array_toArray(mix) { // @arg Mix/Array:
     return Array.isArray(mix) ? mix : [mix];
 }
 
+function Arrra_toHexString() { // @ret String:
+                               // @this: ByteArray:
+                               // @help: Array#toHexString
+    var rv = [], i = 0, iz = this.length;
+
+    for (; i < iz; ++i) {
+        rv[i] = (this[i] + 0x100).toString(16).slice(-2);
+    }
+    return rv.join("");
+}
+
 function Array_match(fn,     // @arg Function:
                      that) { // @arg this(= undefined): fn this
                              // @ret Mix/undefined:
@@ -1537,12 +1540,14 @@ function Array_clean(only) { // @arg String(= ""): typeof filter. "number", "str
     return rv;
 }
 
+/*
 function Array_toArray() { // @ret Array:
                            // @help: Array#toArray
                            // @desc: array to array
                            // @see: NodeList#toArray, HTMLCollection#toArray
     return this;
 }
+ */
 
 function Array_count() { // @ret Object: { value: value-count, ... }
                          // @help: Array#count
@@ -1677,10 +1682,10 @@ function Array_nsort(desc) { // @arg Boolean(= false): false is ascending(0 -> 9
     return this.clean("number").sort(desc ? descending : ascending); // Array#clean
 }
 
-function Array_average(median) { // @arg Boolean(= false): true is median `` ソートしたサンプルの中央の値を採用します
-                                 //                        false is total/length `` 合計値をサンプル数で割った値を採用します
+function Array_average(median) { // @arg Boolean(= false): true is median
+                                 //                        false is total/length
                                  // @ret Number: average
-                                 // @desc: average of number elements(arithmetic mean) `` 数値要素の平均値を返します
+                                 // @desc: average of number elements(arithmetic mean)
                                  // @help: Array#average
     var ary = this.clean("number"), iz = ary.length; // Array#clean
 
@@ -1690,9 +1695,9 @@ function Array_average(median) { // @arg Boolean(= false): true is median `` ソ
     ary.nsort(); // 0, 1, .. 98, 99
 
     if (iz % 2) {
-        return ary[(iz - 1) / 2];               // odd  `` 奇数(中央の値が平均値)
+        return ary[(iz - 1) / 2];
     }
-    return (ary[iz / 2 - 1] + ary[iz / 2]) / 2; // even `` 偶数(中央の2値の平均値)
+    return (ary[iz / 2 - 1] + ary[iz / 2]) / 2;
 }
 
 function Array_or(merge) { // @arg Array: merge array
@@ -2377,366 +2382,6 @@ function RegExp_flag(command) { // @arg String(= ""): ""(clear). "+g"(add), "-g"
     return RegExp(this.source, flag);
 }
 
-// --- test ----------------------------------------------
-function Array_test(label, // @arg String(= ""): label
-                    arg) { // @arg Mix(= undefined): test arg
-                           // @this: test case
-                           // @throw: TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
-                           //         TypeError("BAD_TYPE: ...")
-                           // @help: Array#test
-                           // @desc: unit test
-    if (!this.length) { return; }
-
-    var nicknames = _enumNicknames(this.clean()), // { object, array }
-        plan, group, param;
-
-    plan  = _streamTokenizer( nicknames.array.join(" > ") );
-    group = plan.shift();
-    param = mm.mix(nicknames.object, { arg: arg, pass: 0, miss: 0,
-                                       logg: mm_logg(label || "") });
-
-    group && _recursiveTestCase( plan, group, param );
-}
-
-function _recursiveTestCase(plan,    // @arg StringArrayArray: [[fn1, fn2, ...], [fn3, ...]]
-                            group,   // @arg Array: group
-                            param) { // @arg FunctionObject: { init, fin, fn1, ... }
-                                     // @throw: TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
-                                     //         TypeError("BAD_TYPE: ...")
-                                     // @inner: do test
-    var index = 0;
-
-    group.each(function(action) { // @param String: command string. "fn1"
-
-        var lval, rval, // left-value, right-value
-            jrv, // judge function result value
-            jfn, // judge function name
-            msg;
-
-        switch (mm.type(param[action])) {
-        case "array": // [ left-values, right-value, override-judge-function ]
-            try {
-                lval = param[action][0];
-                rval = param[action][1];
-                jfn = param[action][2] || mm.like;
-                jrv = jfn(lval, rval);
-                msg = "= @@( @@ )".at( jfn.nickname(),
-                                       mm_dump(lval, 0) + ", " +
-                                       mm_dump(rval, 0) );
-            } catch (O_o) {
-                msg = O_o + "";
-            }
-            _callback( jrv, msg);
-            break;
-        case "boolean":
-            _callback( param[action] );
-            break;
-        case "function": // function -> sync or async lazy evaluation
-            jrv = param[action](_callback);
-
-            switch (jrv) {
-            case false:  // function  sync() { return false; } -> miss
-            case true:   // function  sync() { return true;  } -> pass
-                _callback(jrv);
-                break;
-            case void 0: // function  sync(no arguments) { return undefined; } -> TypeError
-                         // function async(no arguments) { ...               } -> TypeError
-                         // function async(next) { 0..wait(next);                        } -> pass
-                         // function async(next) { 0..wait(function() { next(true);  }); } -> pass
-                         // function async(next) { 0..wait(function() { next(false); }); } -> miss
-                if (param[action].length) {
-                    break;
-                }
-            default:     // function  sync() { return 123; } -> TypeError
-                debugger;
-                throw new TypeError("NEED_BOOLEAN_RESULT_VALUE: " + action);
-            }
-            break;
-        default:
-            debugger;
-            throw new TypeError("BAD_TYPE: " + action);
-        }
-
-        function _callback(result, // @arg Boolean:
-                           msg) {  // @arg String(= ""): log message
-                                   // @lookup: param, action, index, group
-            var miss = result === false, nextAction, tick_result;
-
-            miss ? param.logg.error(action + ":", result, msg)
-                 : param.logg(action + ":", result, msg);
-            miss ? ++param.miss
-                 : ++param.pass;
-
-            if (typeof Array_test.tick === "function") {
-                tick_result = Array_test.tick({ ok:   !miss,
-                                                msg:  msg    || "",
-                                                name: action || "",
-                                                pass: param.pass,
-                                                miss: param.miss });
-                if (tick_result === false) { // false -> break
-                    return;
-                }
-            }
-            if (++index >= group.length) {
-                nextAction = plan.shift();
-                nextAction ? _recursiveTestCase( plan, nextAction, param )
-                           : param.logg.out(); // end of action
-            }
-        }
-    });
-}
-
-function _enumNicknames(ary) { // @arg FunctionArray/MixArray:
-                               // @ret Object: { array, object }
-                               //        array - Array: [ nickname, key, ... ]
-                               //        object - Object: { nickname: fn, ... key: value ... }
-                               // @desc: enum function nickname from Array
-                               // @inner: enum nicknames
-    var rv = { object: {}, array: [] }, i = 0, iz = ary.length, key;
-
-    for (; i < iz; ++i) {
-        key = typeof ary[i] === "function" ? ary[i].nickname("fn" + i)
-                                           : "" + i;
-        rv.object[key] = ary[i];
-        rv.array.push(key);
-    }
-    return rv;
-}
-
-function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>foo"
-                                     // @ret ArrayArrayString:
-                                     //         exec plan. [ ["a"], ["b", "c"], ["d"], ["foo"] ]
-                                     //                      ~~~~~  ~~~~~~~~~~  ~~~~~  ~~~~~~~
-                                     //                      group   group       group  group
-                                     //                         ________^_________
-                                     //                         parallel execution
-                                     // @inner: stream DSL tokenizer
-    var plan = [], remain = [];
-
-    command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).each(function(token) {
-        token === "+" ? 0 :
-        token === ">" ? (remain.length && plan.push(remain.shifts())) // Array#shifts
-                      : remain.push(token);
-    });
-    remain.length && plan.push(remain.concat());
-    return plan;
-}
-
-/*
-        "fn1 > fn2 + fn3".stream({ ... })
-        ~~~~~~~~~~~~~~~~~  +---------------------------+
-              command    > > _streamTokenizer(command) |
-                           +------------v--------------+
-                                        v
-
-                            [ [ "fn1" ],  [ "fn2", "fn3" ] ]
-                                ~~~~~     ~~~~~~~~~~~~~~~~
-                                action         group (parallel execution group)
-
-                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                                        plan
- */
-
-// --- stream ----------------------------------------------
-function Array_stream(delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
-                               // @this - FunctionArray
-                               // @ret Object: { uid: number, halt: function }
-                               // @help: Array#stream
-                               // @desc: create Stream
-    var names = _enumNicknames(this); // { array, object }
-
-    return names.array.join(" > ").stream(names.object, delay);
-}
-
-function String_stream(methods, // @arg Object: { key: fn, ... }
-                       delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
-                                // @ret Object: { halt: function }
-                                // @this: command string. "fn1 > delay > fn2 + fn3"
-                                //            fn - FunctionNameString:
-                                //            delay - IntegerString/UnitizedIntegerString: "1" or "1s" is 1sec, "1ms" is 1ms
-                                // @throw: TypeError("FUNCTION_NOT_FOUND: ...")
-                                //         TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
-                                // @desc: create stream
-                                // @help: String#stream
-    var commands = this.split(/\s*>+\s*/).join(delay ? ">" + delay + ">" : ">"),
-        plan = _streamTokenizer(commands); // plan: [ [ "fn1" ], [ delay ], [ "fn2", "fn3" ] ]
-
-    methods.__cancel__ = false;
-    methods.__halt__ = function(action, error) {
-        methods.__halt__ = mm.nop;
-        methods.__cancel__ = true;
-        methods.halt && methods.halt(action || "user", error || false);
-    };
-    plan.length && _nextStream(methods, plan);
-
-    return { halt: methods.__halt__ }; // provide halt method
-}
-
-function _nextStream(methods, // @arg Object: { init, fin, halt, fn1, ... }
-                     plan) {  // @arg StringArrayArray: [[fn1, fn2, ...], [fn3, ...]]
-                              // @throw: TypeError("FUNCTION_NOT_FOUND: ...")
-                              //         TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
-                              // @inner: exec next stream group
-    if (methods.__cancel__) {
-        return;
-    }
-    var i = 0, group = plan.shift(); // parallel execution group. [action, ...]
-
-    group && group.each(function(action) { // @param String: command string. "fn1"
-        var r, ms, delay = /^(?:(\d+ms)|(\d+s)|(\d+))$/.exec(action);
-
-        if (delay) { // "1", "1s", "1ms"
-            ms = parseInt(delay[0]) * (delay[1] ? 1 : 1000);
-            setTimeout(function() {
-                _judge(true);
-            }, ms);
-        } else if (!(action in methods)) {
-            throw new TypeError("FUNCTION_NOT_FOUND: " + action);
-        } else { // action is function
-            try {
-                // sync or async lazy evaluation
-                r = methods[action](_judge);
-            } catch (O_o) { // wow?
-//{@debug
-                mm_log(mm.env.chrome ? O_o.stack.replace(/at eval [\s\S]+$/m, "")
-                                     : O_o + "");
-                debugger;
-//}@debug
-                return methods.__halt__(action, true); // halt
-            }
-            switch (r) {
-            case false:  // function  sync() { return false; } -> miss
-            case true:   // function  sync() { return true;  } -> pass
-                _judge(r);
-                break;
-            case void 0: // function  sync(no arguments) { return undefined; } -> TypeError
-                         // function async(no arguments) { ...               } -> TypeError
-                         // function async(next) { 0..wait(next);                        } -> pass
-                         // function async(next) { 0..wait(function() { next(true);  }); } -> pass
-                         // function async(next) { 0..wait(function() { next(false); }); } -> miss
-                if (methods[action].length) { // function has arguments
-                    break;
-                }
-            default:     // function  sync() { return 123; } -> TypeError
-//{@debug
-                debugger;
-//}@debug
-                throw new TypeError("NEED_BOOLEAN_RESULT_VALUE: " + action);
-            }
-        }
-
-        function _judge(result) { // @arg Boolean:
-            if (result === false) {
-                methods.__halt__(action, false); // halt
-            } else if (++i >= group.length) {
-                _nextStream(methods, plan); // recursive call
-            }
-        }
-    });
-}
-
-// --- sync / async iterate ------------------------------------------
-function Array_sync() { // @ret ModArray: Array + { map, each, some, every }
-                        // @help: Array#sync
-                        // @desc: overwritten by the synchronization method
-    this.map  = Array.prototype.map;
-    this.each = Array.prototype.each;
-    this.some = Array.prototype.some;
-    this.every= Array.prototype.every;
-    return this;
-}
-
-function Array_async(callback, // @arg Function(= undefined): callback(result:MixArray/Boolean/undefined, error:Boolean)
-                     wait,     // @arg Integer(= 0): async wait time (unit: ms)
-                     unit) {   // @arg Integer(= 0): units to processed at a time.
-                               //                    0 is auto detection (maybe 50000)
-                               // @ret ModArray: Array + { map, each, some, every }
-                               // @help: Array#async
-                               // @desc: returned (each, map, some, every) an iterator method
-                               //        that handles asynchronous array divided into appropriate units.
-//{@debug
-    mm.allow("wait", wait, wait ? wait > 0 : true);
-    mm.allow("unit", unit, unit ? unit > 0 : true);
-//}@debug
-
-    callback = callback || mm_nop;
-    wait = ((wait || 0) / 1000) | 0;
-    unit = unit || 0;
-
-    if (!unit) { // auto detection
-         unit = 50000; // TODO: bench and detection
-    }
-
-    this.map  = function(fn, that) { return _async_iter(this, fn, that, callback, wait, unit, "map" ); };
-    this.each = function(fn, that) { return _async_iter(this, fn, that, callback, wait, unit, "each"); };
-    this.some = function(fn, that) { return _async_iter(this, fn, that, callback, wait, unit, "some"); };
-    this.every= function(fn, that) { return _async_iter(this, fn, that, callback, wait, unit, "every");};
-    return this;
-}
-
-function _async_iter(ary,      // @arg Array:
-                     fn,       // @arg Function: callback function
-                     that,     // @arg Mix: callback.apply(fn_that)
-                     callback, // @arg Function:
-                     wait,     // @arg Integer:
-                     unit,     // @arg Integer:
-                     iter) {   // @arg String: iterator function name. "map", "each", "some" and "every"
-                               // @ret Object: { halt }
-                               // @innert:
-    var i = 0, iz = ary.length, range, cmd = [], obj = {}, result;
-
-    if (iter === "map") {
-        result = Array(iz);
-    }
-    for (; i < iz; i += unit) {
-        range = Math.min(iz, i + unit);
-        switch (iter) {
-        case "map":   obj["fn" + i] =  _each(ary, fn, that, i, range, true);  break;
-        case "each":  obj["fn" + i] =  _each(ary, fn, that, i, range, false); break;
-        case "some":  obj["fn" + i] = _every(ary, fn, that, i, range, true);  break;
-        case "every": obj["fn" + i] = _every(ary, fn, that, i, range, false);
-        }
-        cmd.push("fn" + i, wait);
-    }
-    obj.end = function() {
-        callback(result, false, false);
-        return true; // String#stream spec (need return boolean)
-    };
-    obj.halt = function(action, error) {
-        callback(result, error, true);
-    };
-    cmd.pop(); // remove last wait
-    return (cmd.join(" > ") + " > end").stream(obj); // String#stream
-
-    // --- internal ---
-    function _each(ary, fn, that, i, iz, map) {
-        return function() {
-            for (var r; i < iz; ++i) {
-                if (i in ary) {
-                    r = fn.call(that, ary[i], i, ary);
-                    map && (result[i] = r);
-                }
-            }
-            return true; // -> next stream
-        };
-    }
-    function _every(ary, fn, that, i, iz, some) {
-        return function() {
-            for (var r; i < iz; ++i) {
-                if (i in ary) {
-                    r = fn.call(that, ary[i], i, ary);
-                    if (!r && !some || r && some) {
-                        result = some ? true : false;
-                        return false; // -> halt stream -> callback(result)
-                    }
-                }
-            }
-            result = some ? false : true;
-            return true; // -> next stream
-        };
-    }
-}
-
 // --- Object ----------------------------------------------
 function Object_collectOwnProperties(rv, obj) {
     var key, keys = Object.keys(obj), i = 0, iz = keys.length;
@@ -2992,10 +2637,12 @@ _extendNativeObjects(mm_mix, mm_wiz);
 _defineLibraryAPIs(mm_mix);
 _defineHashPrototype(mm_wiz);
 
-mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
-mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "mm,Class,Hash,Await".split(","));
+if (mm.help) {
+    mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
+                "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
+    mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
+                "mm,Class,Hash,Await".split(","));
+}
 
 })(this.self || global);
 

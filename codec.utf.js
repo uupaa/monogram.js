@@ -1,10 +1,10 @@
-// utf.js: extend UTF8 and UTF16 convert methods
+// codec.utf.js: extend UTF8 and UTF16 convert methods
 // @see: https://gist.github.com/4185267
 
 //{@utf
-(function(global) { // @arg Global: window or global
+(function() {
 
-// --- header function _extendNativeObjects() {
+// --- header ---------------------------------------------
 function _extendNativeObjects() {
     wiz(Array.prototype, {
         toUTF8Array:    Array_toUTF8Array,  // [utf16].toUTF8Array():UTF8Array
@@ -109,7 +109,9 @@ function Array_toUTF16String() { // @ret String:
 function String_toUTF8Array() { // @ret UTF8Array: [...]
                                 // @help: String#toUTF8Array
                                 // @desc: String to UTF8Array
-    return this.toUTF16Array().toUTF8Array(); // String#toUTF16Array, Array#toUTF8Array
+
+    return this.toUTF16Array(). // String#toUTF16Array
+                toUTF8Array();  // Array#toUTF8Array
 }
 
 function String_toUTF16Array() { // @arg String:
@@ -135,6 +137,6 @@ function wiz(object, extend, override) {
 // --- export --------------------------------
 _extendNativeObjects();
 
-})(this.self || global);
+})();
 //}@utf
 

@@ -1,51 +1,50 @@
+// codec.hmac.js
+// @need: codec.utf.js, codec.md5.js, codec.sha1.js
+
 //{@hmac
 (function() {
 
-mm.hmac = mm_hmac;          // mm.hmac(key:String/ByteCodedArray,
-                            //         data:String/ByteCodedArray,
-                            //         method:Function):CodedArray [...] + { code, toString }
+// --- header --------------------------------
+function _extendNativeObjects() {
+    wiz(Array.prototype, {
+        toHMACArray:    Array_toHMACArray   // [].toHMACArray(data:Array, method:String):Array
+    });
+    wiz(String.prototype, {
+        toHMACArray:    String_toHMACArray  // "".toHMACArray(data:Array, method:String):Array
+    });
+}
 
-mm.mix(mm.md5, {
-    hmac:   mm_md5_hmac     // mm.md5.hmac(key:String/ByteCodedArray,
-});                         //             data:String/ByteCodedArray):MD5CodedArray [...] + { code: "md5", toString }
-mm.mix(mm.sha1, {
-    hmac:   mm_sha1_hmac    // mm.sha1.hmac(key:String/ByteCodedArray,
-});                         //              data:String/ByteCodedArray):SHA1CodedArray [...] + { code: "sha1", toString }
+// --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function mm_md5_hmac(key,    // @arg String/ByteCodedArray:
-                     data) { // @arg String/ByteCodedArray:
-                             // @ret MD5CodedArray: [...] + { code: "md5", toString }
-                             // @desc: encode HMAC-MD5
-    return _mm_hmac(key, data, mm.md5);
+function Array_toHMACArray(data,     // @arg ByteArray:
+                           method) { // @arg String:
+                                     // @ret Array: [...]
+                                     // @desc: encode HMAC
+    return _calc_hmac(this.valueOf(), data, method);
 }
 
-function mm_sha1_hmac(key,    // @arg String/ByteCodedArray:
-                      data) { // @arg String/ByteCodedArray:
-                              // @ret SHA1CodedArray: [...] + { code: "sha1", toString }
-                              // @desc: encode HMAC-SHA1
-    return _mm_hmac(key, data, mm.sha1);
+function String_toHMACArray(data,     // @arg ByteArray:
+                            method) { // @arg String:
+                                      // @ret Array: [...]
+                                      // @desc: encode HMAC
+    return _calc_hmac(this.toUTF8Array(), data, method);
 }
 
-function mm_hmac(key,      // @arg String/ByteCodedArray:
-                 data,     // @arg String/ByteCodedArray:
-                 method) { // @arg Function: hash method. e.g.: mm.md5, mm.sha1
-                           // @ret MD5CodedArray/SHA1CodedArray: [...] + { code: "md5" or "sha1", toString }
-                           // @desc: encode HMAC-MD5, HMAC-SHA1
-//{@debug
-    mm.allow("key",  key,  "String/ByteCodedArray");
-    mm.allow("data", data, "String/ByteCodedArray");
-//}@debug
-
-    key  = Array.isArray(key)  ? key  : key.encode("utf8");
-    data = Array.isArray(data) ? data : data.encode("utf8");
+function _calc_hmac(key,      // @arg ByteArray:
+                    data,     // @arg ByteArray:
+                    method) { // @arg String: hash method
+                              // @ret MD5Array/SHA1Array: [...]
+                              // @desc: encode HMAC-MD5, HMAC-SHA1
+    method = { "md5":  toMD5Array,
+               "sha1": toSHA1Array }[method.toLowerCase()];
 
     // http://en.wikipedia.org/wiki/HMAC
     var blocksize = 64, // magic word(MD5.blocksize = 64, SHA1.blocksize = 64)
         i = 0, opad, ipad;
 
     if (key.length > blocksize) {
-        key = method(key, true);
+        key = key[method]();
     }
     opad = key.concat(); // clone
     ipad = key.concat(); // clone
@@ -54,8 +53,20 @@ function mm_hmac(key,      // @arg String/ByteCodedArray:
         opad[i] ^= 0x5C; // xor
         ipad[i] ^= 0x36; // xor
     }
-    return method(opad.concat(method(ipad.concat(data))));
+    return opad.concat( ipad.concat(data)[method]() )[method]();
 }
+
+function wiz(object, extend, override) {
+    for (var key in extend) {
+        (override || !(key in object)) && Object.defineProperty(object, key, {
+            configurable: true, writable: true, value: extend[key]
+        });
+    }
+}
+
+// --- export --------------------------------
+_extendNativeObjects();
 
 })();
 //}@hmac
+
