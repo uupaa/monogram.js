@@ -13,6 +13,9 @@ function _extendNativeObjects() {
         toColorArray:   String_toColorArray,    // "".toColorArray():Array
         toColorString:  String_toColorString    // "".toColorString(type:String = "#rgb"):String
     });
+    mm.color = function(r, g, b, a) {
+        return new Color([r, g, b, a]);
+    };
     mm.Color = Color;
 }
 
@@ -433,7 +436,7 @@ _initColor("000000black,888888gray,ccccccsilver,ffffffwhite,ff0000red,ffff00" +
 // --- export --------------------------------
 _extendNativeObjects();
 
-[].help.add("http://code.google.com/p/mofmof-js/wiki/", ["Color"]);
+Color.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Color"]);
 
 })();
 //}@color

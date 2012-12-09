@@ -24,7 +24,7 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <script src="logic.effect.js"></script>
 <script src="logic.stream.js"></script>
 <script src="logic.matrix2d.js"></script>
-<script src="logic.messageing.js"></script>
+<script src="logic.messaging.js"></script>
 
 <script src="codec.md5.js"></script>
 <script src="codec.sha1.js"></script>

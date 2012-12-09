@@ -57,7 +57,7 @@ function _polyfill() {
         reverse:    String_reverse      // "".reverse():String
     });
     wiz(Number, {
-        isNaN:      Number_isNaN,,      // Number.isNaN(mix:Mix):Boolean
+        isNaN:      Number_isNaN,       // Number.isNaN(mix:Mix):Boolean
         isFinite:   Number_isFinite,    // Number.isFinite(mix:Mix):Boolean
         isInteger:  Number_isInteger,   // Number.isInteger(mix:Mix):Boolean
         toInteger:  Number_toInteger    // Number.toInteger(mix:Mix):Integer

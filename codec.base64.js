@@ -16,8 +16,9 @@ function _extendNativeObjects() {
 }
 
 // --- library scope vars ----------------------------------
-var _base64_db = {
-        chars: base.split(""),              // ["A", "B", ... "/"]
+var _BASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+    _BASE_DB = {
+        chars: _BASE.split(""),             // ["A", "B", ... "/"]
         codes: { "=": 0, "-": 62, "_": 63 } // { 65: 0, 66: 1 }
                                             // charCode and URLSafe64 chars("-", "_")
     };
@@ -31,7 +32,7 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
     var rv = [], ary = this, // this is IntegerArray
         c = 0, i = 0, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
-        chars = _base64_db.chars;
+        chars = _BASE_DB.chars;
 
     --iz;
     while (i < iz) {
@@ -62,7 +63,7 @@ function String_fromBase64String() { // @ret String:
                                      // @desc: decode Base64String to String
     var rv = [], c = 0, i = 0, ary = this.split(""),
         iz = this.length - 1,
-        codes = _base64_db.codes;
+        codes = _BASE_DB.codes;
 
     while (i < iz) {                // 00000000|00000000|00000000 (24bit)
         c = (codes[ary[i++]] << 18) // 111111  |        |
@@ -80,11 +81,8 @@ function String_fromBase64String() { // @ret String:
 }
 
 function _initBase64() { // @inner: init base64
-    var base = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-        i = 0;
-
-    for (; i < 64; ++i) {
-        _base64_db.codes[base.charAt(i)] = i;
+    for (var i = 0; i < 64; ++i) {
+        _BASE_DB.codes[_BASE.charAt(i)] = i;
     }
 }
 
@@ -98,6 +96,7 @@ function wiz(object, extend, override) {
 
 // --- export --------------------------------
 _extendNativeObjects();
+_initBase64();
 
 })();
 //}@base64
