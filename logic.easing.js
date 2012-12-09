@@ -1,4 +1,4 @@
-// easing.js: easing function API
+// Math.easing.js: easing function API
 //
 // This code block base idea from Robert Penner's easing equations.
 //      (c) 2001 Robert Penner, all rights reserved.

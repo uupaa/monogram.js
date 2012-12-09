@@ -5,19 +5,19 @@
 //                   m21, m22, m23,      0, 1, 0,      m[3], m[4], m[5],
 //                   m31, m32, m33]      x, y, 1]      m[6], m[7], m[8]]
 //
-Math.Matrix2D = {
-    identify:   Matrix2D_identify,      // Math.Matrix2D.identify():Matrix2DArray - [1,0,0, 0,1,0, 0,0,1]
-    scale:      Matrix2D_scale,         // Math.Matrix2D.scale(x:Number, y:Number, m:Matrix2DArray):Matrix2DArray
-    rotate:     Matrix2D_rotate,        // Math.Matrix2D.rotate(angle:Number, m:Matrix2DArray):Matrix2DArray
-    multiply:   Matrix2D_multiply,      // Math.Matrix2D.multiply(ma:Matrix2DArray, mb:Matrix2DArray):Matrix2DArray
-    translate:  Matrix2D_translate,     // Math.Matrix2D.translate(x:Number, y:Number, m:Matrix2DArray):Matrix2DArray
-    transform:  Matrix2D_transform      // Math.Matrix2D.transform(m11:Number, m12:Number, m21:Number,
+Math.matrix2d = {
+    identify:   Matrix2D_identify,      // Math.matrix2d.identify():Matrix2DArray - [1,0,0, 0,1,0, 0,0,1]
+    scale:      Matrix2D_scale,         // Math.matrix2d.scale(x:Number, y:Number, m:Matrix2DArray):Matrix2DArray
+    rotate:     Matrix2D_rotate,        // Math.matrix2d.rotate(angle:Number, m:Matrix2DArray):Matrix2DArray
+    multiply:   Matrix2D_multiply,      // Math.matrix2d.multiply(ma:Matrix2DArray, mb:Matrix2DArray):Matrix2DArray
+    translate:  Matrix2D_translate,     // Math.matrix2d.translate(x:Number, y:Number, m:Matrix2DArray):Matrix2DArray
+    transform:  Matrix2D_transform      // Math.matrix2d.transform(m11:Number, m12:Number, m21:Number,
                                         //                         m22:Number,  dx:Number,  dy:Number,
                                         //                         m:Matrix2DArray):Matrix2DArray
 };
 
 function Matrix2D_identify() { // @ret Matrix2DArray: [1,0,0, 0,1,0, 0,0,1]
-                               // @help: Math.Matrix2D.identify
+                               // @help: Math.matrix2d.identify
                                // @desc: create 2D Matrix identify
 
     // [m11(x),  m12,     m13
@@ -31,7 +31,7 @@ function Matrix2D_identify() { // @ret Matrix2DArray: [1,0,0, 0,1,0, 0,0,1]
 function Matrix2D_multiply(ma,   // @arg Matrix2DArray: matrix A
                            mb) { // @arg Matrix2DArray: matrix B
                                  // @ret Matrix2DArray: A x B
-                                 // @help: Math.Matrix2D.multiply
+                                 // @help: Math.matrix2d.multiply
                                  // @desc: 2D Matrix multiply
     // [m11,     m12,     m13
     //  m21,     m22,     m23
@@ -51,7 +51,7 @@ function Matrix2D_scale(x,   // @arg Number: scale x
                         y,   // @arg Number: scale y
                         m) { // @arg Matrix2DArray: matrix
                              // @ret Matrix2DArray:
-                             // @help: Math.Matrix2D.scale
+                             // @help: Math.matrix2d.scale
                              // @desc: 2D Matrix scaleing
     // [x, 0, 0,
     //  0, y, 0,
@@ -64,7 +64,7 @@ function Matrix2D_scale(x,   // @arg Number: scale x
 function Matrix2D_rotate(angle, // @arg Number: radian
                          m) {   // @arg Matrix2DArray: matrix
                                 // @ret Matrix2DArray:
-                                // @help: Math.Matrix2D.rotate
+                                // @help: Math.matrix2d.rotate
                                 // @desc: 2D Matrix multiply x rotate
     var c = Math.cos(angle),
         s = Math.sin(angle);
@@ -85,7 +85,7 @@ function Matrix2D_transform(m11, // @arg Number:
                             dy,  // @arg Number:
                             m) { // @arg Matrix2DArray: matrix
                                  // @ret Matrix2DArray:
-                                 // @help: Math.Matrix2D.transform
+                                 // @help: Math.matrix2d.transform
                                  // @desc: 2D Matrix multiply x transform
     // [m11, m12, 0,
     //  m21, m22, 0,
@@ -101,7 +101,7 @@ function Matrix2D_translate(x,   // @arg Number:
                             y,   // @arg Number:
                             m) { // @arg Matrix2DArray: matrix
                                  // @ret Matrix2DArray:
-                                 // @help: Math.Matrix2D.translate
+                                 // @help: Math.matrix2d.translate
                                  // @desc: 2D Matrix multiply x translate
     // [1, 0, 0,
     //  0, 1, 0,

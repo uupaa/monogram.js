@@ -35,23 +35,23 @@ function Function_help_url(fn) { // @arg Function/undefined:
         help = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + src + "\n");
 
     return help ? _findHelp(help[1].trim()) : "";
-}
 
-function _findHelp(help) {
-    var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
+    function _findHelp(help) {
+        var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
 
-    for (; i < iz; i += 2) {
-        url = ary[i];
-        rex = ary[i + 1];
-        m   = rex.exec(help);
+        for (; i < iz; i += 2) {
+            url = ary[i];
+            rex = ary[i + 1];
+            m   = rex.exec(help);
 
-        if (m) {
-            return m[2] === "#" ? url + m[1] + "#" + m[1] + ".prototype." + m[3]
-                 : m[2] === "." ? url + m[1] + "#" + m[1] + "."           + m[3]
-                                : url + m[1];
+            if (m) {
+                return m[2] === "#" ? url + m[1] + "#" + m[1] + ".prototype." + m[3]
+                     : m[2] === "." ? url + m[1] + "#" + m[1] + "."           + m[3]
+                                    : url + m[1];
+            }
         }
+        return "";
     }
-    return "";
 }
 
 function Function_help_add(url,    // @arg URLString: help url string

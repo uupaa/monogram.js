@@ -295,7 +295,12 @@ function _extendNativeObjects(mix, wiz) {
     wiz(Function.prototype, {
 //[ES]  bind:       Function_bind,      // fn#bind():Function
         argsApply:  Function_argsApply, // fn#argsApply(that, ...):Mix
-        nickname:   Function_nickname   // fn#nickname(defaultName:String = ""):String
+        nickname:   Function_nickname,  // fn#nickname(defaultName:String = ""):String
+        // --- help ---
+        help:   mix(Function_help, {    // fn#help(that:Object = null):String
+            add:    Function_help_add,  // fn#help.add(url:URLString, word:String/StringArray/RegExp):void
+            url:    Function_help_url   // fn#help.url(fn:Function):String
+        })
     });
     wiz(RegExp, {
         esc:        RegExp_esc,         // RegExp.esc(str:String):EscapedString
@@ -364,11 +369,12 @@ function _defineHashPrototype(wiz) {
 }
 
 // --- library scope vars ----------------------------------
-var _mm_uid_db = {},
-    _mm_log_db = [],
-    _mm_log_index = 0,
-    _mm_conv_db,
-    _mm_type_alias_db = {
+var _uid_db  = {},
+    _help_db = [], // [ <url, rex>, ... ]
+    _log_db  = [],
+    _log_index = 0,
+    _conv_db,
+    _type_alias_db = {
         "NodeList": "list",
         "Arguments": "list",
         "NamedNodeMap": "attr",
@@ -733,13 +739,13 @@ function mm_uid(group) { // @arg String(= ""): uid group name.
                          // @ret Integer: unique number, at 1 to 0x1fffffffffffff
                          // @help: mm.uid
                          // @desc: get unique id
-    _mm_uid_db[group] || (_mm_uid_db[group] = 0);
+    _uid_db[group] || (_uid_db[group] = 0);
 
     // IEEE754 fraction size. 0x1fffffffffffff = Math.pow(2, 53) - 1
-    if (++_mm_uid_db[group] >= 0x1fffffffffffff) { // overflow?
-          _mm_uid_db[group] = 1; // reset
+    if (++_uid_db[group] >= 0x1fffffffffffff) { // overflow?
+          _uid_db[group] = 1; // reset
     }
-    return _mm_uid_db[group];
+    return _uid_db[group];
 }
 
 function mm_cast(mix) { // @arg Attr/Hash/List/FakeArray/Style/DateString/Mix:
@@ -856,26 +862,26 @@ function mm_conv(from, // @arg CaseInsensitiveString: "Integer", "HexString", "B
         code = (num[from.toLowerCase()]) << 4 |
                (num[  to.toLowerCase()]);
 
-    _mm_conv_db || _mm_conv_init();
+    _conv_db || _mm_conv_init();
 
-    return _mm_conv_db[code] || {};
+    return _conv_db[code] || {};
 
     function _mm_conv_init() {
-        _mm_conv_db = { 0x12: {}, 0x21: {}, 0x14: {}, 0x41: {} };
+        _conv_db = { 0x12: {}, 0x21: {}, 0x14: {}, 0x41: {} };
 
         var i = 0, hex, bin;
 
         for (; i < 0x100; ++i) {
             hex = (i + 0x100).toString(16).slice(1);
             bin = String.fromCharCode(i);
-            _mm_conv_db[0x12][i]   = hex;    // {   255 :   "ff" }
-            _mm_conv_db[0x21][hex] = i;      // {   "ff":   255  }
-            _mm_conv_db[0x14][i]   = bin;    // {   255 : "\255" }
-            _mm_conv_db[0x41][bin] = i;      // { "\255":   255  }
+            _conv_db[0x12][i]   = hex;    // {   255 :   "ff" }
+            _conv_db[0x21][hex] = i;      // {   "ff":   255  }
+            _conv_db[0x14][i]   = bin;    // {   255 : "\255" }
+            _conv_db[0x41][bin] = i;      // { "\255":   255  }
         }
         // http://twitter.com/edvakf/statuses/15576483807
         for (i = 0x80; i < 0x100; ++i) { // [Webkit][Gecko]
-            _mm_conv_db[0x41][String.fromCharCode(0xf700 + i)] = i; // "\f780" -> 0x80
+            _conv_db[0x41][String.fromCharCode(0xf700 + i)] = i; // "\f780" -> 0x80
         }
     }
 }
@@ -1228,8 +1234,8 @@ function mm_type(mix) { // @arg Mix: search
             return "list"; // Arguments
         }
     }
-    if (rv in _mm_type_alias_db) {
-        return _mm_type_alias_db[rv];
+    if (rv in _type_alias_db) {
+        return _type_alias_db[rv];
     }
     return rv ? rv.toLowerCase() : "object";
 }
@@ -1237,7 +1243,7 @@ function mm_type(mix) { // @arg Mix: search
 function mm_type_alias(obj) { // @arg Object: { fullTypeName: shortTypeName, ... }
                                  // @help: mm.type.add
     Object_each(obj, function(value, key) {
-        _mm_type_alias_db["[object " + key + "]"] = value;
+        _type_alias_db["[object " + key + "]"] = value;
     });
 }
 
@@ -1260,31 +1266,31 @@ function mm_complex(arg1,   // @arg String/Object(= undefined):
 function mm_log(ooo) { // @var_args Mix: message
                        // @help: mm.log
                        // @desc: push log db
-    _mm_log_db.push({ type: 0, time: Date.now(),
-                      msg:  [].slice.call(arguments).join(" ") });
-    _mm_log_db.length > mm_log.limit && mm_log_dump();
+    _log_db.push({ type: 0, time: Date.now(),
+                   msg:  [].slice.call(arguments).join(" ") });
+    _log_db.length > mm_log.limit && mm_log_dump();
 }
 
 function mm_log_warn(ooo) { // @var_args Mix: message
                             // @help: mm.log.warn
                             // @desc: push log db
-    _mm_log_db.push({ type: 1, time: Date.now(),
-                      msg:  [].slice.call(arguments).join(" ") });
-    _mm_log_db.length > mm_log.limit && mm_log_dump();
+    _log_db.push({ type: 1, time: Date.now(),
+                   msg:  [].slice.call(arguments).join(" ") });
+    _log_db.length > mm_log.limit && mm_log_dump();
 }
 
 function mm_log_error(ooo) { // @var_args Mix: message
                              // @help: mm.log.error
                              // @desc: push log db
-    _mm_log_db.push({ type: 2, time: Date.now(),
-                      msg:  [].slice.call(arguments).join(" ") });
-    _mm_log_db.length > mm_log.limit && mm_log_dump();
+    _log_db.push({ type: 2, time: Date.now(),
+                   msg:  [].slice.call(arguments).join(" ") });
+    _log_db.length > mm_log.limit && mm_log_dump();
 }
 
 function mm_log_copy() { // @ret: Object { data: [log-data, ...], index: current-index }
                          // @help: mm.log.copy
                          // @desc: copy log
-    return { data: _mm_log_db.copy(), index: _mm_log_index };
+    return { data: _log_db.copy(), index: _log_index };
 }
 
 function mm_log_dump(url) { // @arg String(= ""): "" or url(http://example.com?log=@@)
@@ -1293,7 +1299,7 @@ function mm_log_dump(url) { // @arg String(= ""): "" or url(http://example.com?l
     function _stamp(db) {
         return new Date(db.time).format(db.type & 4 ? "[D h:m:s ms]:" : "[I]:");
     }
-    var db = _mm_log_db, i = _mm_log_index, iz = db.length,
+    var db = _log_db, i = _log_index, iz = db.length,
         console = global.console,
         space = mm.env.webkit ? "  " : "";
 
@@ -1316,13 +1322,13 @@ function mm_log_dump(url) { // @arg String(= ""): "" or url(http://example.com?l
             }
         }
     }
-    _mm_log_index = i;
+    _log_index = i;
 }
 
 function mm_log_clear() { // @help: mm.log.clear
                           // @desc: clear log db
-    _mm_log_index = 0;
-    _mm_log_db = [];
+    _log_index = 0;
+    _log_db = [];
 }
 
 function mm_logg(label,  // @arg String/Function: label (group name)
@@ -1338,7 +1344,7 @@ function mm_logg(label,  // @arg String/Function: label (group name)
         line = mm.env.lang === "ja" ? ["\u2502", "\u250c", "\u2502", "\u2514"]
                                     : ["|",      "+-",     "| ",     "`-"    ];
 
-    _mm_log_db.push({ type: mode, time: Date.now(), msg: _msg(1, "") });
+    _log_db.push({ type: mode, time: Date.now(), msg: _msg(1, "") });
     _logg.out   = _out;
     _logg.error = _error;
     return _logg;
@@ -1347,18 +1353,18 @@ function mm_logg(label,  // @arg String/Function: label (group name)
         return "@@@@ @@( @@ )".at(line[0].repeat(nest), line[index], label, msg);
     }
     function _error(ooo) {
-        _mm_log_db.push({ type: mode + 2, time: Date.now(),
-                          msg:  _msg(2, [].slice.call(arguments).join(" ")) });
+        _log_db.push({ type: mode + 2, time: Date.now(),
+                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
     }
     function _logg(ooo) {
-        _mm_log_db.push({ type: mode, time: Date.now(),
-                          msg:  _msg(2, [].slice.call(arguments).join(" ")) });
+        _log_db.push({ type: mode, time: Date.now(),
+                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
     }
     function _out() {
-        _mm_log_db.push({ type: mode, time: Date.now(),
-                          msg:  _msg(3, (new Date).diff(now)) });
+        _log_db.push({ type: mode, time: Date.now(),
+                       msg:  _msg(3, (new Date).diff(now)) });
         --mm_logg.nest;
-        _mm_log_db.length > mm_log.limit && mm_log_dump();
+        _log_db.length > mm_log.limit && mm_log_dump();
     }
 }
 
@@ -2358,6 +2364,55 @@ function Function_nickname(defaultName) { // @arg String(= ""): default nickname
                 : defaultName; // [IE][Opera<11]
 }
 
+function Function_help(that) { // @arg this:
+                               // @ret String:
+                               // @help: Function#help
+                               // @desc: show help url
+    that = that || this;
+    var url = Function_help_url(that),
+        src = that.__SRC__ ? that.__SRC__ : that;
+
+    return url + "\n\n" + that + "\n\n" + url;
+}
+
+function Function_help_url(fn) { // @arg Function/undefined:
+                                 // @ret String:
+                                 // @desc: get help url
+    var src  = fn.__SRC__ ? fn.__SRC__ : fn,
+        help = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + src + "\n");
+
+    return help ? _findHelp(help[1].trim()) : "";
+
+    function _findHelp(help) {
+        var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
+
+        for (; i < iz; i += 2) {
+            url = ary[i];
+            rex = ary[i + 1];
+            m   = rex.exec(help);
+
+            if (m) {
+                return m[2] === "#" ? url + m[1] + "#" + m[1] + ".prototype." + m[3]
+                     : m[2] === "." ? url + m[1] + "#" + m[1] + "."           + m[3]
+                                    : url + m[1];
+            }
+        }
+        return "";
+    }
+}
+
+function Function_help_add(url,    // @arg URLString: help url string
+                           word) { // @arg String/StringArray/RegExp: keywords or pattern
+                                   // @desc: add help chain
+    if (typeof word === "string") {
+        word = [word];
+    }
+    if (Array.isArray(word)) {
+        word = RegExp("^(" + word.join("|") + ")(?:([#\\.])([\\w\\,]+))?$");
+    }
+    _help_db.push(url, word);
+}
+
 function RegExp_esc(str) { // @arg String:
                            // @ret EscapedString:
                            // @help: RegExp.esc
@@ -2637,12 +2692,10 @@ _extendNativeObjects(mm_mix, mm_wiz);
 _defineLibraryAPIs(mm_mix);
 _defineHashPrototype(mm_wiz);
 
-if (mm.help) {
-    mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-                "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
-    mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-                "mm,Class,Hash,Await".split(","));
-}
+mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
+            "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
+mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
+            "mm,Class,Hash,Await".split(","));
 
 })(this.self || global);
 
