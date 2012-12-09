@@ -15,7 +15,7 @@ function _extendNativeObjects() {
         toColorString:  String_toColorString    // "".toColorString(type:String = "#rgb"):ColorString
     });
     mm.Color = Color;
-    mm.color = function(color) {                // mm.color(color:RGBAColorArray):Color
+    mm.color = function(color) {                // mm.color(color:RGBAColorArray/HSLAObject/HSVAObject):Color
         return new Color(color);
     };
 }
