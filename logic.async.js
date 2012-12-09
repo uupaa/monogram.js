@@ -128,10 +128,6 @@ function wiz(object, extend, override) {
 // --- export --------------------------------
 _extendNativeObjects();
 
-if ([].async.help) {
-    [].async.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Async"]);
-}
-
 })();
 //}@await
 

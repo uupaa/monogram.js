@@ -2695,7 +2695,7 @@ _defineHashPrototype(mm_wiz);
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
             "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "mm,Class,Hash,Await".split(","));
+            "mm,Class,Hash,Await,Msg".split(","));
 
 })(this.self || global);
 

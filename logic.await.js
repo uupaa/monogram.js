@@ -131,10 +131,6 @@ function wiz(object, extend, override) {
 // --- export --------------------------------
 _extendNativeObjects();
 
-if (Await.help) {
-    Await.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Await"]);
-}
-
 })(this.self || global);
 //}@await
 

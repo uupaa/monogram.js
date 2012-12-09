@@ -157,8 +157,6 @@ function Msg_post(msg,   // @arg String: msg
 // --- export --------------------------------
 _defineLibraryAPIs();
 
-mm.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Msg"]);
-
 })(this.self || global);
 //}@msg
 
