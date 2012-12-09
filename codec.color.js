@@ -7,30 +7,31 @@
 // --- header ---------------------------------------------
 function _extendNativeObjects() {
     mm.wiz(Array.prototype, {
-        toColorString:  Array_toColorString     // [].toColorString(type:String = "#rgb"):String
+        toColorString:  Array_toColorString     // [].toColorString(type:String = "#rgb"):ColorString
     });
     mm.wiz(String.prototype, {
-        toColorArray:   String_toColorArray,    // "".toColorArray():Array
-        toColorString:  String_toColorString    // "".toColorString(type:String = "#rgb"):String
+        toColor:        String_toColor,         // "".toColor():Color
+        toColorArray:   String_toColorArray,    // "".toColorArray():RGBAColorArray
+        toColorString:  String_toColorString    // "".toColorString(type:String = "#rgb"):ColorString
     });
-    mm.color = function(r, g, b, a) {
-        return new Color([r, g, b, a]);
-    };
     mm.Color = Color;
+    mm.color = function(color) {                // mm.color(color:RGBAColorArray):Color
+        return new Color(color);
+    };
 }
 
-function Color(colorArray) {
-    this.init(colorArray);
+function Color(color) { // @arg RGBAColorArray:
+    this.init(color);
 }
 Color.prototype = {
-    init:       Color_init,
+    init:       Color_init,             // Color#init(color:RGBAColorArray/HSLAObject/HSVAObject)
     gray:       Color_gray,             // Color#gray():Color
-    hsla:       Color_hsla,             // Color#hsla():Object - { h, s, l, a }
-    hsva:       Color_hsva,             // Color#hsva():Object - { h, s, v, a }
+    hsla:       Color_hsla,             // Color#hsla():HSLAObject - { h, s, l, a }
+    hsva:       Color_hsva,             // Color#hsva():HSVAObject - { h, s, v, a }
     sepia:      Color_sepia,            // Color#sepia():Color
     comple:     Color_comple,           // Color#comple():Color
     arrange:    Color_arrange,          // Color#arrange(h:Number = 0, s:Number = 0, l:Number = 0):Color
-    toString:   Color_toString,         // Color#toString(type:String = "#rgb"):String
+    toString:   Color_toString,         // Color#toString(type:String = "#rgb"):ColorString
     toFloatArray:Color_toFloatArray     // Color#toFloatArray():NumberArray - [r, g, b, a]
 };
 Color.random = Color_random;            // Color.random(alpha:Number = 1):Color
@@ -42,7 +43,12 @@ var _namedColorDB = { transparent: [0, 0, 0, 0] },
         //[1]              [2]      [3]  [4]      [5]  [6]      [7]     [8]
 
 // --- implement -------------------------------------------
-function String_toColorArray() { // @ret ColorArray: [r, g, b, a]
+function String_toColor() { // @ret Color:
+                            // @help: String#toColor
+    return new Color(this.toColorArray());
+}
+
+function String_toColorArray() { // @ret RGBAColorArray: [r, g, b, a]
                                  // @help: String#toColorArray
     var str = this.toLowerCase();
 
@@ -70,7 +76,7 @@ function Array_toColorString(type) { // @arg String(= "#rgb"): result type.
                                      //      type = "rgb()"  is return "rgb(r,g,b)"
                                      //      type = "rgba()" is return "rgba(0,0,0,0)"
                                      // @ret ColorString:
-                                     // @this ColorArray: [r, g, b, a]
+                                     // @this RGBAColorArray: [r, g, b, a]
     var r = this[0], g = this[1], b = this[2], a = this[3],
         num = r << 16 | g << 8 | b;
 
@@ -83,9 +89,8 @@ function Array_toColorString(type) { // @arg String(= "#rgb"): result type.
     return "rgba(" + r + "," + g + "," + b + "," + a + ")";
 }
 
-
 function _parseHexColorCode(str) { // @arg String: "#rgb", "#rrggbb", "#aarrggbb"
-                                   // @ret Array: [r, g, b, a]
+                                   // @ret RGBAColorArray: [r, g, b, a]
     var ary, num;
 
     switch (str.length) {
@@ -109,7 +114,7 @@ function _parseHexColorCode(str) { // @arg String: "#rgb", "#rrggbb", "#aarrggbb
 }
 
 function _parseColorFunction(str) { // @arg String: "rgba(r,g,b,a)", "hsla(,,,)", "hsva(,,,)"
-                                    // @ret Array: [r, g, b, a]
+                                    // @ret RGBAColorArray: [r, g, b, a]
     var match, num = 0, r = 0, g = 0, b = 0, a = 0;
 
     match = _PARSE_COLOR.exec(str);
@@ -128,8 +133,8 @@ function _parseColorFunction(str) { // @arg String: "rgba(r,g,b,a)", "hsla(,,,)"
     return [r, g, b, a];
 }
 
-function _hslaToColorArray(h, s, l, a) { // @ret ColorArray:
-                                         // @inner: HSLA to ColorArray
+function _hslaToColorArray(h, s, l, a) { // @ret RGBAColorArray:
+                                         // @inner: HSLA to RGBAColorArray
                                          // ( h: 0-360, s: 0-100, l: 0-100, a: alpha )
     h = (h === 360) ? 0 : h;
     s = s / 100;
@@ -163,8 +168,8 @@ function _hslaToColorArray(h, s, l, a) { // @ret ColorArray:
     return [r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, a];
 }
 
-function _hsvaToColorArray(h, s, v, a) { // @ret ColorArray:
-                                         // @inner: HSVA to ColorArray
+function _hsvaToColorArray(h, s, v, a) { // @ret RGBAColorArray:
+                                         // @inner: HSVA to RGBAColorArray
                                          // ( h: 0-360, s: 0-100, v: 0-100, a: alpha )
     h = (h >= 360) ? 0 : h;
     s = s * 0.01;
@@ -195,16 +200,26 @@ function _hsvaToColorArray(h, s, v, a) { // @ret ColorArray:
     return [r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, a];
 }
 
-function Color_init(ary) { // @arg ColorArray: [r, g, b, a]
-                           //    red   - Integer: 0 ~ 255
-                           //    green - Integer: 0 ~ 255
-                           //    blue  - Integer: 0 ~ 255
-                           //    alpha - Number: 0.0 ~ 1.0
-                           // @desc: Color constructor
-    var r = ary[0] || 0,
-        g = ary[1] || 0,
-        b = ary[2] || 0,
-        a = ary[3] || 0;
+function Color_init(color) { // @arg RGBAColorArray/HSLAObject/HSVAObject:
+                             //    red   - Integer: 0 ~ 255
+                             //    green - Integer: 0 ~ 255
+                             //    blue  - Integer: 0 ~ 255
+                             //    alpha - Number: 0.0 ~ 1.0
+                             // @desc: Color constructor
+    if (Array.isArray(color)) {
+        ;
+    } else if (color.l) {
+        color = _HSLA2RGBA(color.h, color.s, color.l, color.a);
+    } else if (color.v) {
+        color = _HSVA2RGBA(color.h, color.s, color.v, color.a);
+    } else {
+        throw new TypeError("BAD_ARG");
+    }
+
+    var r = color[0] || 0,
+        g = color[1] || 0,
+        b = color[2] || 0,
+        a = color[3] || 0;
 
     this.r = r = (r < 0 ? 0 : r > 255 ? 255 : r) | 0;
     this.g = g = (g < 0 ? 0 : g > 255 ? 255 : g) | 0;
@@ -217,15 +232,19 @@ function Color_toString(type) { // @arg String(= "#rgb"):
                                 // @ret String:
     return [this.r, this.g, this.b, this.a].toColorString(type);
 }
+
 function Color_gray() { // @ret Color:
     return new Color([this.g, this.g, this.g, this.a]);
 }
+
 function Color_hsla() { // @ret Object: { h, s, l, a }
     return _RGBA2HSLA(this.r, this.g, this.b, this.a);
 }
+
 function Color_hsva() { // @ret Object: { h, s, v, a }
     return _RGBA2HSVA(this.r, this.g, this.b, this.a);
 }
+
 function Color_sepia() { // @ret Color:
     var y = 0.2990 * this.r + 0.5870 * this.g + 0.1140 * this.b,
         u = -0.091, v = 0.056;
@@ -234,9 +253,11 @@ function Color_sepia() { // @ret Color:
                        y - 0.3444 * u - 0.7114 * v,
                       (y + 1.7330 * u) * 0.8, this.a]);
 }
+
 function Color_comple() { // @ret Color:
     return new Color([this.r ^ 255, this.g ^ 255, this.b ^ 255, this.a]);
 }
+
 function Color_arrange(h,   // @arg Number(= 0): Hue        (-360 ~ 360). absolure value
                        s,   // @arg Number(= 0): Saturation (-100 ~ 100). relative value
                        l) { // @arg Number(= 0): Lightness  (-100 ~ 100). relative value
@@ -294,7 +315,7 @@ function _RGBA2HSVA(r, g, b, a) { // @ret Object: { h, s, v, a }
     return { h: (h < 0) ? h + 360 : h, s: s, v: v, a: a };
 }
 
-function _HSVA2RGBA(h, s, v, a) { // @ret Array: [r, g, b, a]
+function _HSVA2RGBA(h, s, v, a) { // @ret RGBAColorArray: [r, g, b, a]
     h = (h === 360) ? 0 : h;
     s = s / 100;
     v = v / 100;
@@ -351,10 +372,11 @@ function _RGBA2HSLA(r, g, b, a) { // @ret Object: { h, s, l, a }
 }
 
 function _HSLA2RGBA(h, s, l, a) { // h: 0-360, s: 0-100, l: 0-100
-    var h = (hsla.h === 360) ? 0 : hsla.h,
-        s = hsla.s / 100,
-        l = hsla.l / 100,
-        r, g, b, s1, s2, l1, l2;
+    h = (h === 360) ? 0 : h;
+    s = s / 100;
+    l = l / 100;
+
+    var r, g, b, s1, s2, l1, l2;
 
     if (h < 120) {
         r = (120 - h) / 60;
