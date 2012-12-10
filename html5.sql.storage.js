@@ -1,13 +1,6 @@
-// html5.storage.js: WebStorage and WebSQL
+// html5.sql.storage.js: WebSQLStorage
 // @need: mm.js
 
-// mm.iCache.setup(dbName:String, tableName:String):void
-// mm.iCache.has(id:String):Boolean
-// mm.iCache.set(id:String, data:Base64String):void
-// mm.iCache.get(id:String):Base64String
-// mm.iCache.clear():void
-// mm.iCache.tearDown():void
-//
 // mm.iSQLStorage.setup(dbName:String, tableName:String, fn:Function = null):void
 // mm.iSQLStorage.has(id:String, fn:Function = null):void
 // mm.iSQLStorage.get(id:String, fn:Function = null):void
@@ -17,65 +10,18 @@
 
 /* use case
 
-    mm.iCache.set("id", "base64data");
-    node.src = "data:image/png;base64" + mm.iCache.get("id");
-
-    mm.iSQLStorage.setup("mydb", "mytable", mm.nop);
-    mm.iSQLStorage.set("key", "value", mm.nop);
-    mm.iSQLStorage.get("key", function(err, id, time, data) {
-        console.log(data);
+    mm.iSQLStorage.setup("mydb", "mytable", function(err) {
+        if (!err) {
+            mm.iSQLStorage.set("key", "value");
+            mm.iSQLStorage.get("key", function(err, id, time, data) {
+                console.log(data);
+            });
+            mm.iSQLStorage.clear();
+        }
     });
-    mm.iSQLStorage.tearDown();
-
  */
 
-// --------------------------------------------------------
-mm.Class("Cache:Singleton", { // mm.iCache
-    init: function() {
-        this._db = localStorage;
-        this._dbName = "";
-        this._tableName = "__";
-    },
-    setup: function(dbName,      // @arg String:
-                    tableName) { // @arg String:
-        this._dbName = dbName;
-        this._tableName = "__" + tableName + "__";
-    },
-    has: function(id) { // @arg String:
-                        // @ret Boolean:
-//{@debug
-        mm.allow("id", id, "String");
-//}@debug
-        return (this._tableName + id) in this._db;
-    },
-    set: function(id,     // @arg String:
-                  data) { // @arg Base64string:
-//{@debug
-        mm.allow("id",   id,   "String");
-        mm.allow("data", data, "String");
-//}@debug
-        data ? this._db.setItem(this._tableName + id, data)
-             : this._db.removeItem(this._tableName + id);
-    },
-    get: function(id) { // @arg String:
-                        // @ret Base64String:
-//{@debug
-        mm.allow("id", id, "String");
-//}@debug
-        return this._db.getItem(this._tableName + id) || "";
-    },
-    clear: function() {
-        for (var key in this._db) {
-            if (key.indexOf(this._tableName) === 0) {
-                this._db.removeItem(key);
-            }
-        }
-    },
-    tearDown: function() {
-        this._db.clear();
-    }
-});
-
+//{@sqlstorage
 // --------------------------------------------------------
 mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
     init: function() {
@@ -86,26 +32,17 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
     setup: function(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
                     fn) {      // @arg Function(= null): fn(err:Error)
-//{@debug
-        mm.allow("dbName",    dbName,    "String");
-        mm.allow("tableName", tableName, "String");
-        mm.allow("fn",        fn,        "Function/undefined");
-//}@debug
         this._dbName = dbName;
         this._tableName = tableName;
 
         // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
-        this._db = openDatabase(dbName, "1.0", dbName, 512000);
+        this._db = openDatabase(dbName, "1.0", dbName, 1024 * 1024 * 4.9);
         this._exec("CREATE TABLE IF NOT EXISTS " + tableName +
                    " (id TEXT PRIMARY KEY,time INTEGER,data TEXT)", [], fn);
     },
     has: function(id,   // @arg String:
                   fn) { // @arg Function(= null): fn(has:Boolean)
                         // @desc: has id
-//{@debug
-        mm.allow("id", id, "String");
-        mm.allow("fn", fn, "Function/undefined");
-//}@debug
         this.get(id, function(err, id, time, data) {
             fn(err || !time ? false : true);
         });
@@ -114,10 +51,6 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
                   fn) { // @arg Function(= null): fn(err:Error, id:String,
                         //                        time:Integer, data:String)
                         // @desc: fetch a row
-//{@debug
-        mm.allow("id", id, "String");
-        mm.allow("fn", fn, "Function/undefined");
-//}@debug
         var that = this;
 
         this._db.readTransaction(function(tr) {
@@ -141,11 +74,6 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
                   data, // @arg String: "" is delete row.
                   fn) { // @arg Function(= null): fn(err:Error)
                         // @desc: add/update row
-//{@debug
-        mm.allow("id",   id,   "String");
-        mm.allow("data", data, "String");
-        mm.allow("fn",   fn,   "Function/undefined");
-//}@debug
         if (!data) {
             this._exec("DELETE FROM " + this._tableName +
                        " WHERE id=?", [id], fn);
@@ -156,16 +84,10 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
     },
     clear: function(fn) { // @arg Function(= null): fn(err:Error)
                           // @desc: clear all data
-//{@debug
-        mm.allow("fn", fn, "Function/undefined");
-//}@debug
         this._exec("DELETE FROM " + this._tableName, [], fn);
     },
     tearDown: function(fn) { // @arg Function(= null): fn(err:Error)
                              // @desc: drop table
-//{@debug
-        mm.allow("fn", fn, "Function/undefined");
-//}@debug
         this._exec("DROP TABLE " + this._tableName, [], fn);
     },
     _exec: function(sql, args, fn) {
@@ -182,4 +104,5 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
         });
     }
 });
+//}@sqlstorage
 

@@ -1,3 +1,5 @@
+// html5.vml.canvas.js
+
 //{@canvasvml
 
 // --- Canvas VML ------------------------------------------
