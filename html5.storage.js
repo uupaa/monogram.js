@@ -1,10 +1,13 @@
 // html5.storage.js: WebStorage and WebSQL
 // @need: mm.js
 
+// mm.iCache.setup(dbName:String, tableName:String):void
 // mm.iCache.has(id:String):Boolean
 // mm.iCache.set(id:String, data:Base64String):void
 // mm.iCache.get(id:String):Base64String
 // mm.iCache.clear():void
+// mm.iCache.tearDown():void
+//
 // mm.iSQLStorage.setup(dbName:String, tableName:String, fn:Function = null):void
 // mm.iSQLStorage.has(id:String, fn:Function = null):void
 // mm.iSQLStorage.get(id:String, fn:Function = null):void
@@ -28,12 +31,22 @@
 
 // --------------------------------------------------------
 mm.Class("Cache:Singleton", { // mm.iCache
+    init: function() {
+        this._db = localStorage;
+        this._dbName = "";
+        this._tableName = "__";
+    },
+    setup: function(dbName,      // @arg String:
+                    tableName) { // @arg String:
+        this._dbName = dbName;
+        this._tableName = "__" + tableName + "__";
+    },
     has: function(id) { // @arg String:
                         // @ret Boolean:
 //{@debug
         mm.allow("id", id, "String");
 //}@debug
-        return id in localStorage;
+        return (this._tableName + id) in this._db;
     },
     set: function(id,     // @arg String:
                   data) { // @arg Base64string:
@@ -41,23 +54,35 @@ mm.Class("Cache:Singleton", { // mm.iCache
         mm.allow("id",   id,   "String");
         mm.allow("data", data, "String");
 //}@debug
-        data ? localStorage.setItem(id, data)
-             : localStorage.removeItem(id);
+        data ? this._db.setItem(this._tableName + id, data)
+             : this._db.removeItem(this._tableName + id);
     },
     get: function(id) { // @arg String:
                         // @ret Base64String:
 //{@debug
         mm.allow("id", id, "String");
 //}@debug
-        return localStorage.getItem(id) || "";
+        return this._db.getItem(this._tableName + id) || "";
     },
     clear: function() {
-        localStorage.clear();
+        for (var key in this._db) {
+            if (key.indexOf(this._tableName) === 0) {
+                this._db.removeItem(key);
+            }
+        }
+    },
+    tearDown: function() {
+        this._db.clear();
     }
 });
 
 // --------------------------------------------------------
 mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
+    init: function() {
+        this._db = null;
+        this._dbName = "";
+        this._tableName = "";
+    },
     setup: function(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
                     fn) {      // @arg Function(= null): fn(err:Error)
@@ -66,6 +91,7 @@ mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
         mm.allow("tableName", tableName, "String");
         mm.allow("fn",        fn,        "Function/undefined");
 //}@debug
+        this._dbName = dbName;
         this._tableName = tableName;
 
         // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
