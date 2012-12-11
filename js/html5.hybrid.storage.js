@@ -31,7 +31,7 @@ mm.Class("Cache:Singleton", { // mm.iCache
         this._dbName = "";      // String:
         this._tableName = "";   // String:
         this._cache = {};       // Object: on memory cache data. { key: value }
-        this._writeQueue = [];  // Array: [<id, data>, ...]
+        this._queue = [];       // Array: insert queue [<id, data>, ...]
         this._timerID = 0;      // Integer: timer id
     },
     setup: function(dbName,    // @arg String: db name
@@ -75,7 +75,7 @@ mm.Class("Cache:Singleton", { // mm.iCache
         } else {
             delete this._cache[id];
         }
-        this._writeQueue.push(id, data);
+        this._queue.push(id, data);
         this._startQueue();
     },
     clear: function(fn) { // @arg Function(= null): fn(err:Error)
@@ -125,42 +125,44 @@ mm.Class("Cache:Singleton", { // mm.iCache
     _startQueue: function() {
         var that = this;
 
-        if (this._writeQueue.length) {
-            this._stopQueue();
-            this._timerID = setTimeout(_tick, 0);
-        }
-
-        function _tick() {
-            var id   = that._writeQueue.shift();
-            var data = that._writeQueue.shift();
-
-            if (!data) {
-                that._exec("DELETE FROM " + that._tableName + " WHERE id=?", [id],
-                    function(err) {
-                        if (err) {
-                            that._stopQueue();
-                            that._error = err.message;
-                        } else {
-                            that._startQueue();
-                        }
-                    });
-            } else {
-                that._exec("INSERT OR REPLACE INTO " + that._tableName + " VALUES(?,?)", [id, data],
-                    function(err) {
-                        if (err) {
-                            that._stopQueue();
-                            that._error = err.message;
-                        } else {
-                            that._startQueue();
-                        }
-                    });
-            }
+        if (!this._timerID) {
+            this._timerID = setInterval(function() {
+                that._tick();
+            }, 100);
         }
     },
     _stopQueue: function() {
         if (this._timerID) {
             clearTimeout(this._timerID);
             this._timerID = 0;
+        }
+    },
+    _tick: function() {
+        var that = this;
+
+        if (!this._queue.length) {
+            return this._stopQueue();
+        }
+
+        var id   = this._queue.shift();
+        var data = this._queue.shift();
+
+        if (!data) {
+            this._exec("DELETE FROM " + this._tableName + " WHERE id=?", [id],
+                function(err) {
+                    if (err) {
+                        console.log(err.message);
+                        that._queue.push(id, data);
+                    }
+                });
+        } else {
+            this._exec("INSERT OR REPLACE INTO " + this._tableName + " VALUES(?,?)", [id, data],
+                function(err) {
+                    if (err) {
+                        console.log(err.message);
+                        that._queue.push(id, data);
+                    }
+                });
         }
     }
 });
