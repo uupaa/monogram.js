@@ -12,6 +12,7 @@ function _extendNativeObjects() {
         toUTF16String:  Array_toUTF16String // [utf8].toUTF16String():String
     });
     wiz(String.prototype, {
+        toByteArray:    String_toByteArray, // "".toByteArray():ByteArray
         toUTF8Array:    String_toUTF8Array, // "".toUTF8Array():UTF8Array
         toUTF16Array:   String_toUTF16Array // "".toUTF16Array():UTF16Array
     });
@@ -104,6 +105,18 @@ function Array_toUTF16String() { // @ret String:
         rv.push( String.fromCharCode.apply(null, this.slice(i, i + bulkSize)) );
     }
     return rv.join("");
+}
+
+function String_toByteArray() { // @arg String:
+                                // @ret ByteArray: [...]
+                                // @help String#toByteArray
+                                // @desc convert String to ByteArray
+    var rv = [], i = 0, iz = this.length;
+
+    for (; i < iz; ++i) {
+        rv[i] = this.charCodeAt(i) & 0xFF;
+    }
+    return rv;
 }
 
 function String_toUTF8Array() { // @ret UTF8Array: [...]

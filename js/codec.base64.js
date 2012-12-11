@@ -10,7 +10,6 @@ function _extendNativeObjects() {
         toBase64String:     Array_toBase64String    // [byte].toBase64String():Base64String
     });
     wiz(String.prototype, {
-        toByteArray:        String_toByteArray,     // "".toByteArray():ByteArray
         toBase64String:     String_toBase64String,  // "".toBase64String(safe:Boolean = false):Base64String
         fromBase64String:   String_fromBase64String // "".fromBase64String():String
     });
@@ -50,18 +49,6 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                                 replace(/\//g, "_");
     }
     return rv.join("");
-}
-
-function String_toByteArray() { // @arg String:
-                                // @ret ByteArray: [...]
-                                // @help String#toByteArray
-                                // @desc convert String to ByteArray
-    var rv = [], i = 0, iz = this.length;
-
-    for (; i < iz; ++i) {
-        rv[i] = this.charCodeAt(i) & 0xFF;
-    }
-    return rv;
 }
 
 function String_toBase64String(safe) { // @arg Boolean(= false):
