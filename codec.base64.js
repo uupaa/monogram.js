@@ -93,8 +93,8 @@ function wiz(object, extend, override) {
         });
     }
 }
+// --------------------------------------------------------
 
-// --- export --------------------------------
 _extendNativeObjects();
 _initBase64();
 

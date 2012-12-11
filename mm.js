@@ -93,7 +93,8 @@ function _defineLibraryAPIs(mix) {
         lang:       "en",               // mm.env.lang   - String: language. "en", "ja", ...
         secure:     false,              // mm.env.secure - Boolean: is SSL page
         // --- browser ---
-        ie:         !!document.uniqueID,// mm.env.ie     - Boolean: is IE
+//        ie:         !!document.uniqueID,// mm.env.ie     - Boolean: is IE
+        ie:         false,// mm.env.ie     - Boolean: is IE
         ie8:        false,              // mm.env.ie8    - Boolean: is IE 8
         ie9:        false,              // mm.env.ie9    - Boolean: is IE 9
         ie10:       false,              // mm.env.ie10   - Boolean: is IE 10
@@ -108,9 +109,15 @@ function _defineLibraryAPIs(mix) {
         node:       !!(global.require &&
                        global.process), // mm.env.node   - Boolean: is node.js (run at Server)
         ngcore:     !!global.Core,      // mm.env.ngcore - Boolean: is ngCore (run at ngCore)
+        worker:     !!global.importScripts,
+                                        // mm.env.worker - Boolean: is WebWorkers (run at Worker)
+/*
         browser:    !!(global.navigator &&
                        global.document),// mm.env.browser - Boolean: is Browser (run at Browser)
+ */
+        browser:    false,
         titanium:   !!global.Ti,        // mm.env.titanium - Boolean: is Titanium (run at Titanium)
+
         // --- os ---
         ios:        false,              // mm.env.ios    - Boolean: is iOS
         mac:        false,              // mm.env.mac    - Boolean: is Mac OS X
@@ -2654,9 +2661,12 @@ function Object_pack(obj,     // @arg Object:
 // http://googlewebmastercentral-ja.blogspot.com/2011/05/android.html
 // http://blogs.msdn.com/b/ie/archive/2012/07/12/ie10-user-agent-string-update.aspx
 function _detectEnv(rv) { // @inner:
-    if (!rv.browser) {
+    if (rv.node || rv.ngcore || rv.worker || rv.titanium) {
         return rv;
     }
+
+    rv.browser = true;
+
     var nav = global.navigator, ua = nav.userAgent;
 
     rv.ua       = ua;
