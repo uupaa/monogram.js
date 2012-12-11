@@ -1,5 +1,5 @@
 // html5.ajax.js
-// @need: codec.base64.js, codec.utf.js
+// @need: mm.js, codec.base64.js, codec.utf.js
 
 mm.Class("Ajax:Singleton", { // mm.iAjax
     load: function(url,   // @arg URLString:

@@ -100,9 +100,9 @@ mm.Class("Cache:Singleton", { // mm.iCache
                     obj = result.rows.item(i);
                     that._cache[obj.id] = obj.data;
                 }
-                fn(null); // ok
+                fn && fn(null); // ok
             }, function(tr, error) {
-                fn(error);
+                fn && fn(error);
             });
         });
     },
