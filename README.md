@@ -6,40 +6,32 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 ====
 ```html
 <!DOCTYPE html><html><head><meta charset="utf-8">
-<!-- polyfill -->
-<script src="polyfill.es.js"></script>
-<script src="polyfill.uri.js"></script>
-<script src="polyfill.json.js"></script>
-<script src="polyfill.ruby.js"></script>
-<!-- end polyfill -->
+<script src="js/polyfill.es.js"></script>
+<script src="js/polyfill.ruby.js"></script>
 
-<script src="mm.js"></script>
+<script src="js/mm.js"></script>
 
-<!-- as you like -->
-<script src="logic.url.js"></script>
-<script src="logic.test.js"></script>
-<script src="logic.async.js"></script>
-<script src="logic.await.js"></script>
-<script src="logic.easing.js"></script>
-<script src="logic.effect.js"></script>
-<script src="logic.stream.js"></script>
-<script src="logic.matrix2d.js"></script>
-<script src="logic.messaging.js"></script>
+<script src="js/logic.url.js"></script>
+<script src="js/logic.test.js"></script>
+<script src="js/logic.async.js"></script>
+<script src="js/logic.await.js"></script>
+<script src="js/logic.easing.js"></script>
+<script src="js/logic.effect.js"></script>
+<script src="js/logic.stream.js"></script>
+<script src="js/logic.matrix2d.js"></script>
+<script src="js/logic.messaging.js"></script>
 
-<script src="codec.md5.js"></script>
-<script src="codec.sha1.js"></script>
-<script src="codec.hmac.js"></script>
-<script src="codec.crc32.js"></script>
-<script src="codec.color.js"></script>
-<script src="codec.base64.js"></script>
-<script src="codec.utf.js"></script>
-<!-- end you like -->
+<script src="js/codec.md5.js"></script>
+<script src="js/codec.sha1.js"></script>
+<script src="js/codec.hmac.js"></script>
+<script src="js/codec.crc32.js"></script>
+<script src="js/codec.color.js"></script>
+<script src="js/codec.base64.js"></script>
+<script src="js/codec.utf.js"></script>
 
-<!-- for developer -->
-<script src="dev.prof.js"></script>
-<script src="dev.perf.js"></script>
-<script src="dev.pollution.js"></script>
-<!-- end for developer -->
+<script src="js/dev.prof.js"></script>
+<script src="js/dev.perf.js"></script>
+<script src="js/dev.pollution.js"></script>
 </head><body>
 </body></html>
 ```
