@@ -32,6 +32,7 @@ mm.Class("Cache:Singleton", { // mm.iCache
         this._tableName = "";   // String:
         this._cache = {};       // Object: on memory cache data. { key: value }
         this._writeQueue = [];  // Array: [<id, data>, ...]
+        this._timerID = 0;      // Integer: timer id
     },
     setup: function(dbName,    // @arg String: db name
                     tableName, // @arg String: table name

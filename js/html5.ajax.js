@@ -18,22 +18,23 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
 
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
+                var text = xhr.responseText;
+
                 switch (xhr.status) {
                 case 200:
                 case 201:
-                    // binary or image -> Base64String
+                    // binary -> Base64String
                     if (/base64/i.test(type)) {
-                        return fn(null, xhr.responseText.toUTF16Array().toBase64String());
+                        return fn(null, text.toUTF16Array().toBase64String());
                     }
-                    // text -> document <body>
+                    // text -> <body>
                     if (/node/i.test(type)) {
                         var body = document.createElement("body");
 
-                        body.innerHTML = xhr.responseText;
+                        body.innerHTML = text;
                         return fn(null, body);
                     }
-                    // text -> text
-                    fn(null, xhr.responseText);
+                    fn(null, text);
                     break;
                 case 304:
                 defaut:
