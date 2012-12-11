@@ -10,6 +10,7 @@ function _extendNativeObjects() {
         toBase64String:     Array_toBase64String    // [byte].toBase64String():Base64String
     });
     wiz(String.prototype, {
+        toByteArray:        String_toByteArray,     // "".toByteArray():ByteArray
         toBase64String:     String_toBase64String,  // "".toBase64String(safe:Boolean = false):Base64String
         fromBase64String:   String_fromBase64String // "".fromBase64String():String
     });
@@ -30,15 +31,15 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                       // @help: Array#toBase64
                                       // @desc: ByteArray to Base64String
     var rv = [], ary = this, // this is IntegerArray
-        c = 0, i = 0, iz = ary.length,
+        c = 0, i = -1, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
         chars = _BASE_DB.chars;
 
     --iz;
     while (i < iz) {
-        c =  ((ary[i++] & 0xff) << 16) |
-             ((ary[i++] & 0xff) <<  8) |
-              (ary[i++] & 0xff); // 24bit
+        c =  ((ary[++i] & 0xff) << 16) |
+             ((ary[++i] & 0xff) <<  8) |
+              (ary[++i] & 0xff); // 24bit
         rv.push(chars[(c >> 18) & 0x3f], chars[(c >> 12) & 0x3f],
                 chars[(c >>  6) & 0x3f], chars[ c        & 0x3f]);
     }
@@ -49,6 +50,18 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                                 replace(/\//g, "_");
     }
     return rv.join("");
+}
+
+function String_toByteArray() { // @arg String:
+                                // @ret ByteArray: [...]
+                                // @help String#toByteArray
+                                // @desc convert String to ByteArray
+    var rv = [], i = 0, iz = this.length;
+
+    for (; i < iz; ++i) {
+        rv[i] = this.charCodeAt(i) & 0xFF;
+    }
+    return rv;
 }
 
 function String_toBase64String(safe) { // @arg Boolean(= false):
