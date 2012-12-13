@@ -16,13 +16,14 @@ function _extendNativeObjects() {
 // --- implement -------------------------------------------
 function String_js() { // @arg String: JavaScript Expression
                        // @desc: blocking api
-    var script = document.createElement("script"),
+    var expression = this + "",
+        script = document.createElement("script"),
         head = document.head ||
                document.getElementsByTagName("head")[0];
 
     head.appendChild(script);
     script.charset = "utf-8";
-    script.text = this + "";
+    script.text = expression;
 }
 
 // --- export --------------------------------

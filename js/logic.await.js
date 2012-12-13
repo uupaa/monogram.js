@@ -1,11 +1,12 @@
 // logic.await.js: extend Await methods
+// @need: mm.js
 
 //{@await
-(function(global) { // @arg Global: window or global
+(function() {
 
 // --- header ----------------------------------------------
 function _extendNativeObjects() {
-    wiz(Function.prototype, {
+    mm.wiz(Function.prototype, {
         await:      Function_await      // fn#await(waits:Integer, tick:Function = undefined):Await
     });
 }
@@ -35,7 +36,7 @@ function Function_await(waits,  // @arg Integer: wait count
                                 // @help: Await#await
                                 // @desc: create Await instance
     if (!waits) {
-        return this(null, []);
+        return this(null, []); // fn(err, args)
     }
     return new Await(this, waits, tick);
 }
@@ -54,10 +55,8 @@ function Await_init(fn,     // @arg Function: callback(err, args)
         tick:  tick || null,
         fn:    fn
     };
-    if (globa.mm) { // monogram.js
-        Object.defineProperty(this, "__CLASS__",     { value: "await" });
-        Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
-    }
+    Object.defineProperty(this, "__CLASS__",     { value: "await" });
+    Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
 }
 
 function Await_missable(count) { // @arg Integer: missable count
@@ -99,11 +98,11 @@ function _Await_next(db) {
     var err = db.state === 400 ? new TypeError("miss") : null;
 
     // tick callback
-    db.tick && db.tick(err, db.args);
+    db.tick && db.tick(err, db.args); // fn(err, args)
 
     if (db.state > 100) { // change state?
         if (db.fn) {
-            db.fn(err, db.args); // end callback
+            db.fn(err, db.args); // end callback. fn(err, args)
             db.fn = db.tick = null;
             db.args = []; // gc
         }
@@ -120,17 +119,9 @@ function Await_isCompleted() { // @ret Boolean:
     return this._db.state === 200;
 }
 
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
-    }
-}
-
 // --- export --------------------------------
 _extendNativeObjects();
 
-})(this.self || global);
+})();
 //}@await
 

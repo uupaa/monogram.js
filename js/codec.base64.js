@@ -30,15 +30,15 @@ function Array_toBase64String(safe) { // @arg Boolean(= false):
                                       // @help: Array#toBase64
                                       // @desc: ByteArray to Base64String
     var rv = [], ary = this, // this is IntegerArray
-        c = 0, i = 0, iz = ary.length,
+        c = 0, i = -1, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
         chars = _BASE_DB.chars;
 
     --iz;
     while (i < iz) {
-        c =  ((ary[i++] & 0xff) << 16) |
-             ((ary[i++] & 0xff) <<  8) |
-              (ary[i++] & 0xff); // 24bit
+        c =  ((ary[++i] & 0xff) << 16) |
+             ((ary[++i] & 0xff) <<  8) |
+              (ary[++i] & 0xff); // 24bit
         rv.push(chars[(c >> 18) & 0x3f], chars[(c >> 12) & 0x3f],
                 chars[(c >>  6) & 0x3f], chars[ c        & 0x3f]);
     }
