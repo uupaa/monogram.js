@@ -1,0 +1,13 @@
+{
+    "author": "@uupaa",
+    "name": "monogram.js",
+    "version": "1",
+    "engines": "0.8.14",
+    "homepage": "https://github.com/uupaa/monogram.js"
+    "repository": {
+        "type": "git",
+        "url":  "https://github.com/uupaa/monogram.js"
+    },
+    "dependencies": {}
+}
+
