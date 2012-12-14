@@ -1202,7 +1202,7 @@ function mm_type(mix) { // @arg Mix: search
        : mix === void 0 ? "undefined"
        : mix === global ? "global"
        : mix.nodeType   ? "node"
-       : mix.ClassName  ? mix.ClassName // ES Spec: [[Class]] like internal property
+       : mix.ClassName  ? mix.ClassName.toLowerCase() // ES Spec: [[Class]] like internal property
        : "";
 
     if (rv) {
