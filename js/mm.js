@@ -93,7 +93,6 @@ function _defineLibraryAPIs(mix) {
         lang:       "en",               // mm.env.lang   - String: language. "en", "ja", ...
         secure:     false,              // mm.env.secure - Boolean: is SSL page
         // --- browser ---
-//        ie:         !!document.uniqueID,// mm.env.ie     - Boolean: is IE
         ie:         false,// mm.env.ie     - Boolean: is IE
         ie8:        false,              // mm.env.ie8    - Boolean: is IE 8
         ie9:        false,              // mm.env.ie9    - Boolean: is IE 9
@@ -111,10 +110,6 @@ function _defineLibraryAPIs(mix) {
         ngcore:     !!global.Core,      // mm.env.ngcore - Boolean: is ngCore (run at ngCore)
         worker:     !!global.importScripts,
                                         // mm.env.worker - Boolean: is WebWorkers (run at Worker)
-/*
-        browser:    !!(global.navigator &&
-                       global.document),// mm.env.browser - Boolean: is Browser (run at Browser)
- */
         browser:    false,
         titanium:   !!global.Ti,        // mm.env.titanium - Boolean: is Titanium (run at Titanium)
 
@@ -158,13 +153,13 @@ function _defineLibraryAPIs(mix) {
 function _extendNativeObjects(mix, wiz) {
 
     // --- Type Detection, API Versioning ---
-    wiz(Function.prototype, { __CLASS__: "function",typeFunction: true, api: Object_api });
-    wiz( Boolean.prototype, { __CLASS__: "boolean", typeBoolean:  true, api: Object_api });
-    wiz(  String.prototype, { __CLASS__: "string",  typeString:   true, api: Object_api });
-    wiz(  Number.prototype, { __CLASS__: "number",  typeNumber:   true, api: Object_api });
-    wiz(  RegExp.prototype, { __CLASS__: "regexp",  typeRegExp:   true, api: Object_api });
-    wiz(   Array.prototype, { __CLASS__: "array",   typeArray:    true, api: Object_api });
-    wiz(    Date.prototype, { __CLASS__: "date",    typeDate:     true, api: Object_api });
+    wiz(Function.prototype, { ClassName: "Function",typeFunction: true, api: Object_api });
+    wiz( Boolean.prototype, { ClassName: "Boolean", typeBoolean:  true, api: Object_api });
+    wiz(  String.prototype, { ClassName: "String",  typeString:   true, api: Object_api });
+    wiz(  Number.prototype, { ClassName: "Number",  typeNumber:   true, api: Object_api });
+    wiz(  RegExp.prototype, { ClassName: "Regexp",  typeRegExp:   true, api: Object_api });
+    wiz(   Array.prototype, { ClassName: "Array",   typeArray:    true, api: Object_api });
+    wiz(    Date.prototype, { ClassName: "Date",    typeDate:     true, api: Object_api });
 
     // --- Extension ---
     wiz(Date, {
@@ -336,7 +331,7 @@ function Hash(obj) { // @arg Object:
 
 function _defineHashPrototype(wiz) {
     wiz(Hash.prototype, {
-        __CLASS__:  "hash",
+        ClassName:  "Hash",
         // --- mixin ---
         mix:        function(extend, override) {
                                       mm_mix(this, extend.valueOf(), override); return this; /* @help: Hash#mix */ },
@@ -486,7 +481,7 @@ function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseCl
     }
 
     function _factory(that, args) { // @lookup: className, properties,
-        Object.defineProperty(that, "__CLASS__",     { value: spec.klass.toLowerCase() });
+        Object.defineProperty(that, "ClassName",     { value: spec.klass });
         Object.defineProperty(that, "__CLASS_UID__", { value: mm_uid("mm.class") });
 
         var obj = that, stack = [];
@@ -954,7 +949,7 @@ function _recursiveDump(mix,    // @arg Mix: value
                 return mix.nickname("") + "()" + sp;
             }
             // Class name detection
-            return mix.__CLASS__ ? "mm." + mix.__CLASS__ + sp : "";
+            return mix.ClassName ? "mm." + mix.ClassName + sp : "";
         }
     }
 
@@ -1189,8 +1184,8 @@ function _judgeType(mix, type) {
         return true;
     }
     return type === "void"      ? mix === void 0
-         : type === "this"      ? !!mix.__CLASS__
-         : type === "class"     ? !!mix.__CLASS__
+         : type === "this"      ? !!mix.ClassName
+         : type === "class"     ? !!mix.ClassName
          : type === "integer"   ? Number.isInteger(mix)
          : type === "primitive" ? mix == null || typeof mix !== "object"
          : type === mm_type(mix);
@@ -1207,7 +1202,7 @@ function mm_type(mix) { // @arg Mix: search
        : mix === void 0 ? "undefined"
        : mix === global ? "global"
        : mix.nodeType   ? "node"
-       : mix.__CLASS__  ? mix.__CLASS__ // ES Spec: [[Class]] like internal property
+       : mix.ClassName  ? mix.ClassName // ES Spec: [[Class]] like internal property
        : "";
 
     if (rv) {
@@ -2470,7 +2465,7 @@ function Object_has(data,   // @arg Object/Function:
 }
 
 function _Object_has(data, find) {
-    if (data.__CLASS__ !== find.__CLASS__) {
+    if (data.ClassName !== find.ClassName) {
         return false;
     }
     switch (mm_type(data)) {

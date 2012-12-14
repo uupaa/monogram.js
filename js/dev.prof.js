@@ -393,8 +393,8 @@ function _judgeType(mix, type) {
         return true;
     }
     return type === "void"      ? mix === void 0
-         : type === "this"      ? !!mix.__CLASS__
-         : type === "class"     ? !!mix.__CLASS__
+         : type === "this"      ? !!mix.ClassName
+         : type === "class"     ? !!mix.ClassName
          : type === "integer"   ? Number.isInteger(mix)
          : type === "primitive" ? mix == null || typeof mix !== "object"
          : type === "codedarray"? Array.isArray(mix) && !!mix.code // Array.isCodedArray
@@ -409,7 +409,7 @@ function _mm_type(mix) {
        : mix === void 0 ? "undefined"
        : mix === global ? "global"
        : mix.nodeType   ? "node"
-       : mix.__CLASS__  ? mix.__CLASS__
+       : mix.ClassName  ? mix.ClassName
        : "";
     if (rv) {
         return rv;

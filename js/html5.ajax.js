@@ -8,7 +8,7 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
                           //        "binary", "binary/base64",
                           //        "image", "image/base64",
                           //        "text", "text/js", "text/node"
-                   fn) {  // @arg Function(= null): fn(err:Error, data:String/Base64String/Node)
+                   fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node)
                           //    fn.err - Error: error Object or null
                           //    fn.data - String/Base64String/Node:
                           // @desc: get remote data
@@ -16,6 +16,7 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
 
         var type = param.type || "text";
         var xhr = new XMLHttpRequest();
+        var isAwait = fn.ClassName === "Await";
 
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -26,25 +27,30 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
                 case 201:
                     // "image/base64" -> Base64String
                     if (/base64$/i.test(type)) {
-                        return fn(null, text.toUTF16Array().toBase64String());
+                        return isAwait ? fn.pass(text.toUTF16Array().toBase64String())
+                                       : fn(null, text.toUTF16Array().toBase64String());
                     }
                     // "text/node" -> <body>
                     if (/node$/i.test(type)) {
                         var body = document.createElement("body");
 
                         body.innerHTML = text;
-                        return fn(null, body);
+                        return isAwait ? fn.pass(body)
+                                       : fn(null, body);
                     }
                     // "text/js" -> eval(js)
                     if (/js$/i.test(type)) {
                         text.js();
-                        return fn(null, "");
+                        return isAwait ? fn.pass("")
+                                       : fn(null, "");
                     }
-                    fn(null, text);
+                    isAwait ? fn.pass(text)
+                            : fn(null, text);
                     break;
                 case 304:
                 defaut:
-                    fn(new TypeError(xhr.status), "");
+                    isAwait ? fn.miss(new TypeError(xhr.status))
+                            : fn(new TypeError(xhr.status), "");
                 }
             }
         };

@@ -55,7 +55,7 @@ function Await_init(fn,     // @arg Function: callback(err, args)
         tick:  tick || null,
         fn:    fn
     };
-    Object.defineProperty(this, "__CLASS__",     { value: "await" });
+    Object.defineProperty(this, "ClassName",     { value: "await" });
     Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
 }
 

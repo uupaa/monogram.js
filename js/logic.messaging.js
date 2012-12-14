@@ -30,7 +30,7 @@ Msg.prototype = {
 function Msg_init() {
     this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
     this._broadcast   = []; // broadcast address
-    Object.defineProperty(this, "__CLASS__",     { value: "msg" });
+    Object.defineProperty(this, "ClassName",     { value: "msg" });
     Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
 }
 
@@ -76,7 +76,7 @@ function Msg_list() { // @ret ClassNameStringArray: [className, ...]
                       // @help: Msg#list
                       // @desc: get registered instance list
     return mm.map(this._deliverable, function(instance) {
-        return instance.__CLASS__;
+        return instance.ClassName;
     });
 }
 
@@ -120,7 +120,7 @@ function Msg_send(msg,   // @arg String: msg
         } else {
             rv[i] = "NOT_DELIVERABLE";
             if (instance) {
-                mm.log(msg + " is not deliverable. " + instance.__CLASS__);
+                mm.log(msg + " is not deliverable. " + instance.ClassName);
             }
         }
     }
@@ -146,7 +146,7 @@ function Msg_post(msg,   // @arg String: msg
                 instance.msgbox.apply(instance, args);
             } else {
                 if (instance) {
-                    mm.log(msg + " is not deliverable. " + instance.__CLASS__);
+                    mm.log(msg + " is not deliverable. " + instance.ClassName);
                 }
             }
         }

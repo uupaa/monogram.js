@@ -365,7 +365,7 @@ function _uu_dump(mix,    // @arg Node: parentNode
     function _dumpHash(mix) {
         var ary = [], key,
             keys = Object.keys(mix).sort(), i = 0, iz = keys.length,
-            name = mix.__CLASS__ ? "mm." + mix.__CLASS__ + sp
+            name = mix.ClassName ? "mm." + mix.ClassName + sp
                  : mix.nickname  ? mix.nickname("anonymous") + sp : "";
 
         if (!iz) {
