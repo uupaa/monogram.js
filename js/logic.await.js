@@ -7,16 +7,16 @@
 // --- header ----------------------------------------------
 function _extendNativeObjects() {
     mm.wiz(Function.prototype, {
-        await:      Function_await      // fn#await(waits:Integer, tick:Function = undefined):Await
+        await:      Function_await      // fn#await(waits:Integer):Await
     });
 }
 
-function Await(fn, waits, tick) {
-    this.init(fn, waits, tick);
+function Await(fn, waits) {
+    this.init(fn, waits);
 }
 
 Await.prototype = {
-    init:           Await_init,         // Await#init(fn:Function, waits:Integer, tick:Function = null):this
+    init:           Await_init,         // Await#init(fn:Function, waits:Integer):this
     missable:       Await_missable,     // Await#missable(count:Integer):this
     pass:           Await_pass,         // Await#pass(value:Mix = undefined):this
     miss:           Await_miss,         // Await#miss(value:Mix = undefined):this
@@ -27,24 +27,22 @@ Await.prototype = {
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function Function_await(waits,  // @arg Integer: wait count
-                        tick) { // @arg Function(= undefined): tickCallback(err, args)
-                                // @ret AwaitInstance:
-                                // @this: callback(err:Error, args:Array)
-                                //      err - Error:
-                                //      args - Array: pass(arg) and miss(arg) args collections
-                                // @help: Await#await
-                                // @desc: create Await instance
+function Function_await(waits) { // @arg Integer: wait count
+                                 // @ret AwaitInstance:
+                                 // @this: callback(err:Error, args:Array)
+                                 //      err - Error:
+                                 //      args - Array: pass(arg) and miss(arg) args collections
+                                 // @help: Await#await
+                                 // @desc: create Await instance
     if (!waits) {
         return this(null, []); // fn(err, args)
     }
-    return new Await(this, waits, tick);
+    return new Await(this, waits);
 }
 
-function Await_init(fn,     // @arg Function: callback(err, args)
-                    waits,  // @arg Integer: wait count
-                    tick) { // @arg Function(= null): tick callback(err, args)
-                            // @help: Await
+function Await_init(fn,      // @arg Function: callback(err, args)
+                    waits) { // @arg Integer: wait count
+                             // @help: Await
     this._db = {
         missable: 0,    // Integer: missable
         waits: waits,   // Integer: waits
@@ -52,10 +50,9 @@ function Await_init(fn,     // @arg Function: callback(err, args)
         miss:  0,       // Integer: miss() called count
         state: 100,     // Integer: 100(continue) or 200(success) or 400(error)
         args:  [],      // Array: pass(arg), miss(arg) collections
-        tick:  tick || null,
         fn:    fn
     };
-    Object.defineProperty(this, "ClassName",     { value: "await" });
+    Object.defineProperty(this, "__CLASS__",     { value: "await" });
     Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
 }
 
@@ -97,13 +94,10 @@ function _Await_next(db) {
     }
     var err = db.state === 400 ? new TypeError("miss") : null;
 
-    // tick callback
-    db.tick && db.tick(err, db.args); // fn(err, args)
-
     if (db.state > 100) { // change state?
         if (db.fn) {
             db.fn(err, db.args); // end callback. fn(err, args)
-            db.fn = db.tick = null;
+            db.fn = null;
             db.args = []; // gc
         }
     }
@@ -119,7 +113,7 @@ function Await_isCompleted() { // @ret Boolean:
     return this._db.state === 200;
 }
 
-// --- export --------------------------------
+// --- export ---------------------------------------------
 _extendNativeObjects();
 
 })();
