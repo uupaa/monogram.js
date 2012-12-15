@@ -7,7 +7,8 @@
 // -- unsupported ":not()", ":not(*)"                           in WebKit querySelectorAll()
 
 //{@cssselector
-(function(global) {
+(function(global,
+          document) {
 
 // --- header ----------------------------------------------
 function CSSSelector(token,     // @arg CSSSelectorTokenObject
@@ -38,16 +39,31 @@ var _A_TAG          = 1,  //  | E               | [ _A_TAG, "E" ]
     _QUERY_FORM     = /^(input|button|select|option|textarea)$/i,
     _QUERY_CASESENS = { title: 0, id: 0, name: 0, "class": 0, "for": 0 },
     _data_nodeid    = "data-nodeid",
-    _nodeCount      = 0;
+    _nodeCount      = 0,
+    _ie678          = false,
+    _fixattrdb = { // [IE6][IE7]
+//{@ie
+        cellspacing:    "cellSpacing",
+        colspan:        "colSpan",
+        "for":          "htmlFor",      // node.getAttribute("htmlFor")
+        "class":        "className",    // override node.getAttribute("className")
+        frameborder:    "frameBorder",
+        maxlength:      "maxLength",
+        readonly:       "readOnly",
+        rowspan:        "rowSpan",
+        tabindex:       "tabIndex",
+        usemap:         "useMap"
+//}@ie
+    };
 
 // --- implement -------------------------------------------
 function _selector(token,     // @arg Object: CSSSelectorTokenObject
                    context) { // @arg Node(= document): context
                               // @ret NodeArray: [node, ...]
                               // @desc: CSS3 Selectors Evaluator
-    context = global.document;
+    context = context || document;
 
-    var doc = context.ownerDocument || global.document,
+    var doc = context.ownerDocument || document,
         xmldoc = false,
         ctx = [context], result = [], ary, node,
         lock, word, match, negate = 0, data = token.data,
@@ -57,8 +73,6 @@ function _selector(token,     // @arg Object: CSSSelectorTokenObject
     if (doc.createElement("a").tagName !== doc.createElement("A").tagName) {
         xmldoc = true; // true is XMLDocument, false is HTMLDocument
     }
-
-    var _ie678 = false;
 
     if (doc.uniqueID && getComputedStyle === "undefined") { // [IE6][IE7][IE8]
         _ie678 = true;
@@ -98,10 +112,10 @@ function _selector(token,     // @arg Object: CSSSelectorTokenObject
             return r;
         case _A_QUICK_EFG: // [ _A_QUICK_EFG, ["E", "F"] or ["E", "F", "G"] ]
             ary = data[++i];
-            return uu.node.sort(
-                        uu.tag(ary[0], context).concat(
-                            uu.tag(ary[1], context),
-                            ary[2] ? uu.tag(ary[2], context) : [])).sort;
+            return _sort_node(
+                        _query_tag(ary[0], context).concat(
+                            _query_tag(ary[1], context),
+                            ary[2] ? _query_tag(ary[2], context) : [])).sort;
         case _A_COMBINATOR: // [ _A_COMBINATOR, ">", _A_TAG, "DIV" ]
             type = _QUERY_COMB[data[++i]];
             ++i;
@@ -190,8 +204,8 @@ function _selector(token,     // @arg Object: CSSSelectorTokenObject
         case _A_ATTR_VALUE: // [ _A_ATTR_VALUE, "ATTR", "OPERATOR", "VALUE" ]
             attr = data[++i];
             ope  = data[++i];
-            val  = uu.string.trim.quote(data[++i]); // '"quote"' -> "quote"
-            uu.ready.getAttribute || (attr = uu.attr.fix.db[attr] || attr); // [IE] fix attr name
+            val  = _trimQuote(data[++i]); // '"quote"' -> "quote"
+            attr = _fixattrdb[attr] || attr;
             switch (ope) {
             case 1: val = "^" + val + "$"; break;                 // [attr  = value]
             case 3: val = "^" + val;       break;                 // [attr ^= value]
@@ -232,19 +246,19 @@ function _selector(token,     // @arg Object: CSSSelectorTokenObject
             break;
         case _A_PSEUDO: // [ _A_PSEUDO, 1~29 ]
             type = data[++i];
-            ctx = (type < 4  ? childFilter
-                 : type < 10 ? actionFilter
-                 : type < 13 ? formFilter
-                             : otherFilter)(ctx, j, jz, negate, type, xmldoc);
+            ctx = (type < 4  ? _childFilter
+                 : type < 10 ? _actionFilter
+                 : type < 13 ? _formFilter
+                             : _otherFilter)(ctx, j, jz, negate, type, xmldoc, doc);
             break;
         case _A_PSEUDO_NTH: // [ _A_PSEUDO_FUNC, 31~34, { a,b,k } ]
             type = data[++i];
-            ctx = (type < 33 ? nthFilter
-                             : nthTypeFilter)(ctx, j, jz, negate, type, data[++i], xmldoc);
+            ctx = (type < 33 ? _nthFilter
+                             : _nthTypeFilter)(ctx, j, jz, negate, type, data[++i], xmldoc);
             break;
         case _A_PSEUDO_FUNC: // [ _A_PSEUDO_FUNC, 31~99, arg ]
             type = data[++i];
-            ctx = otherFunctionFilter(ctx, j, jz, negate, type, data[++i]);
+            ctx = _otherFunctionFilter(ctx, j, jz, negate, type, data[++i]);
             break;
         case _A_PSEUDO_NOT: // [ _A_PSEUDO_NOT, _A_ID/_A_CLASS/_ATTR/_A_PSEUDO/_A_PSEUDO_FUNC, ... ]
             negate = 2;
@@ -267,13 +281,13 @@ function _selector(token,     // @arg Object: CSSSelectorTokenObject
                 lock[nid] || (r[++ri] = node, lock[nid] = 1);
             }
         }
-        return uu.node.sort(r).sort; // to document order
+        return _sort_node(r).sort; // to document order
     }
     return ctx;
 }
 
 // inner - 1:first-child  2:last-child  3:only-child
-function childFilter(ctx, j, jz, negate, ps) {
+function _childFilter(ctx, j, jz, negate, ps) {
     var rv = [], ri = -1, node, cn, found = 0;
 
     for (; j < jz; found = 0, ++j) {
@@ -295,27 +309,44 @@ function childFilter(ctx, j, jz, negate, ps) {
 }
 
 // inner - 7:hover  8:focus  x:active
-function actionFilter(ctx, j, jz, negate, ps) {
+function _actionFilter(ctx, j, jz, negate, ps, xmldoc, doc) {
     var rv = [], ri = -1, node, ok, cs,
-        decl = uu.ie ? "ruby-align:center" : "outline:0 solid #000",
-        ss = uu.ss("uuquery2"); // StyleSheetObject
+        selector = ps < 8 ? ":hover" : ":focus";
 
     // http://d.hatena.ne.jp/uupaa/20080928
-    ss.add(ps < 8 ? ":hover" : ":focus", decl);
+    node = doc.createElement("style");
+    node.id = "__temp_style__";
+    doc.getElementsByTagName("head")[0].appendChild(node);
+
+    if (_ie678) {
+        node.styleSheet.addRule(selector, "ruby-align:center");
+    } else {
+        node.sheet.insertRule(selector + "{outline:0 solid #000}");
+    }
 
     for (; j < jz; ++j) {
         node = ctx[j];
-        ok = uu.ie ? node.currentStyle.rubyAlign === "center" :
-                   (cs = uu.css(node),
-                    (cs.outlineWidth + cs.outlineStyle) === "0pxsolid");
+        if (_ie678) {
+            // "ruby-align:center"
+            ok = node.currentStyle.rubyAlign === "center";
+        } else {
+            // "outline:0 solid #000"
+            cs = getComputedStyle(node);
+            ok = (cs.outlineWidth + cs.outlineStyle) === "0pxsolid";
+        }
         (ok ^ negate) && (rv[++ri] = node);
     }
-    ss.clear();
+
+    // remove style
+    node = doc.getElementById("__temp_style__");
+    if (node) {
+        node.parentNode.removeChild(node);
+    }
     return rv;
 }
 
 // inner - 10:enabled  11:disabled  12:checked
-function formFilter(ctx, j, jz, negate, ps) {
+function _formFilter(ctx, j, jz, negate, ps) {
     var rv = [], ri = -1, node, ok;
 
     for (; j < jz; ++j) {
@@ -329,7 +360,7 @@ function formFilter(ctx, j, jz, negate, ps) {
 }
 
 // inner - 13:link  14:visited  15:empty  16:root  17:target  18:required  19:optional
-function otherFilter(ctx, j, jz, negate, ps, xmldoc) {
+function _otherFilter(ctx, j, jz, negate, ps, xmldoc, doc) {
     var rv = [], ri = -1, node, cn, ok = 0, found, word, rex /*, attr */;
 
     switch (ps) {
@@ -375,7 +406,7 @@ function otherFilter(ctx, j, jz, negate, ps, xmldoc) {
 }
 
 // inner - 31:nth-child  32:nth-last-child
-function nthFilter(ctx, j, jz, negate, ps, anb, xmldoc) {
+function _nthFilter(ctx, j, jz, negate, ps, anb, xmldoc) {
     if (anb.all) {
         return negate ? [] : ctx;
     }
@@ -409,7 +440,7 @@ function nthFilter(ctx, j, jz, negate, ps, anb, xmldoc) {
 }
 
 // inner - 33:nth-of-type  34:nth-last-of-type
-function nthTypeFilter(ctx, j, jz, negate, ps, anb) {
+function _nthTypeFilter(ctx, j, jz, negate, ps, anb) {
     (ps === 34) && ctx.reverse();
 
     var rv = [], ri = -1, node, tag, parent, parentnid, nid,
@@ -467,7 +498,7 @@ function _createTagDB(ctx, j, jz, reverse) { // @param NodeArray:
 }
 
 // inner - 35:lang  36:contains
-function otherFunctionFilter(ctx, j, jz, negate, ps, arg) {
+function _otherFunctionFilter(ctx, j, jz, negate, ps, arg) {
     var rv = [], ri = -1, ok = 0, node,
         rex = ps === 35 ? RegExp("^(" + arg + "$|" + arg + "-)", "i") : 0;
 
@@ -487,6 +518,78 @@ function otherFunctionFilter(ctx, j, jz, negate, ps, arg) {
     return rv;
 }
 
+function _sort_node(ary,       // @param NodeArray:
+                    context) { // @hidden Node(= <body>): search context
+                               // @return Hash: { sort, dup }
+                               //   sort - Array: SortedNodeArray
+                               //   dup  - Array: DuplicatedNodeArray
+                               // @desc: sort by document order, detect duplicate
+
+    //  [1][sort] _sort_node([<body>, <html>, <body>], document) -> { sort: [<html>, <body>], dup: [<body>] }
+
+    var rv = [], ri = -1, i = 0, iz = ary.length, obj = { length: iz },
+        idx, min = 0xfffffff, max = 0, node, dups = [], di = -1, allNodes;
+
+    if (!_ie) {
+        allNodes = _query_tag("*", context || document.body);
+    }
+
+    for (; i < iz; ++i) {
+        node = ary[i];
+        idx = _ie ? node.sourceIndex
+                  : allNodes.indexOf(node);
+        min > idx && (min = idx);
+        max < idx && (max = idx);
+        obj[idx] ? (dups[++di] = node) : (obj[idx] = node); // judge duplicate
+    }
+    for (i = min; i <= max; ++i) {
+        (node = obj[i]) && (rv[++ri] = node);
+    }
+    return { sort: rv, dup: dups };
+}
+
+function _query_tag(selector,  // @arg String(= "*"): tag name, "*" is all
+                    context) { // @arg Node(= <body>): query context
+                               // @ret NodeArray: [Node, ...]
+                               // @desc: as document.getElementsByTaName
+    expr = expr || "*";
+    if (!_ie678) {
+        return Array.from((context || document.ownerDocument).getElementsByTagName(expr));
+    }
+//{@ie
+    // [IE6][IE7][IE8]
+    var rv = [], ri = -1, v, i = 0, skip = (expr === "*"),
+        nodeList = (context || document.ownerDocument).getElementsByTagName(expr),
+        iz = nodeList.length;
+
+    // [IE] getElementsByTagName("*") has comment nodes
+    for (; i < iz; ++i) {
+        v = nodeList[i];
+        if (!skip || v.nodeType === Node.ELEMENT_NODE) {
+            rv[++ri] = v;
+        }
+    }
+    return rv;
+//}@ie
+}
+
+function _trimQuote(str) { // @arg String:
+                           // @ret String: trimed string
+                           // @desc: trim both spaces and strip single/double quotes.
+                           //        does not remove the quotes that are not symmetric.
+    str = str.trim();
+    var m = /^["']/.exec(str);
+
+    if (m) {
+        m = RegExp(m[0] + "$").exec(str);
+        if (m) {
+            return str.trims(m[0]);
+        }
+    }
+    return str;
+}
+
+
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
     module.exports = { CSSSelector: CSSSelector };
@@ -494,6 +597,6 @@ if (typeof module !== "undefined") { // is modular
     global.CSSSelector = CSSSelector;
 }
 
-})(this.self || global);
+})(this.self || global, this.document);
 //}@cssselector
 
