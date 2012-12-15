@@ -37,7 +37,6 @@ var _A_TAG          = 1,  //  | E               | [ _A_TAG, "E" ]
     _TOKEN_ATTR     = /^\[\s*(?:([^~\^$*|=!\s]+)\s*([~\^$*|!]?\=)\s*((["'])?.*?\4)|([^\]\s]+))\s*\]/,
     _TOKEN_NTH      = /^(?:(even|odd)|(1n\+0|n\+0|n)|(\d+)|(?:(-?\d*)n([+\-]?\d*)))$/,
     _TOKEN_OPERATOR = { "=": 1, "*=": 2, "^=": 3, "$=": 4, "~=": 5, "|=": 6, "!=": 7 },
-    _TOKEN_KIND     = { "#": 1, ".": 2, "[": 3, ":": 4 },
     _TOKEN_NTH_1    = { a: 0, b: 1, k: 1 }, // nth-child(1)
     _TOKEN_GROUP    = /^\s*,\s*/,
     _TOKEN_ERROR    = /^[>+~]|[>+~*]{2}|[>+~]$/,
@@ -117,10 +116,10 @@ function _innerLoop(expr,  // @arg String: CSS3 Selector Expression
                            // @ret String: remain expression
     var data = rv.data, m, num, mm, anb, a, b, c;
 
-    switch (_TOKEN_KIND[expr.charAt(0)] || 0) {
-    case 1: (m = _TOKEN_IDENT.exec(expr)) && data.push(_A_ID,    m[1]); break;
-    case 2: (m = _TOKEN_IDENT.exec(expr)) && data.push(_A_CLASS, m[1]); break;
-    case 3: m = _TOKEN_ATTR.exec(expr); // [1]ATTR, [2]OPERATOR, [3]"VALUE" [5]ATTR
+    switch (expr.charAt(0)) {
+    case "#": (m = _TOKEN_IDENT.exec(expr)) && data.push(_A_ID,    m[1]); break;
+    case ".": (m = _TOKEN_IDENT.exec(expr)) && data.push(_A_CLASS, m[1]); break;
+    case "[": m = _TOKEN_ATTR.exec(expr); // [1]ATTR, [2]OPERATOR, [3]"VALUE" [5]ATTR
             if (m) {
                 m[5] ? data.push(_A_ATTR, m[5])
                      : data.push(_A_ATTR_VALUE,
@@ -133,7 +132,7 @@ function _innerLoop(expr,  // @arg String: CSS3 Selector Expression
                 num === 5 && m[3].indexOf(" ") >= 0 && (rv.msg = m[0]);
             }
             break;
-    case 4: m = _TOKEN_PSEUDO.FIND.exec(expr);
+    case ":": m = _TOKEN_PSEUDO.FIND.exec(expr);
             if (m) {
                 num = _TOKEN_PSEUDO_LIST[m[1]] || 0;
                 if (!num) {
