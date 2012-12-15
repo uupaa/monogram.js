@@ -42,13 +42,14 @@ var _A_TAG          = 1,  //  | E               | [ _A_TAG, "E" ]
 
 // --- implement -------------------------------------------
 function _selector(token,     // @arg Object: CSSSelectorTokenObject
-                   context) { // @arg Node: context
+                   context) { // @arg Node(= document): context
                               // @ret NodeArray: [node, ...]
                               // @desc: CSS3 Selectors Evaluator
-    var doc = context.ownerDocument,
-        node = context.ownerDocument,
+    context = global.document;
+
+    var doc = context.ownerDocument || global.document,
         xmldoc = false,
-        ctx = [context], result = [], ary,
+        ctx = [context], result = [], ary, node,
         lock, word, match, negate = 0, data = token.data,
         i = 0, iz = data.length, j, jz = 1, k, kz, r, ri,
         ident, nid, type, attr, ope, val, rex;
@@ -334,7 +335,7 @@ function otherFilter(ctx, j, jz, negate, ps, xmldoc) {
     switch (ps) {
     case 13: rex = /^(?:a|area)$/i; break;
     case 14: jz = 0; break;
-    case 16: negate || (jz = 0, rv = [doc.html]); break;
+    case 16: negate || (jz = 0, rv = [doc.documentElement]); break;
     case 17: (word = location.hash.slice(1)) || (jz = 0); break;
 /* TODO: test
     case 18: attr = "required"; break;
@@ -356,7 +357,7 @@ function otherFilter(ctx, j, jz, negate, ps, xmldoc) {
                     ok = !found && !node.innerText;
                  }
                  break;
-        case 16: ok = node !== doc.html; break;
+        case 16: ok = node !== doc.documentElement; break;
         case 17: ok = xmldoc ? (node.id === word)
                              : ((node.id || node.name) === word); break;
 /* TODO: test
