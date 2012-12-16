@@ -1,15 +1,28 @@
 // logic.await.js: extend Await methods
-// @need: mm.js
 
+/*
+    require("logic.await");
+
+    var await = callback.await(4);
+
+    [1,2,3].forEach(function(value) {
+        await.pass(value);
+    });
+    await.pass(4);
+
+    function callback(err, args) {
+        console.log(args); // 1,2,3,4
+    }
+
+ */
 //{@await
 (function() {
 
 // --- header ----------------------------------------------
-function _extendNativeObjects() {
-    mm.wiz(Function.prototype, {
-        await:      Function_await      // fn#await(waits:Integer):Await
+Function.prototype.await ||
+    Object.defineProperty(Function.prototype, "await", {
+        configurable: true, writable: true, value: Function_await
     });
-}
 
 function Await(fn, waits) {
     this.init(fn, waits);
@@ -43,6 +56,8 @@ function Function_await(waits) { // @arg Integer: wait count
 function Await_init(fn,      // @arg Function: callback(err, args)
                     waits) { // @arg Integer: wait count
                              // @help: Await
+    Object.defineProperty(this, "ClassName", { value: "Await" });
+
     this._db = {
         missable: 0,    // Integer: missable
         waits: waits,   // Integer: waits
@@ -52,8 +67,6 @@ function Await_init(fn,      // @arg Function: callback(err, args)
         args:  [],      // Array: pass(arg), miss(arg) collections
         fn:    fn
     };
-    Object.defineProperty(this, "__CLASS__",     { value: "await" });
-    Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
 }
 
 function Await_missable(count) { // @arg Integer: missable count
@@ -112,9 +125,6 @@ function Await_isCompleted() { // @ret Boolean:
                                // @help: Await#isCompleted
     return this._db.state === 200;
 }
-
-// --- export ---------------------------------------------
-_extendNativeObjects();
 
 })();
 //}@await
