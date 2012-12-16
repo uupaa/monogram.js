@@ -1,21 +1,25 @@
 // html5.eval.js
-// @need: mm.js
 
-//{@evaljs
+/*
+    require("html5.eval");
+
+    "alert(123)".evalJavaScript();
+ */
+
+//{@evaljavascript
 (function() {
 
 // --- header ----------------------------------------------
-function _extendNativeObjects() {
-    mm.wiz(String.prototype, {
-        js:     String_js       // "".js():void
+String.prototype.evalJavaScript ||
+    Object.defineProperty(String.prototype, "evalJavaScript", {
+        configurable: true, writable: true, value: String_evalJavaScript
     });
-}
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function String_js() { // @arg String: JavaScript Expression
-                       // @desc: blocking api
+function String_evalJavaScript() { // @arg String: JavaScript Expression
+                                   // @desc: blocking api
     var expression = this + "",
         script = document.createElement("script"),
         head = document.head ||
@@ -26,8 +30,5 @@ function String_js() { // @arg String: JavaScript Expression
     script.text = expression;
 }
 
-// --- export --------------------------------
-_extendNativeObjects();
-
 })();
-//}@evaljs
+//}@evaljavascript
