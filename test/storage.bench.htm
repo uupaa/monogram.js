@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<!-- polyfill -->
+<script src="../polyfill.es.js"></script>
+<!-- end polyfill -->
+
+<script src="../mm.js"></script>
+
+<!-- as you like -->
+<!-- end you like -->
+
+<!-- for browser -->
+<script src="../html5.sql.storage.js"></script>
+<script src="../html5.web.storage.js"></script>
+<script src="../html5.hybrid.storage.js"></script>
+<!-- end for browser -->
+
+<!-- for developer -->
+<!-- end for developer -->
+</head><body>
+<script>
+window.onload = function() {
+    runHybridStorage();
+    runWebStorage();
+};
+
+function runHybridStorage() {
+    mm.iCache.setup("mydb", "mytable", function(err) {
+        if (!err) {
+var now = Date.now();
+            var rv = [];
+            var i = 0, iz = 2000;
+
+            for (; i < iz; ++i) {
+                mm.iCache.set("key" + i, "value" + i);
+                if (mm.iCache.has("key" + i)) {
+                    rv.push(mm.iCache.get("key" + i));
+                }
+            }
+console.log("hybrid: " + (Date.now() - now));
+        }
+    });
+}
+
+function runWebStorage() {
+    mm.iWebStorage.setup("mydb", "mytable", function(err) {
+        if (!err) {
+var now = Date.now();
+            var rv = [];
+            var i = 0, iz = 2000;
+
+            for (; i < iz; ++i) {
+                mm.iWebStorage.set("key" + i, "value" + i);
+                if (mm.iWebStorage.has("key" + i)) {
+                    rv.push(mm.iWebStorage.get("key" + i));
+                }
+            }
+console.log("local: " + (Date.now() - now));
+        }
+    });
+}
+</script>
+</body></html>
+
