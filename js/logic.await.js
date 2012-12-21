@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // logic.await.js: awaiting async/sync events
 
 /*
@@ -31,6 +32,33 @@
     setTimeout(function() { await.pass(3); }, Math.random() * 1000); // goo
     setTimeout(function() { await.miss(4); }, Math.random() * 1000); // boo?
     setTimeout(function() { await.miss(5); }, Math.random() * 1000); // boo?
+=======
+// logic.await.js: extend Await methods
+
+/*
+    require("logic.await");
+
+    var await = callback.await(4);
+
+    [1,2,3].forEach(function(value) {
+        await.pass(value);
+    });
+    await.pass(4);
+
+    function callback(err, args) {
+        console.log(args); // 1,2,3,4
+    }
+
+ */
+//{@await
+(function() {
+
+// --- header ----------------------------------------------
+Function.prototype.await ||
+    Object.defineProperty(Function.prototype, "await", {
+        configurable: true, writable: true, value: Function_await
+    });
+>>>>>>> 700729012832a5a03e21633eee9937a68b9c7a83
 
     function callback(err, args) {
         if (err) {
@@ -72,6 +100,38 @@ Await.prototype = {
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
+<<<<<<< HEAD
+=======
+function Function_await(waits) { // @arg Integer: wait count
+                                 // @ret AwaitInstance:
+                                 // @this: callback(err:Error, args:Array)
+                                 //      err - Error:
+                                 //      args - Array: pass(arg) and miss(arg) args collections
+                                 // @help: Await#await
+                                 // @desc: create Await instance
+    if (!waits) {
+        return this(null, []); // fn(err, args)
+    }
+    return new Await(this, waits);
+}
+
+function Await_init(fn,      // @arg Function: callback(err, args)
+                    waits) { // @arg Integer: wait count
+                             // @help: Await
+    Object.defineProperty(this, "ClassName", { value: "Await" });
+
+    this._db = {
+        missable: 0,    // Integer: missable
+        waits: waits,   // Integer: waits
+        pass:  0,       // Integer: pass() called count
+        miss:  0,       // Integer: miss() called count
+        state: 100,     // Integer: 100(continue) or 200(success) or 400(error)
+        args:  [],      // Array: pass(arg), miss(arg) collections
+        fn:    fn
+    };
+}
+
+>>>>>>> 700729012832a5a03e21633eee9937a68b9c7a83
 function Await_missable(count) { // @arg Integer: missable count
                                  // @ret this:
                                  // @help: Await#missable
@@ -172,6 +232,10 @@ if (typeof module !== "undefined") { // is modular
     global.Await = Await;
 }
 
+<<<<<<< HEAD
 })(this.self || global);
+=======
+})();
+>>>>>>> 700729012832a5a03e21633eee9937a68b9c7a83
 //}@await
 

@@ -1,108 +1,158 @@
 // html5.sql.storage.js: WebSQLStorage
-// @need: mm.js
 
-// mm.iSQLStorage.setup(dbName:String, tableName:String, fn:Function = null):void
-// mm.iSQLStorage.has(id:String, fn:Function = null):void
-// mm.iSQLStorage.get(id:String, fn:Function = null):void
-// mm.iSQLStorage.set(id:String, data:String, fn:Function = null):void
-// mm.iSQLStorage.clear(fn:Function = null):void
-// mm.iSQLStorage.tearDown(fn:Function = null):void
+/*
+    var SQLStorage = reuqire("html5.sql.storage").SQLStorage;
 
-/* use case
-
-    mm.iSQLStorage.setup("mydb", "mytable", function(err) {
-        if (!err) {
-            mm.iSQLStorage.set("key", "value");
-            mm.iSQLStorage.get("key", function(err, id, time, data) {
+    new SQLStorage("mydb", "mytable", function(err, storage) {
+        storage.set("key", "value", function(err) {
+            storage.get("key", function(err, id, data) {
                 console.log(data);
             });
-            mm.iSQLStorage.clear();
-        }
+            storage.clear();
+        });
     });
  */
 
 //{@sqlstorage
-// --------------------------------------------------------
-mm.Class("SQLStorage:Singleton", { // mm.iSQLStorage
-    init: function() {
-        this._db = null;
-        this._dbName = "";
-        this._tableName = "";
-    },
-    setup: function(dbName,    // @arg String: db name
+(function(global) {
+
+// --- header ----------------------------------------------
+function SQLStorage(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
-                    fn) {      // @arg Function(= null): fn(err:Error)
-        this._dbName = dbName;
-        this._tableName = tableName;
+                    fn) {      // @arg Function(= null): fn(err:Error, instance:this)
+    this.init(dbName, tableName, fn);
+}
 
-        // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
-        this._db = openDatabase(dbName, "1.0", dbName, 1024 * 1024 * 4.9);
-        this._exec("CREATE TABLE IF NOT EXISTS " + tableName +
-                   " (id TEXT PRIMARY KEY,time INTEGER,data TEXT)", [], fn);
-    },
-    has: function(id,   // @arg String:
-                  fn) { // @arg Function(= null): fn(has:Boolean)
-                        // @desc: has id
-        this.get(id, function(err, id, time, data) {
-            fn(err || !time ? false : true);
-        });
-    },
-    get: function(id,   // @arg String:
-                  fn) { // @arg Function(= null): fn(err:Error, id:String,
-                        //                        time:Integer, data:String)
-                        // @desc: fetch a row
-        var that = this;
+SQLStorage.prototype = {
+    init:   SQLStorage_init,    // SQLStorage#init(dbName:String, tableName:String, fn:Function = null):void
+    has:    SQLStorage_has,     // SQLStorage#has(id:String, fn:Function = null):void
+    get:    SQLStorage_get,     // SQLStorage#get(id:String, fn:Function = null):void
+    set:    SQLStorage_set,     // SQLStorage#set(id:String, data:String, fn:Function = null):void
+    fetch:  SQLStorage_fetch,   // SQLStorage#fetch(id:String, fn:Function = null):void
+    clear:  SQLStorage_clear,   // SQLStorage#clear(fn:Function = null):void
+    tearDown:SQLStorage_tearDown// SQLStorage#tearDown(fn:Function = null):void
+};
 
-        this._db.readTransaction(function(tr) {
-            tr.executeSql("SELECT time,data FROM " + that._tableName +
-                          " WHERE id=?", [id],
-                function(tr, result) {
-                    var time = 0, data = "";
+// --- library scope vars ----------------------------------
 
-                    if (result.rows.length) {
-                        time = result.rows.item(0).time;
-                        data = result.rows.item(0).data;
-                    }
-                    fn(null, id, time, data);
-                },
-                function(tr, error) {
-                    fn(error, id, 0, "");
-                });
-        });
-    },
-    set: function(id,   // @arg String:
-                  data, // @arg String: "" is delete row.
-                  fn) { // @arg Function(= null): fn(err:Error)
-                        // @desc: add/update row
-        if (!data) {
-            this._exec("DELETE FROM " + this._tableName +
-                       " WHERE id=?", [id], fn);
-        } else {
-            this._exec("INSERT OR REPLACE INTO " + this._tableName +
-                       " VALUES(?,?,?)", [id, Date.now(), data], fn);
-        }
-    },
-    clear: function(fn) { // @arg Function(= null): fn(err:Error)
-                          // @desc: clear all data
-        this._exec("DELETE FROM " + this._tableName, [], fn);
-    },
-    tearDown: function(fn) { // @arg Function(= null): fn(err:Error)
-                             // @desc: drop table
-        this._exec("DROP TABLE " + this._tableName, [], fn);
-    },
-    _exec: function(sql, args, fn) {
-        this._db.transaction(function(tr) {
-            tr.executeSql(sql, args, function(tr, result) {
-                fn && fn(null); // ok
-            }, function(tr, error) {
-                if (fn) {
-                    fn(error);
-                } else {
-                    throw new TypeError(error.message);
-                }
+// --- implement -------------------------------------------
+function SQLStorage_init(dbName, tableName, fn) {
+    var that = this;
+
+    this._dbName = dbName;
+    this._tableName = tableName;
+
+    // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
+    this._db = openDatabase(dbName, "1.0", dbName, 1024 * 1024 * 4.9);
+    this._db.transaction(function(tr) {
+        tr.executeSql("CREATE TABLE IF NOT EXISTS " + tableName +
+                      " (id TEXT PRIMARY KEY,data TEXT)", [],
+            function(tr, result) {
+                fn && fn(null, that); // ok
+            },
+            function(tr, err) {
+                fn && fn(err, that);
             });
-        });
+    });
+}
+
+function SQLStorage_has(id,   // @arg String:
+                        fn) { // @arg Function(= null): fn(has:Boolean)
+                              // @desc: has id
+    this.get(id, function(err, id, data) {
+        fn(err || !id ? false : true);
+    });
+}
+
+function SQLStorage_get(id,   // @arg String:
+                        fn) { // @arg Function(= null): fn(err:Error, id:String, data:String)
+                              // @desc: fetch a row
+    var that = this;
+
+    this._db.readTransaction(function(tr) {
+        tr.executeSql("SELECT data FROM " + that._tableName +
+                      " WHERE id=?", [id],
+            function(tr, result) {
+                var data = "";
+
+                if (result.rows.length) {
+                    data = result.rows.item(0).data;
+                }
+                fn(null, id, data);
+            },
+            function(tr, error) {
+                fn(error, "", "");
+            });
+    });
+}
+
+function SQLStorage_set(id,   // @arg String:
+                        data, // @arg String: "" is delete row.
+                        fn) { // @arg Function(= null): fn(err:Error)
+                              // @desc: add/update row
+    if (!data) {
+        _exec(this._db, "DELETE FROM " + this._tableName +
+                        " WHERE id=?", [id], fn);
+    } else {
+        _exec(this._db, "INSERT OR REPLACE INTO " + this._tableName +
+                        " VALUES(?,?)", [id, data], fn);
     }
-});
+}
+
+function SQLStorage_fetch(fn) { // @arg Function: fn(err:Error, result:Object)
+                                //    result - Object: { id: data, ... }
+    var that = this;
+
+    this._db.readTransaction(function(tr) {
+        tr.executeSql("SELECT * FROM " + that._tableName, [],
+            function(tr, result) {
+                var rv = {}, i = 0, iz = result.rows.length, obj;
+
+                for (; i < iz; ++i) {
+                    obj = result.rows.item(i);
+                    rv[obj.id] = obj.data;
+                }
+                fn && fn(null, rv); // ok
+            }, function(tr, error) {
+                fn && fn(error, {});
+            });
+    });
+}
+
+function SQLStorage_clear(fn) { // @arg Function(= null): fn(err:Error)
+                                // @desc: clear all data
+    _exec(this._db, "DELETE FROM " + this._tableName, [], fn);
+}
+
+function SQLStorage_tearDown(fn) { // @arg Function(= null): fn(err:Error)
+                                   // @desc: drop table
+    _exec(this._db, "DROP TABLE " + this._tableName, [], fn);
+}
+
+function _exec(db,
+               sql,  // @arg String:
+               args, // @arg Array(= []): [arg, ...]
+               fn) { // @arg Function(= null): fn(err:Error)
+    db.transaction(function(tr) {
+        tr.executeSql(sql, args || [], function(tr, result) {
+            fn && fn(null); // ok
+        }, function(tr, error) {
+            if (fn) {
+                fn(error);
+            } else {
+                throw new TypeError(error.message);
+            }
+        });
+    });
+}
+
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { SQLStorage: SQLStorage };
+} else {
+    global.SQLStorage = SQLStorage;
+}
+
+})(this.self || global);
 //}@sqlstorage
 

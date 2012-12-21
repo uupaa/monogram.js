@@ -1,61 +1,111 @@
 // html5.web.storage.js: WebStorage
-// @need: mm.js
 
-// mm.iWebStorage.setup(dbName:String, tableName:String, fn:Function = null):void
-// mm.iWebStorage.has(id:String):Boolean
-// mm.iWebStorage.get(id:String):Base64String
-// mm.iWebStorage.set(id:String, data:Base64String):void
-// mm.iWebStorage.clear(fn:Function = null):void
-// mm.iWebStorage.tearDown(fn:Function = null):void
+/*
+    var WebStorage = reuqire("html5.web.storage").WebStorage;
 
-/* use case
-
-    mm.iWebStorage.setup("mydb", "mytable");
-    mm.iWebStorage.set("id", "base64data");
-    node.src = "data:image/png;base64" + mm.iWebStorage.get("id");
+    new WebStorage("mydb", "mytable", function(err, storage) {
+        storage.set("key", "value");
+        node.src = "data:image/png;base64" + storage.get("key");
+        storage.clear();
+    });
  */
 
 //{@webstorage
-// --------------------------------------------------------
-mm.Class("WebStorage:Singleton", { // mm.iWebStorage
-    init: function() {
-        this._db = localStorage;
-        this._error = "";
-        this._dbName = "";
-        this._tableName = "__";
-    },
-    setup: function(dbName,    // @arg String:
-                    tableName, // @arg String:
-                    fn) {      // @arg Function(= null): fn(err:Error)
-        this._dbName = dbName;
-        this._tableName = "__" + tableName + "__";
-        fn && fn(null);
-    },
-    has: function(id) { // @arg String:
-                        // @ret Boolean:
-        return (this._tableName + id) in this._db;
-    },
-    get: function(id) { // @arg String:
-                        // @ret Base64String:
-        return this._db.getItem(this._tableName + id) || "";
-    },
-    set: function(id,     // @arg String:
-                  data) { // @arg Base64string:
-        data ? this._db.setItem(this._tableName + id, data)
-             : this._db.removeItem(this._tableName + id);
-    },
-    clear: function(fn) { // @arg Function(= null): fn(err:Error)
-        for (var key in this._db) {
-            if (key.indexOf(this._tableName) === 0) {
-                this._db.removeItem(key);
-            }
+(function(global) {
+
+// --- header ----------------------------------------------
+function WebStorage(dbName,    // @arg String: db name
+                    tableName, // @arg String: table name
+                    fn) {      // @arg Function(= null): fn(err:Error, instance:this)
+    this.init(dbName, tableName, fn);
+}
+
+WebStorage.prototype = {
+    init:   WebStorage_init,    // WebStorage#init(dbName:String, tableName:String, fn:Function = null):void
+    has:    WebStorage_has,     // WebStorage#has(id:String, fn:Function = null):Boolean
+    get:    WebStorage_get,     // WebStorage#get(id:String, fn:Function = null):Base64String
+    set:    WebStorage_set,     // WebStorage#set(id:String, data:String, fn:Function = null):this
+    fetch:  WebStorage_fetch,   // WebStorage#fetch(fn:Function = null):Object
+    clear:  WebStorage_clear,   // WebStorage#clear(fn:Function = null):this
+    tearDown:WebStorage_tearDown// WebStorage#tearDown(fn:Function = null):this
+};
+
+// --- library scope vars ----------------------------------
+
+// --- implement -------------------------------------------
+function WebStorage_init(dbName, tableName, fn) {
+    this._db = localStorage;
+    this._dbName = dbName;
+    this._tableName = "__" + tableName + "__";
+    fn && fn(null, this); // ok
+}
+
+function WebStorage_has(id,   // @arg String:
+                        fn) { // @arg Function(= null): fn(has:Boolean)
+                              // @ret Boolean:
+    var rv = (this._tableName + id) in this._db;
+
+    fn && fn(null, rv);
+    return rv;
+}
+
+function WebStorage_get(id,   // @arg String:
+                        fn) { // @arg Function(= null): fn(err:Error, id:String, data:String)
+                              // @ret Base64String:
+    var rv = this._db.getItem(this._tableName + id) || "";
+
+    fn && fn(null, id, rv);
+    return rv;
+}
+
+function WebStorage_set(id,   // @arg String:
+                        data, // @arg Base64string:
+                        fn) { // @arg Function(= null): fn(err:Error)
+                              // @ret this:
+    data ? this._db.setItem(this._tableName + id, data)
+         : this._db.removeItem(this._tableName + id);
+    fn && fn(null); // ok
+    return this;
+}
+
+function WebStorage_fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
+                                // @ret Object: result
+    var rv = {}, key;
+
+    for (key in this._db) {
+        if (key.indexOf(this._tableName) === 0) {
+            rv[key] = this._db[key];
         }
-        fn && fn(null);
-    },
-    tearDown: function(fn) { // @arg Function(= null): fn(err:Error)
-        this._db.clear();
-        fn && fn(null);
     }
-});
+    fn && fn(null, rv);
+    return rv;
+}
+
+function WebStorage_clear(fn) { // @arg Function(= null): fn(err:Error)
+                                // @ret this:
+    for (var key in this._db) {
+        if (key.indexOf(this._tableName) === 0) {
+            this._db.removeItem(key);
+        }
+    }
+    fn && fn(null);
+    return this;
+}
+
+function WebStorage_tearDown(fn) { // @arg Function(= null): fn(err:Error)
+                                   // @ret this:
+    this._db.clear();
+    fn && fn(null);
+    return this;
+}
+
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { WebStorage: WebStorage };
+} else {
+    global.WebStorage = WebStorage;
+}
+
+})(this.self || global);
 //}@webstorage
 
