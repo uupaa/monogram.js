@@ -1,15 +1,9 @@
 // logic.messaging.js: Messaging API
-// @need: mm.js
 
 //{@msg
 (function(global) { // @arg Global: window or global
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs() {
-    mm.Msg = Msg;   // mm.Msg()
-    mm.msg = {};    // mm.msg - Msg pool
-}
-
 function Msg() {
     this.init();
 }
@@ -30,8 +24,7 @@ Msg.prototype = {
 function Msg_init() {
     this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
     this._broadcast   = []; // broadcast address
-    Object.defineProperty(this, "ClassName",     { value: "msg" });
-    Object.defineProperty(this, "__CLASS_UID__", { value: mm.uid("mm.class") });
+    Object.defineProperty(this, "ClassName", { value: "Msg" });
 }
 
 function Msg_bind(ooo) { // @var_args Instance: register drain instance
@@ -50,7 +43,7 @@ function Msg_bind(ooo) { // @var_args Instance: register drain instance
     }, this);
 
     // update broadcast address
-    this._broadcast = mm.values(this._deliverable);
+    this._broadcast = _values(this._deliverable);
     return this;
 }
 
@@ -61,23 +54,26 @@ function Msg_unbind(ooo) { // @var_args Instance: drain instance. undefined is u
     var args = arguments.length ? Array.prototype.slice.call(arguments)
                                 : this._broadcast;
 
-    args.each(function(instance) {
+    args.forEach(function(instance) {
         if (instance.__CLASS_UID__) {
             delete this._deliverable[instance.__CLASS_UID__];
         }
     }, this);
 
     // update broadcast address
-    this._broadcast = mm.values(this._deliverable);
+    this._broadcast = _values(this._deliverable);
     return this;
 }
 
 function Msg_list() { // @ret ClassNameStringArray: [className, ...]
                       // @help: Msg#list
                       // @desc: get registered instance list
-    return mm.map(this._deliverable, function(instance) {
-        return instance.ClassName;
-    });
+    var rv = [], key;
+
+    for (key in this._deliverable) {
+        rv.push(this._deliverable[key].ClassName);
+    }
+    return rv;
 }
 
 function Msg_to(ooo) { // @var_args Instance: delivery to address.
@@ -120,7 +116,7 @@ function Msg_send(msg,   // @arg String: msg
         } else {
             rv[i] = "NOT_DELIVERABLE";
             if (instance) {
-                mm.log(msg + " is not deliverable. " + instance.ClassName);
+                console.log(msg + " is not deliverable. " + instance.ClassName);
             }
         }
     }
@@ -136,7 +132,7 @@ function Msg_post(msg,   // @arg String: msg
         args = Array.prototype.slice.call(arguments),
         deli = this.deli || this._deliverable;
 
-    0..wait(function() {
+    setTimeout(function() {
         var instance, i = 0, iz = addr.length;
 
         for (; i < iz; ++i) {
@@ -146,16 +142,33 @@ function Msg_post(msg,   // @arg String: msg
                 instance.msgbox.apply(instance, args);
             } else {
                 if (instance) {
-                    mm.log(msg + " is not deliverable. " + instance.ClassName);
+                    console.log(msg + " is not deliverable. " + instance.ClassName);
                 }
             }
         }
-    });
+    }, 0);
     return this.that || this;
 }
 
-// --- export --------------------------------
-_defineLibraryAPIs();
+function _values(obj) { // @arg Object:
+                        // @ret Array: [value, ...]
+    var rv = [], keys = Object.keys(obj), i = 0, iz = keys.length;
+
+    for (; i < iz; ++i) { // uupaa-looper
+        rv.push( obj[keys[i]] );
+    }
+    return rv;
+}
+
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Msg: Msg };
+} else if (typeof mm !== "undefined") {
+    global.mm.Msg = Msg;
+    global.mm.msg = {};
+} else {
+    global.Msg = Msg;
+}
 
 })(this.self || global);
 //}@msg

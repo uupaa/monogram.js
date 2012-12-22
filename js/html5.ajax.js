@@ -5,9 +5,13 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
     load: function(url,   // @arg URLString:
                    param, // @arg Object: { type }
                           //    param.type - String(= "text"):
-                          //        "binary", "binary/base64",
-                          //        "image", "image/base64",
-                          //        "text", "text/js", "text/node"
+                          //        "binary"        -> load Binary to Binary
+                          //        "binary/base64" -> load Binary to Base64String
+                          //        "image"         -> load Binary to Binary
+                          //        "image/base64"  -> load Binary to Base64String
+                          //        "text"          -> load Text to Text
+                          //        "text/js"       -> load Text to evvalJavaScript
+                          //        "text/node"     -> load Text to HTMLFragment
                    fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node)
                           //    fn.err - Error: error Object or null
                           //    fn.data - String/Base64String/Node:
@@ -40,7 +44,7 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
                     }
                     // "text/js" -> eval(js)
                     if (/js$/i.test(type)) {
-                        text.js();
+                        text.evalJavaScript();
                         return isAwait ? fn.pass("")
                                        : fn(null, "");
                     }
