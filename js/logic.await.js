@@ -1,46 +1,5 @@
 // logic.await.js: awaiting async/sync events
 
-/*
-    require("logic.await");
-
-    // --- await 4 events ---
-    var await = new Await(callback, 4);
-
-    [1,2,3].forEach(function(value) {
-        await.pass(value);
-    });
-    await.pass(4);
-
-    function callback(err, args) {
-        if (err) {
-            switch (err.message) {
-            case "halt":  console.log("halt",  args.join()); break;
-            case "error": console.log("error", args.join()); break;
-            }
-        } else {
-            // err is null
-            console.log(args.join()); // "1,2,3,4"
-        }
-    }
-
-    // --- await 4 events (missable 1) ---
-    var await = new Await(callback, 4).missable(1);
-
-    setTimeout(function() { await.pass(1); }, Math.random() * 1000); // goo
-    setTimeout(function() { await.pass(2); }, Math.random() * 1000); // goo
-    setTimeout(function() { await.pass(3); }, Math.random() * 1000); // goo
-    setTimeout(function() { await.miss(4); }, Math.random() * 1000); // boo?
-    setTimeout(function() { await.miss(5); }, Math.random() * 1000); // boo?
-
-    function callback(err, args) {
-        if (err) {
-            console.log("boo!", args.join()); // eg: "boo! 4,1,5"
-        } else {
-            console.log("goo!", args.join()); // eg: "goo! 2,3,1,4"
-        }
-    }
- */
-
 //{@await
 (function(global) {
 
@@ -174,4 +133,49 @@ if (typeof module !== "undefined") { // is modular
 
 })(this.self || global);
 //}@await
+
+/*
+    var Await = require("./logic.await").Await;
+
+    // --- await sync 4 events ---
+    function test1() {
+        var await = new Await(callback, 4);
+
+        [1,2,3].forEach(function(value) {
+            await.pass(value);
+        });
+        await.pass(4);
+
+        function callback(err, args) {
+            if (err) {
+                switch (err.message) {
+                case "halt":  console.log("halt",  args.join()); break;
+                case "error": console.log("error", args.join()); break;
+                }
+            } else {
+                // err is null
+                console.log(args.join()); // "1,2,3,4"
+            }
+        }
+    }
+
+    // --- await async 4 events (missable 1) ---
+    function test2() {
+        var await = new Await(callback, 4).missable(1);
+
+        setTimeout(function() { await.pass(1); }, Math.random() * 1000); // goo
+        setTimeout(function() { await.pass(2); }, Math.random() * 1000); // goo
+        setTimeout(function() { await.pass(3); }, Math.random() * 1000); // goo
+        setTimeout(function() { await.miss(4); }, Math.random() * 1000); // boo?
+        setTimeout(function() { await.miss(5); }, Math.random() * 1000); // boo?
+
+        function callback(err, args) {
+            if (err) {
+                console.log("boo!", args.join()); // eg: "boo! 4,1,5"
+            } else {
+                console.log("goo!", args.join()); // eg: "goo! 2,3,1,4"
+            }
+        }
+    }
+ */
 

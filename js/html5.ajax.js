@@ -1,8 +1,22 @@
 // html5.ajax.js
-// @need: mm.js, codec.base64.js, codec.utf.js, html5.eval.js
+// @need: codec.base64.js, html5.script.js
 
-mm.Class("Ajax:Singleton", { // mm.iAjax
-    load: function(url,   // @arg URLString:
+//{@ajax
+(function(global) {
+
+// --- header ----------------------------------------------
+function Ajax() {
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "Ajax" });
+}
+Ajax.prototype = {
+    load        Ajax_load       // Ajax#load(url:String, param:Object, fn:Function):void
+};
+
+// --- library scope vars ----------------------------------
+//
+// --- implement -------------------------------------------
+function Ajax_load(url,   // @arg String:
                    param, // @arg Object: { type }
                           //    param.type - String(= "text"):
                           //        "binary"        -> load Binary to Binary
@@ -16,53 +30,62 @@ mm.Class("Ajax:Singleton", { // mm.iAjax
                           //    fn.err - Error: error Object or null
                           //    fn.data - String/Base64String/Node:
                           // @desc: get remote data
-        param = param || {};
+    param = param || {};
 
-        var type = param.type || "text";
-        var xhr = new XMLHttpRequest();
-        var isAwait = fn.ClassName === "Await";
+    var type = param.type || "text";
+    var xhr = new XMLHttpRequest();
+    var isAwait = fn.ClassName === "Await";
 
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                var text = xhr.responseText;
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            var text = xhr.responseText;
 
-                switch (xhr.status) {
-                case 200:
-                case 201:
-                    // "image/base64" -> Base64String
-                    if (/base64$/i.test(type)) {
-                        return isAwait ? fn.pass(text.toUTF16Array().toBase64String())
-                                       : fn(null, text.toUTF16Array().toBase64String());
-                    }
-                    // "text/node" -> <body>
-                    if (/node$/i.test(type)) {
-                        var body = document.createElement("body");
-
-                        body.innerHTML = text;
-                        return isAwait ? fn.pass(body)
-                                       : fn(null, body);
-                    }
-                    // "text/js" -> eval(js)
-                    if (/js$/i.test(type)) {
-                        text.evalJavaScript();
-                        return isAwait ? fn.pass("")
-                                       : fn(null, "");
-                    }
-                    isAwait ? fn.pass(text)
-                            : fn(null, text);
-                    break;
-                case 304:
-                defaut:
-                    isAwait ? fn.miss(new TypeError(xhr.status))
-                            : fn(new TypeError(xhr.status), "");
+            switch (xhr.status) {
+            case 200:
+            case 201:
+                // "image/base64" -> Base64String
+                if (/base64$/i.test(type)) {
+                    return isAwait ? fn.pass(Base64.btoa(text, true))
+                                   : fn(null, Base64.btoa(text, true));
                 }
-            }
-        };
-        xhr.open("GET", url, true);
-        if (/^(binary|image)/i.test(type)) {
-            xhr.overrideMimeType("text/plain; charset=x-user-defined");
-        }
-        xhr.send(null);
-    }
-});
+                // "text/node" -> <body>
+                if (/node$/i.test(type)) {
+                    var body = document.createElement("body");
 
+                    body.innerHTML = text;
+                    return isAwait ? fn.pass(body)
+                                   : fn(null, body);
+                }
+                // "text/js" -> eval(js)
+                if (/js$/i.test(type)) {
+                    Script.run(text);
+                    return isAwait ? fn.pass("")
+                                   : fn(null, "");
+                }
+                isAwait ? fn.pass(text)
+                        : fn(null, text);
+                break;
+            case 304:
+            defaut:
+                isAwait ? fn.miss(new TypeError(xhr.status))
+                        : fn(new TypeError(xhr.status), "");
+            }
+        }
+    };
+    xhr.open("GET", url, true);
+    if (/^(binary|image)/i.test(type)) {
+        xhr.overrideMimeType("text/plain; charset=x-user-defined");
+    }
+    xhr.withCredentials = true;
+    xhr.send(null);
+}
+
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Ajax: Ajax };
+} else {
+    global.Ajax = Ajax;
+}
+
+})(this.self || global);
+//}@ajax
