@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/html5.sql.storage.js"></script>
+<script src="../js/html5.web.storage.js"></script>
+<script src="../js/html5.storage.cache.js"></script>
+<script src="../js/logic.await.js"></script>
+</head><body>
+<script>
+//  var SQLStorage = require("html5.sql.storage").SQLStorage;
+//  var WebStorage = require("html5.web.storage").WebStorage;
+//  var StorageCache = require("html5.storage.cache").StorageCache;
+
+    var await = storageReady.await(2);
+
+    var cache1 = null,
+        cache2 = null;
+
+    new SQLStorage("hoge", "hoge", function(err, storage) {
+        cache1 = new StorageCache(storage, function(err, result) {
+            await.pass();
+        });
+    });
+    new WebStorage("hoge", "hoge", function(err, storage) {
+        cache2 = new StorageCache(storage, function(err, result) {
+            await.pass();
+        });
+    });
+
+    function storageReady() {
+        console.log("ready");
+
+        cache1.set("a1", "data");
+        cache2.set("a1", "data");
+
+        if (cache1.get("a1") === cache2.get("a1")) {
+            console.log("ok");
+        }
+        cache1.set("a1", "");
+        cache2.set("a1", "");
+    }
+</script>
+</body></html>
+
