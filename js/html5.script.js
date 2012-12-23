@@ -1,4 +1,4 @@
-// html5.script.js
+// html5.script.js: eval JavaScript
 
 //{@script
 (function() {
@@ -27,16 +27,17 @@ function Script_run(expression) { // @arg String: JavaScript Expression
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Script: Script };
+    module.exports = { Monogram: { Script: Script } };
 } else {
-    global.Script = Script;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Script = Script;
 }
 
 })(this.self || global);
 //}@script
 
 /*
-    var Script = require("./html5.script").Script;
+    var Script = require("./html5.script").Monogram.Script;
 
     Script.run("alert(123)");
  */
