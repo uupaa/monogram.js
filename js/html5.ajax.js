@@ -10,7 +10,7 @@ function Ajax() {
         Object.defineProperty(this, "ClassName", { value: "Ajax" });
 }
 Ajax.prototype = {
-    load        Ajax_load       // Ajax#load(url:String, param:Object, fn:Function):this
+    load:   Ajax_load   // Ajax#load(url:String, param:Object, fn:Function):this
 };
 
 // --- library scope vars ----------------------------------
@@ -41,13 +41,8 @@ function Ajax_load(url,   // @arg String:
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             var text = xhr.responseText;
-            var time = Date.now();
-
-            // --- get Last-Modified header ---
-            var lastModified = xhr.getResponseHeader("Last-Modified");
-            if (lastModified) {
-                time = Date.parse(lastModified);
-            }
+            var mod  = xhr.getResponseHeader("Last-Modified") || "";
+            var time = mod ? Date.parse(mod) : Date.now();
 
             switch (xhr.status) {
             case 200:
