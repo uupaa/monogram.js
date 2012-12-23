@@ -7,11 +7,11 @@
 function SQLStorage(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
                     fn) {      // @arg Function(= null): fn(err:Error, instance:this)
-    this.init(dbName, tableName, fn);
+    this._init(dbName, tableName, fn);
 }
 
 SQLStorage.prototype = {
-    init:   SQLStorage_init,    // SQLStorage#init(dbName:String, tableName:String, fn:Function = null):void
+    _init:  SQLStorage_init,
     has:    SQLStorage_has,     // SQLStorage#has(id:String, fn:Function = null):void
     get:    SQLStorage_get,     // SQLStorage#get(id:String, fn:Function = null):void
     set:    SQLStorage_set,     // SQLStorage#set(id:String, data:String, fn:Function = null):void
@@ -137,24 +137,27 @@ function _exec(db,
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { SQLStorage: SQLStorage };
+    module.exports = { Monogram: { SQLStorage: SQLStorage } };
 } else {
-    global.SQLStorage = SQLStorage;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.SQLStorage = SQLStorage;
 }
 
 })(this.self || global);
 //}@sqlstorage
 
 /*
-    var SQLStorage = reuqire("html5.sql.storage").SQLStorage;
+    var SQLStorage = reuqire("html5.sql.storage").Monogram.SQLStorage;
 
-    new SQLStorage("mydb", "mytable", function(err, storage) {
-        storage.set("key", "value", function(err) {
-            storage.get("key", function(err, id, data) {
-                console.log(data);
+    function test1() {
+        new SQLStorage("mydb", "mytable", function(err, storage) {
+            storage.set("key", "value", function(err) {
+                storage.get("key", function(err, id, data) {
+                    console.log(data);
+                });
+                storage.clear();
             });
-            storage.clear();
         });
-    });
+    }
  */
 

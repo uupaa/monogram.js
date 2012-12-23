@@ -6,11 +6,11 @@
 // --- header ----------------------------------------------
 function StorageCache(storage, // @arg Instance: SQLStorage or WebStorage
                       fn) {    // @arg Function(= null): fn(err:Error, that:this)
-    this.init(storage, fn);
+    this._init(storage, fn);
 }
 
 StorageCache.prototype = {
-    init:   StorageCache_init,    // StorageCache#init(storage:Instance, fn:Function)
+    _init:  StorageCache_init,
     has:    StorageCache_has,     // StorageCache#has(id:String):void
     get:    StorageCache_get,     // StorageCache#get(id:String):void
     set:    StorageCache_set,     // StorageCache#set(id:String, data:String):void
@@ -21,8 +21,7 @@ StorageCache.prototype = {
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function StorageCache_init(storage, // @arg Instance: SQLStorage or WebStorage
-                           fn) {    // @arg Function(= null): fn(err:Error, that:this)
+function StorageCache_init(storage, fn) {
     var that = this;
 
     this._storage = storage;
@@ -65,8 +64,6 @@ function StorageCache_get(id) { // @arg String:
 function StorageCache_set(id,     // @arg String:
                           data) { // @arg String: "" is delete row.
                                   // @desc: add/update row
-    var that = this;
-
     if (data) {
         this._cache[id] = data;
     } else {
@@ -122,28 +119,31 @@ function _tick(that) {
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { StorageCache: StorageCache };
+    module.exports = { Monogram: { StorageCache: StorageCache } };
 } else {
-    global.StorageCache = StorageCache;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.StorageCache = StorageCache;
 }
 
 })(this.self || global);
 //}@storagecache
 
 /*
-    var SQLStorage   = reuqire("./html5.sql.storage").SQLStorage;
-    var StorageCache = reuqire("./html5.storage.cache").StorageCache;
+    var SQLStorage   = reuqire("./html5.sql.storage").Monogram.SQLStorage;
+    var StorageCache = reuqire("./html5.storage.cache").Monogram.StorageCache;
 
     var storage = new SQLStorage("mydb", "mytable", function(err, storage) {
     });
 
-    new StorageCache(storage, function(err, cache) {
-        cache.set("id", "base64data");
-        cache.has("id"); // true
+    function test1() {
+        new StorageCache(storage, function(err, cache) {
+            cache.set("id", "base64data");
+            cache.has("id"); // true
 
-        node.src = "data:image/png;base64" + cache.get("id");
+            node.src = "data:image/png;base64" + cache.get("id");
 
-        cache.clear();
-    });
+            cache.clear();
+        });
+    }
  */
 
