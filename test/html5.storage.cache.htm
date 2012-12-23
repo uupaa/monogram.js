@@ -5,11 +5,17 @@
 <script src="../js/logic.await.js"></script>
 </head><body>
 <script>
-//  var SQLStorage = require("html5.sql.storage").SQLStorage;
-//  var WebStorage = require("html5.web.storage").WebStorage;
-//  var StorageCache = require("html5.storage.cache").StorageCache;
+//  var SQLStorage = require("./html5.sql.storage").Monogram.SQLStorage;
+//  var WebStorage = require("./html5.web.storage").Monogram.WebStorage;
+//  var StorageCache = require("./html5.storage.cache").Monogram.StorageCache;
+//  var Await = require("./logic.await").Monogram.Await;
 
-    var await = storageReady.await(2);
+    var SQLStorage = Monogram.SQLStorage;
+    var WebStorage = Monogram.WebStorage;
+    var StorageCache = Monogram.StorageCache;
+    var Await = Monogram.Await;
+
+    var await = new Await(storageReady, 2);
 
     var cache1 = null,
         cache2 = null;
