@@ -1,18 +1,5 @@
 // html5.sql.storage.js: WebSQLStorage
 
-/*
-    var SQLStorage = reuqire("html5.sql.storage").SQLStorage;
-
-    new SQLStorage("mydb", "mytable", function(err, storage) {
-        storage.set("key", "value", function(err) {
-            storage.get("key", function(err, id, data) {
-                console.log(data);
-            });
-            storage.clear();
-        });
-    });
- */
-
 //{@sqlstorage
 (function(global) {
 
@@ -42,8 +29,10 @@ function SQLStorage_init(dbName, tableName, fn) {
     this._dbName = dbName;
     this._tableName = tableName;
 
+    var limit = (1024 * 1024 * 5) - 1024; // 5MB - 1KB
+
     // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
-    this._db = openDatabase(dbName, "1.0", dbName, 1024 * 1024 * 4.9);
+    this._db = openDatabase(dbName, "1.0", dbName, limit);
     this._db.transaction(function(tr) {
         tr.executeSql("CREATE TABLE IF NOT EXISTS " + tableName +
                       " (id TEXT PRIMARY KEY,data TEXT)", [],
@@ -155,4 +144,17 @@ if (typeof module !== "undefined") { // is modular
 
 })(this.self || global);
 //}@sqlstorage
+
+/*
+    var SQLStorage = reuqire("html5.sql.storage").SQLStorage;
+
+    new SQLStorage("mydb", "mytable", function(err, storage) {
+        storage.set("key", "value", function(err) {
+            storage.get("key", function(err, id, data) {
+                console.log(data);
+            });
+            storage.clear();
+        });
+    });
+ */
 

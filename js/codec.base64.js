@@ -4,19 +4,22 @@
 (function(global) {
 
 // --- header ----------------------------------------------
-function Base64(data, decodeBase64String) {
+function Base64(data,                 // @arg String/Array:
+                decodeBase64String) { // @arg Boolean(= false):
     Object.defineProperty &&
         Object.defineProperty(this, "ClassName", { value: "Base64" });
 
     this._data = [];
-    this.init(data, decodeBase64String);
+    this._init(data, decodeBase64String);
 }
+
 Base64.prototype = {
-    init:           Base64_init,
+    _init:          Base64_init,
     toArray:        Base64_toArray,         // Base64#toArray():Array/Base64Array
     toString:       Base64_toString,        // Base64#toString():String
     toBase64String: Base64_toBase64String   // Base64#toBase64String(safe:Boolean = false):Base64String
 };
+
 Base64.btoa = Base64_btoa;  // Base64#btoa(binary:String, fromXHR:Boolean = false):Base64String
 Base64.atob = Base64_atob;  // Base64#atob(base64:String):BinaryString
 
@@ -28,8 +31,7 @@ var _DB = {
     };
 
 // --- implement -------------------------------------------
-function Base64_init(data,                 // @arg String/Array:
-                     decodeBase64String) { // @arg Boolean(= false):
+function Base64_init(data, decodeBase64String) {
     if (Array.isArray(data)) {
         this._data = data; // by ref (not copy)
     } else if (typeof data === "string") {
@@ -173,19 +175,19 @@ function _decode(str) { // @arg Base64String:
 })();
 
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Base64: Base64 };
+    module.exports = { Monogram: { Base64: Base64 } };
 } else {
-    global.Base64 = Base64;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Base64 = Base64;
 }
 
 })(this.self || global);
 //}@base64
 
 /*
-    var Base64 = require("./codec.base64").Base64;
+    var Base64 = require("./codec.base64").Monogram.Base64;
 
-    // --- encode/decode String <-> Base64String ---
-    function test1() {
+    function test1() { // encode/decode String <-> Base64String
         var base64String = new Base64("abc").toBase64String(); // -> "YWJj"
         var decode = new Base64(base64String, true).toString(); // -> "abc"
 
@@ -193,15 +195,14 @@ if (typeof module !== "undefined") { // is modular
         console.log( decode === "abc" );
     }
 
-    function test2() {
+    function test2() { // some case
         console.log(new Base64("abc").toBase64String() === "YWJj" );
         console.log(new Base64("abcd").toBase64String() === "YWJjZA==" );
         console.log(new Base64("abcde").toBase64String() === "YWJjZGU=" );
         console.log(new Base64("abcdef").toBase64String() === "YWJjZGVm" );
     }
 
-    // --- BinaryData to Base64String ---
-    function test3() {
+    function test3() { // BinaryData to Base64String
         function xhr(url) {
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url, false); // false is sync

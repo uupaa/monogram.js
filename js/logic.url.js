@@ -1,90 +1,68 @@
-// logic.url.js: url helper API
-// @need: mm.js
+// logic.url.js: URL build, parse and resolver
 
 //{@url
-(function(global) { // @arg Global: window or global
+(function(global) {
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs() {
-    mm.url = mm.mix(mm_url, {           // mm.url(url:URLObject/URLString = ""):URLString/URLObject
-        resolve:    mm_url_resolve,     // mm.url.resolve(url:URLString):URLString
-        normalize:  mm_url_normalize,   // mm.url.normalize(url:URLString):URLString
-        buildQuery: mm_url_buildQuery,  // mm.url.buildQuery(obj:URLObject, joint:String = "&"):URLQueryString
-        parseQuery: mm_url_parseQuery   // mm.url.parseQuery(query:URLString/URLQueryString):URLQueryObject
-    });
-    mm.wiz(String.prototype, {
-        isURL:      String_isURL        // "".isURL(isRelative:Boolean = false):Boolean
-    });
-    mm.wiz(RegExp, {
-        FILE:       /^(file:)\/{2,3}(?:localhost)?([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/i,
-                    //                 localhost    /dir/f.ext ?key=value    #hash
-                    //  [1]                         [2]        [3]          [4]
-        URL:        /^(\w+:)\/\/((?:([\w:]+)@)?([^\/:]+)(?::(\d*))?)([^ :?#]*)(?:(\?[^#]*))?(?:(#.*))?$/,
-                    //  https://    user:pass@    server   :port    /dir/f.ext   ?key=value     #hash
-                    //  [1]         [3]           [4]       [5]     [6]         [7]            [8]
-        PATH:       /^([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/
-                    //  /dir/f.ext   key=value    hash
-                    //  [1]          [2]          [3]
-    });
+function URL(url) { // @arg URLObject/URLString(= ""):
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "URL" });
+
+    return !url ? URL_parse(global.location.href)
+                : typeof url === "string" ? URL_parse(url)
+                                          : URL_build(url);
 }
+
+URL.build       = URL_build;        // URL.build(URLObject):URLString
+URL.parse       = URL_parse;        // URL.parse(url:URLString):URLObject
+URL.isURL       = URL_isURL;        // URL.isURL(url:String, isRelative:Boolean = false):Boolean
+URL.resolve     = URL_resolve;      // URL.resolve(url:URLString = ""):URLString
+URL.normalize   = URL_normalize;    // URL.normalize(url:URLString):URLString
+URL.buildQuery  = URL_buildQuery;   // URL.buildQuery(obj:URL, joint:String = "&"):URLQueryString
+URL.parseQuery  = URL_parseQuery;   // URL.parseQuery(query:URLString/URLQueryString):URLQueryObject
+URL.FILE        = /^(file:)\/{2,3}(?:localhost)?([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/i;
+                  //                 localhost    /dir/f.ext ?key=value    #hash
+                  //  [1]                         [2]        [3]          [4]
+URL.URL         = /^(\w+:)\/\/((?:([\w:]+)@)?([^\/:]+)(?::(\d*))?)([^ :?#]*)(?:(\?[^#]*))?(?:(#.*))?$/;
+                  //  https://    user:pass@    server   :port    /dir/f.ext   ?key=value     #hash
+                  //  [1]         [3]           [4]       [5]     [6]         [7]            [8]
+URL.PATH        = /^([^ ?#]*)(?:(\?[^#]*))?(?:(#.*))?$/;
+                  //  /dir/f.ext   key=value    hash
+                  //  [1]          [2]          [3]
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function String_isURL(isRelative) { // @arg Boolean(= false):
-                                    // @ret Boolean: true is absolute/relative url
-                                    // @desc: is absolute url or relative url
-                                    // @help: String#isURL
-    if (isRelative) {
-        return RegExp.URL.test("http://a.a/" + this.replace(/^\/+/, ""));
-    }
-    return /^(https?|wss?):/.test(this) ? RegExp.URL.test(this)
-                                        : RegExp.FILE.test(this);
-}
-
-function mm_url(url) { // @arg URLObject/URLString(= ""): "https://..."
-                       //      URLObject: { protocol, host, pathname, search, fragment }
-                       // @ret URLString/URLObject:
-                       // @desc: get current URL, parse URL, build URL
-                       // @help: mm.url
-   return !url ? global.location.href
-         : typeof url === "string" ? _url_parse(url)
-                                   : _url_build(url);
-}
-
-function _url_build(obj) { // @arg URLObject/Object: need { protocol, host, pathname, search, fragment }
-                           // @ret URLString: "{protocol}//{host}{pathname}?{search}#{fragment}"
-                           // @inner: build URL
+function URL_build(obj) { // @arg URLObject: { protocol, host, pathname, search, fragment }
+                          // @ret URLString: "{protocol}//{host}{pathname}?{search}#{fragment}"
+                          // @desc: build URL
     return [obj.protocol,
             obj.protocol ? (obj.protocol === "file:" ? "///" : "//") : "",
             obj.host     || "", obj.pathname || "/",
             obj.search   || "", obj.fragment || ""].join("");
 }
 
-function _url_parse(url) { // @arg URLString: abs or rel,
-                           //                   "http://user:pass@example.com:8080/dir1/dir2/file.ext?a=b&c=d#fragment"
-                           // @ret URLObject: { href, protocol, scheme, secure, host,
-                           //                   auth, hostname, port, pathname, dir, file,
-                           //                   search, query, fragment, ok }
-                           //     href     - String:  "http://user:pass@example.com:8080/dir1/dir2/file.ext?a=b;c=d#fragment"
-                           //     protocol - String:  "http:"
-                           //     scheme   - String:  "http:"
-                           //     secure   - Boolean: false
-                           //     host     - String:  "user:pass@example.com:8080". has auth
-                           //     auth     - String:  "user:pass"
-                           //     hostname - String:  "example.com"
-                           //     port     - Number:  8080
-                           //     pathname - String:  "/dir1/dir2/file.ext"
-                           //     dir      - String:  "/dir1/dir2"
-                           //     file     - String:  "file.ext"
-                           //     search   - String:  "?a=b&c=d"
-                           //     query    - URLQueryObject: { a: "b", c: "d" }
-                           //     fragment - String:  "#fragment"
-                           //     ok       - Boolean: true is valid url
-                           // @inner: parse URL
+function URL_parse(url) { // @arg URLString: absolute url or relative url
+                          // @ret URLObject: { href, ... fragment, ok }
+                          // @desc: parse URL
+    // href     - String:  "http://user:pass@example.com:8080/dir1/dir2/file.ext?a=b;c=d#fragment"
+    // protocol - String:  "http:"
+    // scheme   - String:  "http:"
+    // secure   - Boolean: false
+    // host     - String:  "user:pass@example.com:8080". has auth
+    // auth     - String:  "user:pass"
+    // hostname - String:  "example.com"
+    // port     - Number:  8080
+    // pathname - String:  "/dir1/dir2/file.ext"
+    // dir      - String:  "/dir1/dir2"
+    // file     - String:  "file.ext"
+    // search   - String:  "?a=b&c=d"
+    // query    - URLQueryObject: { a: "b", c: "d" }
+    // fragment - String:  "#fragment"
+    // ok       - Boolean: true is valid url
 
-    function _extends(obj) { // @arg URLObject:
-                             // @ret URLObject:
+    function _set(obj) { // @arg URLObject:
+                         // @ret URLObject:
         var ary = obj.pathname.split("/");
 
         obj.href       = obj.href     || "";
@@ -99,7 +77,7 @@ function _url_parse(url) { // @arg URLString: abs or rel,
         obj.file       = ary.pop();
         obj.dir        = ary.join("/") + "/";
         obj.search     = obj.search   || "";
-        obj.query      = mm_url_parseQuery(obj.search);
+        obj.query      = URL_parseQuery(obj.search);
         obj.fragment   = obj.fragment || "";
         obj.ok         = obj.ok       || true;
         return obj;
@@ -107,34 +85,48 @@ function _url_parse(url) { // @arg URLString: abs or rel,
 
     var m, ports = { "http:": 80, "https": 443, "ws:": 81, "wss:": 816 };
 
-    m = RegExp.FILE.exec(url);
+    m = URL.FILE.exec(url);
     if (m) {
-        return _extends({
-            href: url, protocol: m[1], pathname: m[2],
-                       search:   m[3], fragment: m[4] });
+        return _set({ href:     url,
+                      protocol: m[1], pathname: m[2],
+                      search:   m[3], fragment: m[4] });
     }
-    m = RegExp.URL.exec(url);
+    m = URL.URL.exec(url);
     if (m) {
-        return _extends({
-            href: url, protocol: m[1],
-                       secure:   m[1] === "https:" || m[1] === "wss:",
-                       host:     m[2], auth:   m[3],
-                       hostname: m[4], port:   m[5] ? +m[5] : (ports[m[1]] || 0),
-                       pathname: m[6], search: m[7],
-                       fragment: m[8] });
+        return _set({ href:     url,
+                      protocol: m[1],
+                      secure:   m[1] === "https:" || m[1] === "wss:",
+                      host:     m[2], auth:   m[3],
+                      hostname: m[4], port:   m[5] ? +m[5] : (ports[m[1]] || 0),
+                      pathname: m[6], search: m[7],
+                      fragment: m[8] });
     }
-    m = RegExp.PATH.exec(url);
+    m = URL.PATH.exec(url);
     if (m) {
-        return _extends({
-            href: url, pathname: m[1], search: m[2], fragment: m[3] });
+        return _set({ href:     url,
+                      pathname: m[1], search: m[2], fragment: m[3] });
     }
-    return _extends({ href: url, pathname: url, ok: false });
+    return _set({ href: url, pathname: url, ok: false });
 }
 
-function mm_url_resolve(url) { // @arg URLString: relative URL or absolute URL
-                               // @ret URLString: absolute URL
-                               // @desc: convert relative URL to absolute URL
-                               // @help: mm.url.resolve
+function URL_isURL(url,          // @arg String:
+                   isRelative) { // @arg Boolean(= false):
+                                 // @ret Boolean: true is absolute/relative url
+                                 // @desc: is absolute url or relative url
+                                 // @help: URL.isURL
+    if (isRelative) {
+        return URL.URL.test("http://a.a/" + url.replace(/^\/+/, ""));
+    }
+    return /^(https?|wss?):/.test(url) ? URL.URL.test(url)
+                                       : URL.FILE.test(url);
+}
+
+function URL_resolve(url) { // @arg URLString(= ""): relative URL or absolute URL
+                            // @ret URLString: absolute URL
+                            // @desc: convert relative URL to absolute URL
+                            // @help: URL.resolve
+    url = url || global.location.href;
+
     if (/^(https?|file|wss?):/.test(url)) { // is absolute url?
         return url;
     }
@@ -144,11 +136,12 @@ function mm_url_resolve(url) { // @arg URLString: relative URL or absolute URL
     return a.cloneNode(false).href; // -> "http://example.com/hoge.htm"
 }
 
-function mm_url_normalize(url) { // @arg URLString:
-                                 // @ret URLString:
-                                 // @help: mm.url.normalize
-                                 // @desc: path normalize
-    var rv = [], path, obj = _url_parse(url),
+function URL_normalize(url) { // @arg URLString:
+                              // @ret URLString:
+                              // @help: URL.normalize
+                              // @desc: path normalize
+    var rv = [], path,
+        obj = URL_parse(url),
         dots = /^\.+$/,
         dirs = obj.dir.split("/"),
         i = 0, iz = dirs.length;
@@ -165,30 +158,39 @@ function mm_url_normalize(url) { // @arg URLString:
     }
     // tidy slash "///" -> "/"
     obj.pathname = ("/" + rv.join("/") + "/").replace(/\/+/g, "/") + obj.file;
-    return _url_build(obj); // rebuild
+    return URL_build(obj); // rebuild
 }
 
-function mm_url_buildQuery(obj,     // @arg URLQueryObject: { key1: "a", key2: "b", key3: [0, 1] }
-                           joint) { // @arg String(= "&"): joint string "&" or "&amp;" or ";"
-                                    // @ret URLQueryString: "key1=a&key2=b&key3=0&key3=1"
-                                    // @help: mm.url.buileQuery
-                                    // @desc: build query string
+function URL_buildQuery(obj,     // @arg URLQueryObject: { key1: "a", key2: "b", key3: [0, 1] }
+                        joint) { // @arg String(= "&"): joint string "&" or "&amp;" or ";"
+                                 // @ret URLQueryString: "key1=a&key2=b&key3=0&key3=1"
+                                 // @help: URL.buileQuery
+                                 // @desc: build query string
     joint = joint || "&";
 
-    return mm.map(obj, function(value, key) {
-        key = global.encodeURIComponent(key);
+    var rv = [], token = [], i = 0, iz = 0, key, encKey, value;
 
-        return Array.toArray(value).map(function(v) {
-            return key + "=" + global.encodeURIComponent(v); // "key3=0;key3=1"
-        }).join(joint);
-    }).join(joint); // "key1=a;key2=b;key3=0;key3=1"
+    for (key in obj) {
+        encKey = global.encodeURIComponent(key);
+        value = obj[key];
+
+        if (!Array.isArray(value)) {
+            value = [value];
+        }
+        // "key3=0&key3=1"
+        for (token = [], i = 0, iz = value.length; i < iz; ++i) {
+            token.push( enckey + "=" + global.encodeURIComponent(value[i]) );
+        }
+        rv.push( token.join(joint) );
+    }
+    return rv.join(joint); // "key1=a&key2=b&key3=0&key3=1"
 }
 
-function mm_url_parseQuery(query) { // @arg URLString/URLQueryString: "key1=a;key2=b;key3=0;key3=1"
-                                    // @ret URLQueryObject: { key1: "a", key2: "b", key3: ["0", "1"] }
-                                    // @help: mm.url.parseQuery
-                                    // @desc: parse query string
-    function _parse(_, key, value) {
+function URL_parseQuery(query) { // @arg URLString/URLQueryString: "key1=a;key2=b;key3=0;key3=1"
+                                 // @ret URLQueryObject: { key1: "a", key2: "b", key3: ["0", "1"] }
+                                 // @help: URL.parseQuery
+                                 // @desc: parse query string
+    function _parseQuery(_, key, value) {
         var k = global.encodeURIComponent(key),
             v = global.encodeURIComponent(value);
 
@@ -210,14 +212,64 @@ function mm_url_parseQuery(query) { // @arg URLString/URLQueryString: "key1=a;ke
         query = query.split("?")[1].split("#")[0];
     }
     query.replace(/&amp;|&|;/g, ";"). // "&amp;" or "&" or ";" -> ";"
-          replace(/(?:([^\=]+)\=([^\;]+);?)/g, _parse);
+          replace(/(?:([^\=]+)\=([^\;]+);?)/g, _parseQuery);
 
     return rv;
 }
 
-// --- export --------------------------------
-_defineLibraryAPIs();
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Monogram: { URL: URL } };
+} else {
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.URL = URL;
+}
 
 })(this.self || global);
 //}@url
+
+/*
+    var URL = require("./logic.url").Monogram.URL;
+
+    function test1() { // parse and build
+        var absurl = "http://example.com/dir/file.exe?key=value#hash";
+        var urlObject1 = URL(absurl); // parse
+        var urlObject2 = URL.parse(absurl); // parse
+
+        var result1 = URL.build(urlObject1) === absurl; // build
+        var result2 = URL.build(urlObject2) === absurl; // build
+
+        if (result1 && result2) {
+            console.log("true");
+        } else {
+            console.log("false");
+        }
+    }
+
+    function test2() { // isURL
+        var url = "http://example.com";
+
+        if ( URL.isURL(url) === true) {
+            console.log("true");
+        } else {
+            console.log("false");
+        }
+    }
+
+    function test3() { // normalize
+        var url = "http://example.com///..//hoge/....//huga.ext";
+
+        console.log( URL.normalize(url) );
+    }
+
+    function test4() { // parse and build QueryString
+        var url = "http://example.com?key1=a;key2=b;key3=0;key3=1";
+
+        var urlQueryObject = URL.parseQuery(url);
+
+        var result = JSON.stringify( urlQueryObject );
+
+        console.log( result === '{"key1":"a","key2":"b","key3":["0","1"]}' );
+    }
+ */
 

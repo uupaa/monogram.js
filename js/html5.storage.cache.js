@@ -1,22 +1,5 @@
 // html5.storage.cache.js: Storage Cache
 
-/*
-    var SQLStorage   = reuqire("html5.sql.storage").SQLStorage;
-    var StorageCache = reuqire("html5.storage.cache").StorageCache;
-
-    var storage = new SQLStorage("mydb", "mytable", function(err, that) {
-    });
-
-    new StorageCache(storage, function(err, cache) {
-        cache.set("id", "base64data");
-        cache.has("id"); // true
-
-        node.src = "data:image/png;base64" + cache.get("id");
-
-        cache.clear();
-    });
- */
-
 //{@storagecache
 (function(global) {
 
@@ -146,4 +129,21 @@ if (typeof module !== "undefined") { // is modular
 
 })(this.self || global);
 //}@storagecache
+
+/*
+    var SQLStorage   = reuqire("./html5.sql.storage").SQLStorage;
+    var StorageCache = reuqire("./html5.storage.cache").StorageCache;
+
+    var storage = new SQLStorage("mydb", "mytable", function(err, storage) {
+    });
+
+    new StorageCache(storage, function(err, cache) {
+        cache.set("id", "base64data");
+        cache.has("id"); // true
+
+        node.src = "data:image/png;base64" + cache.get("id");
+
+        cache.clear();
+    });
+ */
 

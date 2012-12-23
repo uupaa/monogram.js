@@ -10,7 +10,7 @@ function Ajax() {
         Object.defineProperty(this, "ClassName", { value: "Ajax" });
 }
 Ajax.prototype = {
-    load        Ajax_load       // Ajax#load(url:String, param:Object, fn:Function):void
+    load        Ajax_load       // Ajax#load(url:String, param:Object, fn:Function):this
 };
 
 // --- library scope vars ----------------------------------
@@ -26,9 +26,11 @@ function Ajax_load(url,   // @arg String:
                           //        "text"          -> load Text to Text
                           //        "text/js"       -> load Text to evvalJavaScript
                           //        "text/node"     -> load Text to HTMLFragment
-                   fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node)
+                   fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node, time:Integer)
                           //    fn.err - Error: error Object or null
                           //    fn.data - String/Base64String/Node:
+                          //    fn.time - Integer: from Last-Modified header or current time
+                          // @ret this:
                           // @desc: get remote data
     param = param || {};
 
@@ -39,36 +41,44 @@ function Ajax_load(url,   // @arg String:
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             var text = xhr.responseText;
+            var time = Date.now();
+
+            // --- get Last-Modified header ---
+            var lastModified = xhr.getResponseHeader("Last-Modified");
+            if (lastModified) {
+                time = Date.parse(lastModified);
+            }
 
             switch (xhr.status) {
             case 200:
             case 201:
                 // "image/base64" -> Base64String
                 if (/base64$/i.test(type)) {
-                    return isAwait ? fn.pass(Base64.btoa(text, true))
-                                   : fn(null, Base64.btoa(text, true));
+                    return isAwait ? fn.pass({ data: Base64.btoa(text, true),
+                                               time: time })
+                                   : fn(null, Base64.btoa(text, true), time);
                 }
                 // "text/node" -> <body>
                 if (/node$/i.test(type)) {
                     var body = document.createElement("body");
 
                     body.innerHTML = text;
-                    return isAwait ? fn.pass(body)
-                                   : fn(null, body);
+                    return isAwait ? fn.pass({ data: body, time: time })
+                                   : fn(null, body, time);
                 }
                 // "text/js" -> eval(js)
                 if (/js$/i.test(type)) {
                     Script.run(text);
-                    return isAwait ? fn.pass("")
-                                   : fn(null, "");
+                    return isAwait ? fn.pass({ data: "", time: time })
+                                   : fn(null, "", time);
                 }
-                isAwait ? fn.pass(text)
-                        : fn(null, text);
+                isAwait ? fn.pass({ data: text, time: time })
+                        : fn(null, text, time);
                 break;
             case 304:
-            defaut:
-                isAwait ? fn.miss(new TypeError(xhr.status))
-                        : fn(new TypeError(xhr.status), "");
+            default:
+                isAwait ? fn.miss({ data: new TypeError(xhr.status), time: time })
+                        : fn(new TypeError(xhr.status), "", time);
             }
         }
     };
@@ -78,6 +88,8 @@ function Ajax_load(url,   // @arg String:
     }
     xhr.withCredentials = true;
     xhr.send(null);
+
+    return this;
 }
 
 // --- build and export API --------------------------------
@@ -89,3 +101,11 @@ if (typeof module !== "undefined") { // is modular
 
 })(this.self || global);
 //}@ajax
+
+/*
+    var Ajax = require("./Ajax").Ajax;
+
+    new Ajax().load(url, { "text" }, function(err, result) {
+    });
+ */
+
