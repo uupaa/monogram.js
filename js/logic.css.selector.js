@@ -1,4 +1,4 @@
-// logic.css.selector.js
+// logic.css.selector.js:
 
 // - selector() function limits
 // -- unsupported impossible rules ( ":root:first-child", etc ) in W3C Test Suite - css3_id27a
@@ -7,11 +7,10 @@
 // -- unsupported ":not()", ":not(*)"                           in WebKit querySelectorAll()
 
 //{@cssselector
-(function(global,
-          document) {
+(function(global, document) {
 
 // --- header ----------------------------------------------
-function CSSSelector(token,     // @arg CSSSelectorTokenObject
+function CSSSelector(token,     // @arg CSSSelectorTokenObject:
                      context) { // @arg Node:
                                 // @ret NodeArray:
     return _selector(token, context);
@@ -592,11 +591,21 @@ function _trimQuote(str) { // @arg String:
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { CSSSelector: CSSSelector };
+    module.exports = { Monogram: { CSSSelector: CSSSelector } };
 } else {
-    global.CSSSelector = CSSSelector;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.CSSSelector = CSSSelector;
 }
 
 })(this.self || global, this.document);
 //}@cssselector
+
+/*
+    var Tokenizer = reuqire("./logic.css.selector").Monogram.CSSSelectorTokenizer;
+    var CSSSelector = reuqire("./logic.css.selector").Monogram.CSSSelector;
+
+    function test1() {
+        var NodeArray = CSSSelector( Tokenizer("E>F>G") );
+    }
+ */
 

@@ -1,15 +1,5 @@
 // html5.web.storage.js: WebStorage
 
-/*
-    var WebStorage = reuqire("html5.web.storage").WebStorage;
-
-    new WebStorage("mydb", "mytable", function(err, storage) {
-        storage.set("key", "value");
-        node.src = "data:image/png;base64" + storage.get("key");
-        storage.clear();
-    });
- */
-
 //{@webstorage
 (function(global) {
 
@@ -17,11 +7,14 @@
 function WebStorage(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
                     fn) {      // @arg Function(= null): fn(err:Error, instance:this)
-    this.init(dbName, tableName, fn);
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "WebStorage" });
+
+    this._init(dbName, tableName, fn);
 }
 
 WebStorage.prototype = {
-    init:   WebStorage_init,    // WebStorage#init(dbName:String, tableName:String, fn:Function = null):void
+    _init:  WebStorage_init,
     has:    WebStorage_has,     // WebStorage#has(id:String, fn:Function = null):Boolean
     get:    WebStorage_get,     // WebStorage#get(id:String, fn:Function = null):Base64String
     set:    WebStorage_set,     // WebStorage#set(id:String, data:String, fn:Function = null):this
@@ -101,11 +94,23 @@ function WebStorage_tearDown(fn) { // @arg Function(= null): fn(err:Error)
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { WebStorage: WebStorage };
+    module.exports = { Monogram: { WebStorage: WebStorage } };
 } else {
-    global.WebStorage = WebStorage;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.WebStorage = WebStorage;
 }
 
 })(this.self || global);
 //}@webstorage
 
+/*
+    var WebStorage = reuqire("./html5.web.storage").Monogram.WebStorage;
+
+    function test1() {
+        new WebStorage("mydb", "mytable", function(err, storage) {
+            storage.set("key", "value");
+            node.src = "data:image/png;base64" + storage.get("key");
+            storage.clear();
+        });
+    }
+ */

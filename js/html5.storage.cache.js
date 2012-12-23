@@ -6,6 +6,9 @@
 // --- header ----------------------------------------------
 function StorageCache(storage, // @arg Instance: SQLStorage or WebStorage
                       fn) {    // @arg Function(= null): fn(err:Error, that:this)
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "StorageCache" });
+
     this._init(storage, fn);
 }
 

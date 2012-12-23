@@ -1,19 +1,18 @@
-// Math.easing.js: easing function API
+// logic.easing.js: easing functions
 //
 // This code block base idea from Robert Penner's easing equations.
 //      (c) 2001 Robert Penner, all rights reserved.
 //      http://www.robertpenner.com/easing_terms_of_use.html
 
 //{@easing
-(function() {
+(function(global) {
 
 // --- header ----------------------------------------------
+function Easing() {
+}
 
 // --- library scope vars ----------------------------------
-
-// --- implement -------------------------------------------
-var fn,
-    easing = {
+var _easing = {
         linear: "(c*t/d+b)", // linear(t, b, c, d,  q1, q1, q3, q4)
                              //     t:Number - current time (from 0)
                              //     b:Number - beginning value
@@ -56,13 +55,29 @@ var fn,
                 "?(c*(q2*(q1-=(2.25/q3))*q1+.9375)+b)" +
                 ":(c*(q2*(q1-=(2.625/q3))*q1+.984375)+b))"
 };
+// --- implement -------------------------------------------
 
 // --- export --------------------------------
-for (fn in easing) {
-    Math[fn] = new Function("t,b,c,d,q1,q2,q3,q4", "return " + easing[fn]);
-    Math[fn].src = easing[fn];
+for (var fn in _easing) {
+    Easing[fn] = new Function("t,b,c,d,q1,q2,q3,q4", "return " + _easing[fn]);
+    Easing[fn].src = _easing[fn];
 }
 
-})();
+// --- build and export API --------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Monogram: { Easing: Easing } };
+} else {
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Easing = Easing;
+}
+
+})(this.self || global);
 //}@easing
+
+/*
+    var Easing = require("./logic.easing").Monogram.Easing;
+
+    Easing.linear(t, b, c, d)
+
+ */
 

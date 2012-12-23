@@ -20,12 +20,12 @@ function Await(fn,       // @arg Function: fn(err:Error, args:MixArray)
 }
 
 Await.prototype = {
-    missable:   Await_missable,     // Await#missable(count:Integer):this
-    add:        Await_add,          // Await#add(count:Integer):this
-    halt:       Await_halt,         // Await#halt():this
-    pass:       Await_pass,         // Await#pass(value:Mix = undefined):this
-    miss:       Await_miss,         // Await#miss(value:Mix = undefined):this
-    getStatus:  Await_getStatus     // Await#getStatus():Object
+    missable:   Await_missable, // Await#missable(count:Integer):this
+    add:        Await_add,      // Await#add(count:Integer):this
+    halt:       Await_halt,     // Await#halt():this
+    pass:       Await_pass,     // Await#pass(value:Mix = undefined):this
+    miss:       Await_miss,     // Await#miss(value:Mix = undefined):this
+    getStatus:  Await_getStatus // Await#getStatus():Object
 };
 
 // --- library scope vars ----------------------------------
@@ -126,19 +126,19 @@ function Await_getStatus() { // @ret Object: { missable, events, pass, miss, sta
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Await: Await };
+    module.exports = { Monogram: { Await: Await } };
 } else {
-    global.Await = Await;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Await = Await;
 }
 
 })(this.self || global);
 //}@await
 
 /*
-    var Await = require("./logic.await").Await;
+    var Await = require("./logic.await").Monogram.Await;
 
-    // --- await sync 4 events ---
-    function test1() {
+    function test1() { // await sync 4 events
         var await = new Await(callback, 4);
 
         [1,2,3].forEach(function(value) {
@@ -159,8 +159,7 @@ if (typeof module !== "undefined") { // is modular
         }
     }
 
-    // --- await async 4 events (missable 1) ---
-    function test2() {
+    function test2() { // await async 4 events (missable 1)
         var await = new Await(callback, 4).missable(1);
 
         setTimeout(function() { await.pass(1); }, Math.random() * 1000); // goo

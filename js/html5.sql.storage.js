@@ -7,6 +7,9 @@
 function SQLStorage(dbName,    // @arg String: db name
                     tableName, // @arg String: table name
                     fn) {      // @arg Function(= null): fn(err:Error, instance:this)
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "SQLStorage" });
+
     this._init(dbName, tableName, fn);
 }
 
@@ -147,7 +150,7 @@ if (typeof module !== "undefined") { // is modular
 //}@sqlstorage
 
 /*
-    var SQLStorage = reuqire("html5.sql.storage").Monogram.SQLStorage;
+    var SQLStorage = reuqire("./html5.sql.storage").Monogram.SQLStorage;
 
     function test1() {
         new SQLStorage("mydb", "mytable", function(err, storage) {

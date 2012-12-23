@@ -1,15 +1,18 @@
 // logic.messaging.js: Messaging API
 
 //{@msg
-(function(global) { // @arg Global: window or global
+(function(global) {
 
 // --- header ----------------------------------------------
 function Msg() {
-    this.init();
+    Object.defineProperty &&
+        Object.defineProperty(this, "ClassName", { value: "Msg" });
+
+    this._init();
 }
 
 Msg.prototype = {
-    init:           Msg_init,           // Msg#init():this
+    _init:          Msg_init,
     bind:           Msg_bind,           // Msg#bind(...):this
     unbind:         Msg_unbind,         // Msg#unbind(...):this
     list:           Msg_list,           // Msg#list():ClassNameStringArray
@@ -162,12 +165,10 @@ function _values(obj) { // @arg Object:
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Msg: Msg };
+    module.exports = { Monogram: { Msg: Msg } };
 } else if (typeof mm !== "undefined") {
-    global.mm.Msg = Msg;
-    global.mm.msg = {};
-} else {
-    global.Msg = Msg;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Msg = Msg;
 }
 
 })(this.self || global);

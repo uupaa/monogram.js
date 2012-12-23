@@ -1,4 +1,4 @@
-// logic.css.selector.tokenizer.js
+// logic.css.selector.tokenizer.js:
 
 // - selector() function limits
 // -- unsupported impossible rules ( ":root:first-child", etc ) in W3C Test Suite - css3_id27a
@@ -10,8 +10,8 @@
 (function(global) {
 
 // --- header ----------------------------------------------
-function CSSSelectorTokenizer(selector) { // @arg: CSSSelectorExpressionString
-                                          // @ret: CSSSelectorTokenObject
+function CSSSelectorTokenizer(selector) { // @arg CSSSelectorExpressionString:
+                                          // @ret CSSSelectorTokenObject:
     return _tokenizer(selector);
 }
 
@@ -203,9 +203,10 @@ function _innerLoop(expr,  // @arg String: CSS3 Selector Expression
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { CSSSelectorTokenizer: CSSSelectorTokenizer };
+    module.exports = { Monogram: { CSSSelectorTokenizer: CSSSelectorTokenizer } };
 } else {
-    global.CSSSelectorTokenizer = CSSSelectorTokenizer;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.CSSSelectorTokenizer = CSSSelectorTokenizer;
 }
 
 })(this.self || global);
