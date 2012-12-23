@@ -94,18 +94,19 @@ function Ajax_load(url,   // @arg String:
 
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Ajax: Ajax };
+    module.exports = { Monogram: { Ajax: Ajax } };
 } else {
-    global.Ajax = Ajax;
+    global.Monogram || (global.Monogram = {});
+    global.Monogram.Ajax = Ajax;
 }
 
 })(this.self || global);
 //}@ajax
 
 /*
-    var Ajax = require("./Ajax").Ajax;
+    var Ajax = require("./Ajax").Monogram.Ajax;
 
-    new Ajax().load(url, { "text" }, function(err, result) {
+    new Ajax().load(url, { type: "text" }, function(err, result, time) {
     });
  */
 
