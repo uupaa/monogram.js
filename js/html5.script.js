@@ -1,7 +1,7 @@
 // html5.script.js: eval JavaScript
 
 //{@script
-(function() {
+(function(global) {
 
 // --- header ----------------------------------------------
 function Script() {
@@ -19,10 +19,9 @@ function Script_run(expression) { // @arg String: JavaScript Expression
         head = document.head ||
                document.getElementsByTagName("head")[0];
 
-    head.appendChild(script);
-
     script.charset = "utf-8";
     script.text = expression;
+    head.appendChild(script);
 }
 
 // --- build and export API --------------------------------

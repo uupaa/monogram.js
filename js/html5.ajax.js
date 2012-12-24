@@ -1,5 +1,5 @@
 // html5.ajax.js
-// @need: codec.base64.js, html5.script.js
+// @call: codec.base64.js, html5.script.js
 
 //{@ajax
 (function(global) {
@@ -9,6 +9,7 @@ function Ajax() {
     Object.defineProperty &&
         Object.defineProperty(this, "ClassName", { value: "Ajax" });
 }
+
 Ajax.prototype = {
     load:   Ajax_load   // Ajax#load(url:String, param:Object, fn:Function):this
 };
@@ -49,9 +50,9 @@ function Ajax_load(url,   // @arg String:
             case 201:
                 // "image/base64" -> Base64String
                 if (/base64$/i.test(type)) {
-                    return isAwait ? fn.pass({ data: Base64.btoa(text, true),
+                    return isAwait ? fn.pass({ data: Monogram.Base64.btoa(text, true),
                                                time: time })
-                                   : fn(null, Base64.btoa(text, true), time);
+                                   : fn(null, Monogram.Base64.btoa(text, true), time);
                 }
                 // "text/node" -> <body>
                 if (/node$/i.test(type)) {
