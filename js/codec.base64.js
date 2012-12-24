@@ -64,14 +64,12 @@ function Base64_btoa(binary,    // @arg String:
     if (global.btoa) {
         if (!fromXHR) {
             try {
-                return global.btoa(binary);
+                return global.btoa(binary); // BinaryString to Base64String
             } catch (o_o) {
-                // maybe. xhr binary has non ascii data
+                // maybe. xhr binary has non ascii value
             }
         }
-        return global.btoa(
-                    String.fromCharCode.apply(null, _toByteArray(binary))
-               );
+        return global.btoa( _toAsciiString(binary) );
     }
     return _encode( _toByteArray(binary) );
 }
@@ -87,6 +85,18 @@ function Base64_atob(base64) { // @arg Base64String:
     }
     return _toString( _decode(base64) );
 }
+
+function _toAsciiString(binary) { // @arg String: has non ascii value
+                                  // @ret BinaryString:
+                                  // @inner: filer
+    var rv = Array(binary.length), i = 0, iz = binary.length;
+
+    for (; i < iz; ++i) {
+        rv[i] = String.fromCharCode( binary.charCodeAt(i) & 0xFF ); // 0xffff -> 0xff
+    }
+    return rv.join("");
+}
+
 
 function _toString(ary) { // @arg Array:
                           // @ret String:
