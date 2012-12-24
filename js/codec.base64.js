@@ -97,7 +97,6 @@ function _toAsciiString(binary) { // @arg String: has non ascii value
     return rv.join("");
 }
 
-
 function _toString(ary) { // @arg Array:
                           // @ret String:
                           // @inner: UTF16Array to String

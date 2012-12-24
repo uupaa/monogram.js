@@ -65,8 +65,8 @@ function Ajax_load(url,   // @arg String:
                 // "text/js" -> eval(js)
                 if (/js$/i.test(type)) {
                     Script.run(text);
-                    return isAwait ? fn.pass({ data: "", time: time })
-                                   : fn(null, "", time);
+                    return isAwait ? fn.pass({ data: text, time: time })
+                                   : fn(null, text, time);
                 }
                 isAwait ? fn.pass({ data: text, time: time })
                         : fn(null, text, time);
