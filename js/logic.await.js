@@ -17,6 +17,8 @@ function Await(fn,       // @arg Function: fn(err:Error, args:MixArray)
     this._state = "progress";   // String: "progress", "done", "error", "halt"
     this._args  = [];           // MixArray: pass(arg), miss(arg) collections
     this._fn    = fn;           // Function: callback(err:Error, args:MixArray)
+
+    _judge(this); // events is 0 -> done
 }
 
 Await.prototype = {
