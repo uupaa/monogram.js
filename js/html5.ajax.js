@@ -11,7 +11,8 @@ function Ajax() {
 }
 
 Ajax.prototype = {
-    load:   Ajax_load   // Ajax#load(url:String, param:Object, fn:Function):this
+    constructor:Ajax
+    load:       Ajax_load   // Ajax#load(url:String, param:Object, fn:Function):this
 };
 
 // --- library scope vars ----------------------------------

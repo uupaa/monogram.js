@@ -24,6 +24,7 @@ function Color(color) { // @arg RGBAColorArray:
     this.init(color);
 }
 Color.prototype = {
+    constructor:Color,
     init:       Color_init,             // Color#init(color:RGBAColorArray/HSLAObject/HSVAObject)
     gray:       Color_gray,             // Color#gray():Color
     hsla:       Color_hsla,             // Color#hsla():HSLAObject - { h, s, l, a }

@@ -1,0 +1,69 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/html5.sql.storage.js"></script>
+</head><body>
+<script>
+var storage = null;
+
+function setup() {
+    storage = new Monogram.SQLStorage();
+    storage.setup("mydb", "mytable", function(err, storage) {
+        err ? console.log("SQLStorage#setup ng")
+            : console.log("SQLStorage#setup ok");
+    });
+}
+function tearDown() {
+    storage.tearDown();
+}
+
+function set(id, hash, time, data) {
+    storage.set(id, [hash, time, data], function(err) {
+    });
+}
+function get(id) {
+    storage.get(id, function(err, result) {
+        console.log( JSON.stringify( result ) );
+    });
+}
+function has(id) {
+    storage.has(id, function(err, has) {
+        console.log( id, has );
+    });
+}
+function fetch() {
+    storage.fetch(function(err, result) {
+        console.log( result );
+    });
+}
+function remove(id) {
+    storage.remove(id);
+}
+function clear() {
+    storage.clear(function(err) {
+        err ? console.log("SQLStorage#tearDown ng")
+            : console.log("SQLStorage#tearDown ok");
+    });
+}
+
+
+setup();
+set("id1", "a", 1, "abc");
+set("id2", "b", 2, "abcd");
+set("id3", "c", 3, "abcde");
+
+get("id1");
+get("id2");
+get("id3");
+
+has("id1");
+has("id2");
+has("id3");
+
+fetch();
+remove("id3");
+fetch();
+clear();
+tearDown();
+
+</script>
+</body></html>
+

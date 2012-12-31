@@ -1,4 +1,5 @@
 <!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/html5.ram.storage.js"></script>
 <script src="../js/html5.sql.storage.js"></script>
 <script src="../js/html5.web.storage.js"></script>
 <script src="../js/html5.storage.cache.js"></script>
@@ -7,41 +8,133 @@
 <script>
 //  var SQLStorage = require("./html5.sql.storage").Monogram.SQLStorage;
 //  var WebStorage = require("./html5.web.storage").Monogram.WebStorage;
+//  var RAMStorage = require("./html5.ram.storage").Monogram.RAMStorage;
 //  var StorageCache = require("./html5.storage.cache").Monogram.StorageCache;
 //  var Await = require("./logic.await").Monogram.Await;
 
-    var SQLStorage = Monogram.SQLStorage;
-    var WebStorage = Monogram.WebStorage;
-    var StorageCache = Monogram.StorageCache;
-    var Await = Monogram.Await;
+    var sql = null;
+    var web = null;
+    var ram = null;
+    var cache1 = null;
+    var cache2 = null;
+    var cache3 = null;
 
-    var await = new Await(storageReady, 2);
+    function setup(callback) {
+        sql = new Monogram.SQLStorage();
+        web = new Monogram.WebStorage();
+        ram = new Monogram.RAMStorage();
+        cache1 = new Monogram.StorageCache();
+        cache2 = new Monogram.StorageCache();
+        cache3 = new Monogram.StorageCache();
 
-    var cache1 = null,
-        cache2 = null;
-
-    new SQLStorage("hoge", "hoge", function(err, storage) {
-        cache1 = new StorageCache(storage, function(err, result) {
-            await.pass();
+        var await = new Monogram.Await(3, function(err, args) {
+            if (err) {
+                console.log( err.message );
+            } else {
+                cache1.setup(sql, function(err) {
+                    cache2.setup(web, function(err) {
+                        cache3.setup(ram, function(err) {
+                            callback && callback();
+                        });
+                    });
+                });
+            }
         });
-    });
-    new WebStorage("hoge", "hoge", function(err, storage) {
-        cache2 = new StorageCache(storage, function(err, result) {
-            await.pass();
+
+        sql.setup("mydb", "mytable", await);
+        web.setup("mydb", "mytable", await);
+        ram.setup("mydb", "mytable", await);
+    }
+    function tearDown(cache, callback) {
+        cache.tearDown(function(err) {
+            err ? console.log(cache.name() + "#tearDown ng")
+                : console.log(cache.name() + "#tearDown ok");
+
+            callback && callback();
         });
+    }
+    function set(cache, id, values, callback) {
+        cache.set(id, values, function(err) {
+            err ? console.log(cache.name() + "#set ng")
+                : console.log(cache.name() + "#set ok");
+
+            callback && callback();
+        });
+    }
+    function get(cache, id, callback) {
+        cache.get(id, function(err, result) {
+            err ? console.log(cache.name() + "#get ng")
+                : console.log(cache.name() + "#get ok", JSON.stringify( result ) );
+
+            callback && callback();
+        });
+    }
+    function has(cache, id, callback) {
+        cache.has(id, function(err, has) {
+            err ? console.log(cache.name() + "#has ng", id)
+                : console.log(cache.name() + "#has ok", id, has );
+
+            callback && callback();
+        });
+    }
+    function fetch(cache, callback) {
+        cache.fetch(function(err, result) {
+            err ? console.log(cache.name() + "#fetch ng", result)
+                : console.log(cache.name() + "#fetch ok", result);
+
+            callback && callback();
+        });
+    }
+    function remove(cache, id, callback) {
+        cache.remove(id, function(err) {
+            err ? console.log(cache.name() + "#remove ng")
+                : console.log(cache.name() + "#remove ok");
+
+            callback && callback();
+        });
+    }
+    function list(cache) {
+        cache.list(function(err, list) {
+            err ? console.log(cache.name() + "#list ng")
+                : console.log(cache.name() + "#list ok", list);
+        });
+    }
+    function clear(cache, callback) {
+        cache.clear(function(err) {
+            err ? console.log(cache.name() + "#tearDown ng")
+                : console.log(cache.name() + "#tearDown ok");
+
+            callback && callback();
+        });
+    }
+
+
+
+    setup(function() {
+        test1(cache1);
+        test1(cache2);
+        test1(cache3);
     });
 
-    function storageReady() {
-        console.log("ready");
+    function test1(cache) {
+        set(cache, "id1", ["a", 1, "abc"]);
+        set(cache, "id2", ["b", 2, "abcd"]);
+        set(cache, "id3", ["c", 3, "abcde"]);
 
-        cache1.set("a1", "data");
-        cache2.set("a1", "data");
+        get(cache, "id1");
+        get(cache, "id2");
+        get(cache, "id3");
 
-        if (cache1.get("a1") === cache2.get("a1")) {
-            console.log("ok");
-        }
-        cache1.set("a1", "");
-        cache2.set("a1", "");
+        has(cache, "id1");
+        has(cache, "id2");
+        has(cache, "id3");
+
+        fetch(cache);
+        remove(cache, "id3");
+        fetch(cache);
+        list(cache);
+        // clear(cache);
+        // tearDown(cache);
     }
 </script>
 </body></html>

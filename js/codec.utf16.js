@@ -19,6 +19,7 @@ function UTF16(data) { // @arg UTF16Array/UTF16String(= ""):
 }
 
 UTF16.prototype = {
+    constructor:    UTF16,
     fromUTF8Array:  UTF16_fromUTF8Array,// UTF16#fromUTF8Array(ary:UTF8Array):this
     toUTF8Array:    UTF16_toUTF8Array,  // UTF16#toUTF8Array():UTF8Array
     fromString:     UTF16_fromString,   // UTF16#fromString(str:String):this

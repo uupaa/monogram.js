@@ -5,8 +5,6 @@
 
 // --- header ----------------------------------------------
 function Script() {
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "Script" });
 }
 Script.run = Script_run;
 

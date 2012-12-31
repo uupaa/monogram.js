@@ -4,162 +4,215 @@
 (function(global) {
 
 // --- header ----------------------------------------------
-function SQLStorage(dbName,    // @arg String: db name
-                    tableName, // @arg String: table name
-                    fn) {      // @arg Function(= null): fn(err:Error, instance:this)
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "SQLStorage" });
-
-    this._init(dbName, tableName, fn);
+function SQLStorage() {
 }
-
 SQLStorage.prototype = {
-    _init:      SQLStorage_init,
-    has:        SQLStorage_has,         // SQLStorage#has(id:String, fn:Function = null):void
-    get:        SQLStorage_get,         // SQLStorage#get(id:String, fn:Function = null):void
-    set:        SQLStorage_set,         // SQLStorage#set(id:String, data:String, time:Integer, fn:Function = null):void
-    fetch:      SQLStorage_fetch,       // SQLStorage#fetch(id:String, fn:Function = null):void
-    clear:      SQLStorage_clear,       // SQLStorage#clear(fn:Function = null):void
-    tearDown:   SQLStorage_tearDown,    // SQLStorage#tearDown(fn:Function = null):void
-    showTable:  SQLStorage_showTable    // SQLStorage#showTable():void
+    constructor:SQLStorage,
+    DDL:        SQLStorage_DDL,     // SQLStorage#DDL():Object - { SETUP, TEAR_DOWN }
+    DML:        SQLStorage_DML,     // SQLStorage#DML():Object - { HAS, GET, SET, REMOVE, FETCH, CLEAR }
+    setup:      SQLStorage_setup,   // SQLStorage#setup(dbName:String, tableName:String, fn:Await/Function = null):this
+    has:        SQLStorage_has,     // SQLStorage#has(id:String, fn:Function):this
+    get:        SQLStorage_get,     // SQLStorage#get(id:String, fn:Function):this
+    set:        SQLStorage_set,     // SQLStorage#set(id:String, values:Array, fn:Function = null):this
+    list:       SQLStorage_list,    // SQLStorage#list(fn:Function):this
+    fetch:      SQLStorage_fetch,   // SQLStorage#fetch(id:String, fn:Function):this
+    clear:      SQLStorage_clear,   // SQLStorage#clear(fn:Function = null):this
+    remove:     SQLStorage_remove,  // SQLStorage#remove(id:String, fn:Function = null):this
+    tearDown:   SQLStorage_tearDown,// SQLStorage#tearDown(fn:Await/Function = null):this
+    showTable:  SQLStorage_showTable// SQLStorage#showTable():this
 };
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function SQLStorage_init(dbName, tableName, fn) {
+function SQLStorage_setup(dbName,    // @arg String: db name
+                          tableName, // @arg String: table name
+                          fn) {      // @arg Await/Function(= null): fn(err:Error)
+                                     // @ret this:
+alert(this.constructor.name);
     var that = this;
+    var isAwait = !!(fn && fn.constructor.name === "Await");
 
-    this._dbName = dbName;
     this._tableName = tableName;
+    this._DDL = this.DDL(tableName);
+    this._DML = this.DML(tableName);
 
     var limit = (1024 * 1024 * 5) - 1024; // 5MB - 1KB
 
     // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
     this._db = openDatabase(dbName, "1.0", dbName, limit);
     this._db.transaction(function(tr) {
-        var sql = "CREATE TABLE IF NOT EXISTS " + tableName +
-                  " (id TEXT PRIMARY KEY,time INTEGER,data TEXT)";
-        // console.log(sql);
-        tr.executeSql(sql, [],
+        tr.executeSql(that._DDL.SETUP, [],
             function(tr, result) {
-                fn && fn(null, that); // ok
+                fn && ( isAwait ? fn.pass() : fn(null) );
             },
             function(tr, err) {
-                fn && fn(err, that);
+                fn && ( isAwait ? fn.miss() : fn(err) );
             });
     });
+    return this;
+}
+
+function SQLStorage_DDL(tableName) { // @arg String: table name
+                                     // @ret Object: { SETUP, TEAR_DOWN }
+                                     //      SETUP - String:
+                                     //      TEARDOWN - String:
+    return {
+        SETUP: "CREATE TABLE IF NOT EXISTS " + tableName +
+               " (id TEXT PRIMARY KEY,hash TEXT,time INTEGER,data TEXT)",
+        TEAR_DOWN: "DROP TABLE " + tableName,
+        SHOW_TABLE: "SELECT * FROM sqlite_master WHERE type='table'"
+    };
+}
+
+function SQLStorage_DML(tableName) { // @arg String: table name
+                                     // @ret Object: { HAS, GET, SET, REMOVE, FETCH, CLEAR }
+                                     //      HAS - String:
+                                     //      GET - String:
+                                     //      SET - String:
+                                     //      REMOVE - String:
+                                     //      FETCH - String:
+                                     //      CLEAR - String:
+    return {
+        HAS:    "SELECT COUNT(*) AS length FROM " + tableName + " WHERE id=?",
+        GET:    "SELECT id,hash,time,data FROM " + tableName + " WHERE id=?",
+        SET:    "INSERT OR REPLACE INTO " + tableName + " VALUES(?,?,?,?)",
+        LIST:   "SELECT id FROM " + tableName,
+        REMOVE: "DELETE FROM " + tableName + " WHERE id=?",
+        FETCH:  "SELECT * FROM " + tableName,
+        CLEAR:  "DELETE FROM " + tableName
+    };
 }
 
 function SQLStorage_has(id,   // @arg String:
-                        fn) { // @arg Function(= null): fn(has:Boolean)
+                        fn) { // @arg Function: fn(err:Error, has:Boolean)
+                              // @ret this:
                               // @desc: has id
-    this.get(id, function(err, id, data) {
-        fn(err || !id ? false : true);
+    return _exec(this._db, this._DML.HAS, [id], function(err, result) {
+        err ? fn(err,  false)
+            : fn(null, !!result.rows.item(0).length);
     });
 }
 
 function SQLStorage_get(id,   // @arg String:
-                        fn) { // @arg Function(= null): fn(err:Error, id:String, data:String, time:INTEGER)
+                        fn) { // @arg Function: fn(err:Error, result:Object)
+                              // @ret this:
                               // @desc: fetch a row
-    var that = this;
-
-    this._db.readTransaction(function(tr) {
-        tr.executeSql("SELECT time,data FROM " + that._tableName +
-                      " WHERE id=?", [id],
-            function(tr, result) {
-                var time = 0;
-                var data = "";
-
-                if (result.rows.length) {
-                    time = result.rows.item(0).time;
-                    data = result.rows.item(0).data;
-                }
-                fn(null, id, data, +time);
-            },
-            function(tr, error) {
-                fn(error, "", "", "");
-            });
+    return _exec(this._db, this._DML.GET, [id], function(err, result) {
+        if (err) {
+            fn(err,  null);
+        } else {
+            if (result.rows.length) {
+                fn(null, result.rows.item(0)); // found
+            } else {
+                fn(null, null); // not found
+            }
+        }
     });
 }
 
-function SQLStorage_set(id,   // @arg String:
-                        data, // @arg String: "" is delete row.
-                        time, // @arg Integer(= 0):
-                        fn) { // @arg Function(= null): fn(err:Error)
-                              // @desc: add/update row
-    if (!data) {
-        _exec(this._db, "DELETE FROM " + this._tableName +
-                        " WHERE id=?", [id], fn);
-    } else {
-        _exec(this._db, "INSERT OR REPLACE INTO " + this._tableName +
-                        " VALUES(?,?,?)", [id, time, data], fn);
-    }
+function SQLStorage_set(id,     // @arg String:
+                        values, // @arg Array: [col2value, col3value, ...]
+                        fn) {   // @arg Function(= null): fn(err:Error)
+                                // @ret this:
+                                // @desc: add/update row
+    return _exec(this._db, this._DML.SET, [id].concat(values), fn);
 }
 
-function SQLStorage_fetch(fn) { // @arg Function: fn(err:Error, result:Object, times:Object)
-                                //    result - Object: { id: data, ... }
-                                //    times - Object: { id: time, ... }
-    var that = this;
+function SQLStorage_list(fn) { // @arg Function: fn(err:Error, list:Array)
+                               // @ret this:
+                              // @desc: add/update row
+    return _exec(this._db, this._DML.LIST, [], function(err, result) {
+        if (err) {
+            fn(err, []);
+        } else {
+            var rv = [], i = 0, iz = result.rows.length, obj;
 
-    this._db.readTransaction(function(tr) {
-        tr.executeSql("SELECT * FROM " + that._tableName, [],
-            function(tr, result) {
-                var rv = {}, times = {}, i = 0, iz = result.rows.length, obj;
+            for (; i < iz; ++i) {
+                rv.push( result.rows.item(i).id );
+            }
+            fn(null, rv); // ok
+        }
+    });
+}
 
-                for (; i < iz; ++i) {
-                    obj = result.rows.item(i);
-                    rv[obj.id] = obj.data;
-                    times[obj.id] = +obj.time;
-                }
-                fn && fn(null, rv, times); // ok
-            }, function(tr, error) {
-                fn && fn(error, {}, {});
-            });
+function SQLStorage_fetch(fn) { // @arg Function: fn(err:Error, result:Object)
+                                //    result - Object: { id: { column: value, ...} }
+                                // @ret this:
+    return _exec(this._db, this._DML.FETCH, [], function(err, result) {
+        if (err) {
+            fn(err, {});
+        } else {
+            var rv = {}, i = 0, iz = result.rows.length, obj;
+
+            for (; i < iz; ++i) {
+                obj = result.rows.item(i);
+                rv[obj.id] = obj;
+            }
+            fn(null, rv); // ok
+        }
     });
 }
 
 function SQLStorage_clear(fn) { // @arg Function(= null): fn(err:Error)
+                                // @ret this:
                                 // @desc: clear all data
-    _exec(this._db, "DELETE FROM " + this._tableName, [], fn);
+    return _exec(this._db, this._DML.CLEAR, [], fn);
 }
 
-function SQLStorage_tearDown(fn) { // @arg Function(= null): fn(err:Error)
+function SQLStorage_remove(id,   // @arg String:
+                           fn) { // @arg Function(= null): fn(err:Error)
+                                 // @ret this:
+    return _exec(this._db, this._DML.REMOVE, [id], fn);
+}
+
+function SQLStorage_tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
+                                   // @ret this:
                                    // @desc: drop table
-    _exec(this._db, "DROP TABLE " + this._tableName, [], fn);
-}
+    var isAwait = !!(fn && fn.constructor.name === "Await");
 
-function SQLStorage_showTable() {
-    this._db.transaction(function(tr) {
-        tr.executeSql("SELECT * FROM sqlite_master WHERE type='table'", [], function(tr, result) {
-            var i = 0, iz = result.rows.length, obj, key;
-
-            for (; i < iz; ++i) {
-                obj = result.rows.item(i);
-                for (key in obj) {
-                    console.log(key + ": " + obj[key]);
-                }
+    return _exec(this._db, this._DDL.TEAR_DOWN, [], function(err, result) {
+        if (fn) {
+            if (isAwait) {
+                err ? fn.miss() : fn.pass();
+            } else {
+                err ? fn(err) : fn(null);
             }
-        }, function(tr, error) {
-        });
+        }
     });
 }
 
-function _exec(db,
+function SQLStorage_showTable() { // @ret this:
+    return _exec(this._db, this._DDL.SHOW_TABLE, [], function(err, result) {
+        var i = 0, iz = result.rows.length, obj, key;
+
+        for (; i < iz; ++i) {
+            obj = result.rows.item(i);
+            for (key in obj) {
+                console.log(key + ": " + obj[key]);
+            }
+        }
+    });
+}
+
+function _exec(db,   // @arg DataBase:
                sql,  // @arg String:
                args, // @arg Array(= []): [arg, ...]
-               fn) { // @arg Function(= null): fn(err:Error)
+               fn) { // @arg Function(= null): fn(err:Error, result:SQLResultSet)
+                     // @ret this:
     db.transaction(function(tr) {
-        tr.executeSql(sql, args || [], function(tr, result) {
-            fn && fn(null); // ok
-        }, function(tr, error) {
-            if (fn) {
-                fn(error);
-            } else {
-                throw new TypeError(error.message);
-            }
-        });
+        tr.executeSql(sql, args || [],
+            function(tr, result) {
+                fn && fn(null, result); // ok
+            }, function(tr, err) {
+                if (fn) {
+                    fn(err, {});
+                } else {
+                    throw new TypeError(err.message);
+                }
+            });
     });
+    return this;
 }
 
 // --- build and export API --------------------------------
@@ -172,19 +225,4 @@ if (typeof module !== "undefined") { // is modular
 
 })(this.self || global);
 //}@sqlstorage
-
-/*
-    var SQLStorage = reuqire("./html5.sql.storage").Monogram.SQLStorage;
-
-    function test1() {
-        new SQLStorage("mydb", "mytable", function(err, storage) {
-            storage.set("key", "value", function(err) {
-                storage.get("key", function(err, id, data) {
-                    console.log(data);
-                });
-                storage.clear();
-            });
-        });
-    }
- */
 

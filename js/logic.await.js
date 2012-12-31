@@ -4,9 +4,9 @@
 (function(global) {
 
 // --- header ----------------------------------------------
-function Await(fn,       // @arg Function: fn(err:Error, args:MixArray)
-               events) { // @arg Integer: event count
-                         // @help: Await
+function Await(events, // @arg Integer: event count
+               fn) {   // @arg Function: fn(err:Error, args:MixArray)
+                       // @help: Await
     Object.defineProperty &&
         Object.defineProperty(this, "ClassName", { value: "Await" });
 
@@ -22,6 +22,7 @@ function Await(fn,       // @arg Function: fn(err:Error, args:MixArray)
 }
 
 Await.prototype = {
+    constructor:Await,
     missable:   Await_missable, // Await#missable(count:Integer):this
     add:        Await_add,      // Await#add(count:Integer):this
     halt:       Await_halt,     // Await#halt():this
@@ -61,7 +62,9 @@ function Await_pass(value) { // @arg Mix(= undefined): value
                              // @help: Await#pass
                              // @desc: pass a process
     ++this._pass;
-    this._args.push(value);
+    if (value !== void 0) {
+        this._args.push(value);
+    }
     return _judge(this);
 }
 
@@ -70,7 +73,9 @@ function Await_miss(value) { // @arg Mix(= undefined): value
                              // @help: Await#miss
                              // @desc: miss a process
     ++this._miss;
-    this._args.push(value);
+    if (value !== void 0) {
+        this._args.push(value);
+    }
     return _judge(this);
 }
 
@@ -141,7 +146,7 @@ if (typeof module !== "undefined") { // is modular
     var Await = require("./logic.await").Monogram.Await;
 
     function test1() { // await sync 4 events
-        var await = new Await(callback, 4);
+        var await = new Await(4, callback);
 
         [1,2,3].forEach(function(value) {
             await.pass(value);
@@ -162,7 +167,7 @@ if (typeof module !== "undefined") { // is modular
     }
 
     function test2() { // await async 4 events (missable 1)
-        var await = new Await(callback, 4).missable(1);
+        var await = new Await(4, callback).missable(1);
 
         setTimeout(function() { await.pass(1); }, Math.random() * 1000); // goo
         setTimeout(function() { await.pass(2); }, Math.random() * 1000); // goo

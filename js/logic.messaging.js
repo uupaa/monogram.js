@@ -12,13 +12,14 @@ function Msg() {
 }
 
 Msg.prototype = {
-    _init:          Msg_init,
-    bind:           Msg_bind,           // Msg#bind(...):this
-    unbind:         Msg_unbind,         // Msg#unbind(...):this
-    list:           Msg_list,           // Msg#list():ClassNameStringArray
-    to:             Msg_to,             // Msg#to(...):WrapperedObject
-    post:           Msg_post,           // Msg#post(msg:String, ...):this
-    send:           Msg_send            // Msg#send(msg:String, ...):ResultArray
+    constructor:MSg,
+    _init:      Msg_init,
+    bind:       Msg_bind,           // Msg#bind(...):this
+    unbind:     Msg_unbind,         // Msg#unbind(...):this
+    list:       Msg_list,           // Msg#list():ClassNameStringArray
+    to:         Msg_to,             // Msg#to(...):WrapperedObject
+    post:       Msg_post,           // Msg#post(msg:String, ...):this
+    send:       Msg_send            // Msg#send(msg:String, ...):ResultArray
 };
 
 // --- library scope vars ----------------------------------
@@ -27,7 +28,6 @@ Msg.prototype = {
 function Msg_init() {
     this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
     this._broadcast   = []; // broadcast address
-    Object.defineProperty(this, "ClassName", { value: "Msg" });
 }
 
 function Msg_bind(ooo) { // @var_args Instance: register drain instance

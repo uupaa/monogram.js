@@ -14,6 +14,7 @@ function Base64(data,                 // @arg String/Array:
 }
 
 Base64.prototype = {
+    constructor:    Base64,
     _init:          Base64_init,
     toArray:        Base64_toArray,         // Base64#toArray():Array/Base64Array
     toString:       Base64_toString,        // Base64#toString():String
