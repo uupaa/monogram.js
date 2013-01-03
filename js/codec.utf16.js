@@ -2,13 +2,10 @@
 // @see: https://gist.github.com/4185267
 
 //{@utf16
-(function() {
+(function(global) {
 
 // --- header ---------------------------------------------
 function UTF16(data) { // @arg UTF16Array/UTF16String(= ""):
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "UTF16" });
-
     if (Array.isArray(data)) {
         this.fromArray(data);
     } else if (typeof data === "string") {
@@ -18,6 +15,7 @@ function UTF16(data) { // @arg UTF16Array/UTF16String(= ""):
     }
 }
 
+UTF16.name = "UTF16";
 UTF16.prototype = {
     constructor:    UTF16,
     fromUTF8Array:  UTF16_fromUTF8Array,// UTF16#fromUTF8Array(ary:UTF8Array):this
@@ -172,19 +170,21 @@ function _fromString(str) { // @arg String:
     return rv;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { UTF16: UTF16 } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.UTF16 = UTF16;
+    module.exports = { UTF16: UTF16 };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.UTF16 = UTF16;
 
 })(this.self || global);
 //}@utf16
 
+// --- test ------------------------------------------------
 /*
-    var UTF16 = require("./codec.utf16").Monogram.UTF16;
+    var UTF16 = require("./codec.utf16").UTF16;
 
     function test1() { // UTF16String to UTF16Array
         // A,I,U in Japanese

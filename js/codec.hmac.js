@@ -1,34 +1,38 @@
-// codec.hmac.js
-// @need: codec.utf.js, codec.md5.js, codec.sha1.js
+// codec.hmac.js: calc HMAC hash
+// @need: Monogram.UTF16.toUTF8Array in codec.utf16.js
+//        Monogram.SHA1 in codec.sha1.js
+//        Monogram.MD5 in codec.md5.js
 
 //{@hmac
-(function() {
+(function(global) {
 
 // --- header --------------------------------
-function _extendNativeObjects() {
-    wiz(Array.prototype, {
-        toHMACArray:    Array_toHMACArray   // [].toHMACArray(data:Array, method:String):Array
-    });
-    wiz(String.prototype, {
-        toHMACArray:    String_toHMACArray  // "".toHMACArray(data:Array, method:String):Array
-    });
+function HMAC(key,      // @arg ByteArray:
+              data,     // @arg SHA1Array/MD5Array:
+              method) { // @arg String: hash method. "MD5", "SHA1"
+    this._key = key;
+    this._data = [];
+    this._method = method.toUpperCase();
+
+    if (Array.isArray(data)) {
+        this._data = data;
+    } else {
+        this._data = new global.Monogram.UTF16(data).toUTF8Array();
+    }
 }
+HMAC.name = "HMAC";
+HMAC.prototype = {
+    constructor:HMAC,
+    toArray:    toArray         // HMAC#toArray():HMACArray
+};
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function Array_toHMACArray(data,     // @arg ByteArray:
-                           method) { // @arg String:
-                                     // @ret Array: [...]
-                                     // @desc: encode HMAC
-    return _calc_hmac(this.valueOf(), data, method);
-}
-
-function String_toHMACArray(data,     // @arg ByteArray:
-                            method) { // @arg String:
-                                      // @ret Array: [...]
-                                      // @desc: encode HMAC
-    return _calc_hmac(this.toUTF8Array(), data, method);
+function toArray() { // @ret HMACArray: [...]
+                     // @help: HMAC#toArray
+                     // @desc: encode HMAC
+    return _calc_hmac(this._key, this._data, method);
 }
 
 function _calc_hmac(key,      // @arg ByteArray:
@@ -36,8 +40,7 @@ function _calc_hmac(key,      // @arg ByteArray:
                     method) { // @arg String: hash method
                               // @ret MD5Array/SHA1Array: [...]
                               // @desc: encode HMAC-MD5, HMAC-SHA1
-    method = { "md5":  toMD5Array,
-               "sha1": toSHA1Array }[method.toLowerCase()];
+    method = { "MD5": toMD5Array, "SHA1": toSHA1Array };
 
     // http://en.wikipedia.org/wiki/HMAC
     var blocksize = 64, // magic word(MD5.blocksize = 64, SHA1.blocksize = 64)
@@ -56,17 +59,15 @@ function _calc_hmac(key,      // @arg ByteArray:
     return opad.concat( ipad.concat(data)[method]() )[method]();
 }
 
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
-    }
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { HMAC: HMAC };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.HMAC = HMAC;
 
-// --- export --------------------------------
-_extendNativeObjects();
-
-})();
+})(this.self || global);
 //}@hmac
 

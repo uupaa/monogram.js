@@ -1,41 +1,26 @@
-// codec.color.js
-// @need: mm.js
+// codec.color.js: color and dict
 
 //{@color
-(function() {
+(function(global) {
 
 // --- header ---------------------------------------------
-function _extendNativeObjects() {
-    mm.wiz(Array.prototype, {
-        toColorString:  Array_toColorString     // [].toColorString(type:String = "#rgb"):ColorString
-    });
-    mm.wiz(String.prototype, {
-        toColor:        String_toColor,         // "".toColor():Color
-        toColorArray:   String_toColorArray,    // "".toColorArray():RGBAColorArray
-        toColorString:  String_toColorString    // "".toColorString(type:String = "#rgb"):ColorString
-    });
-    mm.Color = Color;
-    mm.color = function(color) {                // mm.color(color:RGBAColorArray/HSLAObject/HSVAObject):Color
-        return new Color(color);
-    };
+function Color(color) { // @arg ColorString/RGBAColorArray/HSLAObject/HSVAObject:
+    this.parse(color);
 }
-
-function Color(color) { // @arg RGBAColorArray:
-    this.init(color);
-}
+Color.Name = "Color";
+Color.random = Color_random;            // Color.random(alpha:Number = 1):Color
 Color.prototype = {
     constructor:Color,
-    init:       Color_init,             // Color#init(color:RGBAColorArray/HSLAObject/HSVAObject)
-    gray:       Color_gray,             // Color#gray():Color
+    parse:      Color_parse,            // Color#parse(color:ColorString/RGBAColorArray/HSLAObject/HSVAObject):this
+    gray:       Color_gray,             // Color#gray():this
     hsla:       Color_hsla,             // Color#hsla():HSLAObject - { h, s, l, a }
     hsva:       Color_hsva,             // Color#hsva():HSVAObject - { h, s, v, a }
-    sepia:      Color_sepia,            // Color#sepia():Color
-    comple:     Color_comple,           // Color#comple():Color
-    arrange:    Color_arrange,          // Color#arrange(h:Number = 0, s:Number = 0, l:Number = 0):Color
+    sepia:      Color_sepia,            // Color#sepia():this
+    comple:     Color_comple,           // Color#comple():this
+    arrange:    Color_arrange,          // Color#arrange(h:Number = 0, s:Number = 0, l:Number = 0):this
     toString:   Color_toString,         // Color#toString(type:String = "#rgb"):ColorString
-    toFloatArray:Color_toFloatArray     // Color#toFloatArray():NumberArray - [r, g, b, a]
+    toFloatArray:Color_toFloatArray,    // Color#toFloatArray():NumberArray - [r, g, b, a]
 };
-Color.random = Color_random;            // Color.random(alpha:Number = 1):Color
 
 // --- library scope vars ----------------------------------
 var _namedColorDB = { transparent: [0, 0, 0, 0] },
@@ -44,14 +29,119 @@ var _namedColorDB = { transparent: [0, 0, 0, 0] },
         //[1]              [2]      [3]  [4]      [5]  [6]      [7]     [8]
 
 // --- implement -------------------------------------------
-function String_toColor() { // @ret Color:
-                            // @help: String#toColor
-    return new Color(this.toColorArray());
+function Color_parse(color) { // @arg ColorString/RGBAColorArray/HSLAObject/HSVAObject:
+                              //    red   - Integer: 0 ~ 255
+                              //    green - Integer: 0 ~ 255
+                              //    blue  - Integer: 0 ~ 255
+                              //    alpha - Number: 0.0 ~ 1.0
+                              // @help: Color#parse
+                              // @desc: parse Color
+    if (typeof color === "string") {
+        color = _parseColorString(color);
+    } else if (Array.isArray(color)) {
+        ;
+    } else if (color.l) {
+        color = _HSLA2RGBA(color.h, color.s, color.l, color.a);
+    } else if (color.v) {
+        color = _HSVA2RGBA(color.h, color.s, color.v, color.a);
+    } else {
+        throw new TypeError("BAD_ARG");
+    }
+
+    var r = color[0] || 0,
+        g = color[1] || 0,
+        b = color[2] || 0,
+        a = color[3] || 0;
+
+    this.r = r = (r < 0 ? 0 : r > 255 ? 255 : r) | 0;
+    this.g = g = (g < 0 ? 0 : g > 255 ? 255 : g) | 0;
+    this.b = b = (b < 0 ? 0 : b > 255 ? 255 : b) | 0;
+    this.a = a =  a < 0 ? 0 : a > 1 ? 1 : a;
+//  this.num = r << 16 | g << 8 | b;
 }
 
-function String_toColorArray() { // @ret RGBAColorArray: [r, g, b, a]
-                                 // @help: String#toColorArray
-    var str = this.toLowerCase();
+function Color_toString(type) { // @arg String(= "#rgb"): result type.
+                                //      type = "#rgb"  is return "#rrggbb"
+                                //      type = "#argb" is return "#aarrggbb"
+                                //      type = "rgb"   is return "rgb(r,g,b)"
+                                //      type = "rgba"  is return "rgba(0,0,0,0)"
+                                // @ret ColorString:
+    var r = this.r, g = this.g, b = this.b, a = this.a,
+        num = r << 16 | g << 8 | b;
+
+    switch (type || "#rgb") {
+    case "#rgb":    return "#" + (0x001000000 + num).toString(16).slice(1);
+    case "#argb":   return "#" + (0x100000000 + num + ((a * 255) << 24)).
+                                                      toString(16).slice(-8);
+    case "rgb":     return "rgb(" + r + "," + g + "," + b + ")";
+    }
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+}
+
+function Color_gray() { // @ret this:
+    return new Color([this.g, this.g, this.g, this.a]);
+}
+
+function Color_hsla() { // @ret Object: { h, s, l, a }
+    return _RGBA2HSLA(this.r, this.g, this.b, this.a);
+}
+
+function Color_hsva() { // @ret Object: { h, s, v, a }
+    return _RGBA2HSVA(this.r, this.g, this.b, this.a);
+}
+
+function Color_sepia() { // @ret this:
+    var y = 0.2990 * this.r + 0.5870 * this.g + 0.1140 * this.b,
+        u = -0.091, v = 0.056;
+
+    return new Color([(y + 1.4026 * v) * 1.2,
+                       y - 0.3444 * u - 0.7114 * v,
+                      (y + 1.7330 * u) * 0.8, this.a]);
+}
+
+function Color_comple() { // @ret this:
+    return new Color([this.r ^ 255, this.g ^ 255, this.b ^ 255, this.a]);
+}
+
+function Color_arrange(h,   // @arg Number(= 0): Hue        (-360 ~ 360). absolure value
+                       s,   // @arg Number(= 0): Saturation (-100 ~ 100). relative value
+                       l) { // @arg Number(= 0): Lightness  (-100 ~ 100). relative value
+                            // @ret this:
+                            // @desc: arrangemented color(Hue, Saturation and Lightness)
+    var rv = _RGBA2HSLA(this.r, this.g, this.b, this.a);
+
+    rv.h += h;
+    rv.h = (rv.h > 360) ? rv.h - 360 : (rv.h < 0) ? rv.h + 360 : rv.h;
+    rv.s += s;
+    rv.s = (rv.s > 100) ? 100 : (rv.s < 0) ? 0 : rv.s;
+    rv.l += l;
+    rv.l = (rv.l > 100) ? 100 : (rv.l < 0) ? 0 : rv.l;
+    return _HSLA2RGBA(rv.h, rv.s, rv.l, rv.a);
+}
+
+function Color_toFloatArray() { // @ret FloatColorArray: [r, g, b, a]
+                                //   r, g, b, a - Number: 0.0 - 1.0
+    return [
+        ((this.r / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
+        ((this.g / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
+        ((this.b / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
+        this.a
+    ];
+}
+
+function Color_random(alpha) { // @arg Number(= 1): alpha ratio
+                               // @ret this:
+                               // @desc: create random color
+
+    var n = (Math.random() * 0xffffff) | 0;
+
+    return new Color([n >> 16, (n >> 8) & 255, n & 255,
+                      alpha === 0 ? 0 : (alpha || 1)]);
+}
+function _parseColorString(str) { // @arg ColorString:
+                                  // @ret RGBAColorArray: [r, g, b, a]
+                                  // @inner: ColorString to ColorArray
+    var str = str.toLowerCase();
 
     if (str === "transparent") {
         return [0, 0, 0, 0];
@@ -63,31 +153,6 @@ function String_toColorArray() { // @ret RGBAColorArray: [r, g, b, a]
         return _parseHexColorCode(str);
     }
     return _parseColorFunction(str);
-}
-
-function String_toColorString(type) { // @arg String(= "#rgb"):
-                                      // @ret ColorString:
-                                      // @help: String#toColorString
-    return this.toColorArray().toColorString(type);
-}
-
-function Array_toColorString(type) { // @arg String(= "#rgb"): result type.
-                                     //      type = "#rgb"   is return "#rrggbb"
-                                     //      type = "#argb"  is return "#aarrggbb"
-                                     //      type = "rgb()"  is return "rgb(r,g,b)"
-                                     //      type = "rgba()" is return "rgba(0,0,0,0)"
-                                     // @ret ColorString:
-                                     // @this RGBAColorArray: [r, g, b, a]
-    var r = this[0], g = this[1], b = this[2], a = this[3],
-        num = r << 16 | g << 8 | b;
-
-    switch (type || "#rgb") {
-    case "#rgb":    return "#" + (0x001000000 + num).toString(16).slice(1);
-    case "#argb":   return "#" + (0x100000000 + num + ((a * 255) << 24)).
-                                                      toString(16).slice(-8);
-    case "rgb()":   return "rgb(" + r + "," + g + "," + b + ")";
-    }
-    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
 }
 
 function _parseHexColorCode(str) { // @arg String: "#rgb", "#rrggbb", "#aarrggbb"
@@ -199,100 +264,6 @@ function _hsvaToColorArray(h, s, v, a) { // @ret RGBAColorArray:
         r = g = b = (v + 0.5) | 0;
     }
     return [r * 255 + 0.5, g * 255 + 0.5, b * 255 + 0.5, a];
-}
-
-function Color_init(color) { // @arg RGBAColorArray/HSLAObject/HSVAObject:
-                             //    red   - Integer: 0 ~ 255
-                             //    green - Integer: 0 ~ 255
-                             //    blue  - Integer: 0 ~ 255
-                             //    alpha - Number: 0.0 ~ 1.0
-                             // @desc: Color constructor
-    if (Array.isArray(color)) {
-        ;
-    } else if (color.l) {
-        color = _HSLA2RGBA(color.h, color.s, color.l, color.a);
-    } else if (color.v) {
-        color = _HSVA2RGBA(color.h, color.s, color.v, color.a);
-    } else {
-        throw new TypeError("BAD_ARG");
-    }
-
-    var r = color[0] || 0,
-        g = color[1] || 0,
-        b = color[2] || 0,
-        a = color[3] || 0;
-
-    this.r = r = (r < 0 ? 0 : r > 255 ? 255 : r) | 0;
-    this.g = g = (g < 0 ? 0 : g > 255 ? 255 : g) | 0;
-    this.b = b = (b < 0 ? 0 : b > 255 ? 255 : b) | 0;
-    this.a = a =  a < 0 ? 0 : a > 1 ? 1 : a;
-//  this.num = r << 16 | g << 8 | b;
-}
-
-function Color_toString(type) { // @arg String(= "#rgb"):
-                                // @ret String:
-    return [this.r, this.g, this.b, this.a].toColorString(type);
-}
-
-function Color_gray() { // @ret Color:
-    return new Color([this.g, this.g, this.g, this.a]);
-}
-
-function Color_hsla() { // @ret Object: { h, s, l, a }
-    return _RGBA2HSLA(this.r, this.g, this.b, this.a);
-}
-
-function Color_hsva() { // @ret Object: { h, s, v, a }
-    return _RGBA2HSVA(this.r, this.g, this.b, this.a);
-}
-
-function Color_sepia() { // @ret Color:
-    var y = 0.2990 * this.r + 0.5870 * this.g + 0.1140 * this.b,
-        u = -0.091, v = 0.056;
-
-    return new Color([(y + 1.4026 * v) * 1.2,
-                       y - 0.3444 * u - 0.7114 * v,
-                      (y + 1.7330 * u) * 0.8, this.a]);
-}
-
-function Color_comple() { // @ret Color:
-    return new Color([this.r ^ 255, this.g ^ 255, this.b ^ 255, this.a]);
-}
-
-function Color_arrange(h,   // @arg Number(= 0): Hue        (-360 ~ 360). absolure value
-                       s,   // @arg Number(= 0): Saturation (-100 ~ 100). relative value
-                       l) { // @arg Number(= 0): Lightness  (-100 ~ 100). relative value
-                            // @ret Color:
-                            // @desc: arrangemented color(Hue, Saturation and Lightness)
-    var rv = _RGBA2HSLA(this.r, this.g, this.b, this.a);
-
-    rv.h += h;
-    rv.h = (rv.h > 360) ? rv.h - 360 : (rv.h < 0) ? rv.h + 360 : rv.h;
-    rv.s += s;
-    rv.s = (rv.s > 100) ? 100 : (rv.s < 0) ? 0 : rv.s;
-    rv.l += l;
-    rv.l = (rv.l > 100) ? 100 : (rv.l < 0) ? 0 : rv.l;
-    return _HSLA2RGBA(rv.h, rv.s, rv.l, rv.a);
-}
-
-function Color_toFloatArray() { // @ret FloatColorArray: [r, g, b, a]
-                                //   r, g, b, a - Number: 0.0 - 1.0
-    return [
-        ((this.r / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
-        ((this.g / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
-        ((this.b / 2.555 + 0.5) | 0) / 100, // 0 ~ 1
-        this.a
-    ];
-}
-
-function Color_random(alpha) { // @arg Number(= 1): alpha ratio
-                               // @ret Color:
-                               // @desc: create random color
-
-    var n = (Math.random() * 0xffffff) | 0;
-
-    return new Color([n >> 16, (n >> 8) & 255, n & 255,
-                      alpha === 0 ? 0 : (alpha || 1)]);
 }
 
 function _RGBA2HSVA(r, g, b, a) { // @ret Object: { h, s, v, a }
@@ -411,7 +382,7 @@ function _HSLA2RGBA(h, s, l, a) { // h: 0-360, s: 0-100, l: 0-100
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), a];
 }
 
-// --- initialize ---
+// --- build -----------------------------------------------
 function _initColor(src) { // @arg String: "000000black,..."
     var ary = src.split(","), i = 0, iz = ary.length, v, n;
 
@@ -456,11 +427,13 @@ _initColor("000000black,888888gray,ccccccsilver,ffffffwhite,ff0000red,ffff00" +
 "rkgrey,2f4f4fdarkslategrey,696969dimgrey,808080grey,d3d3d3lightgrey,778899l" +
 "ightslategrey,708090slategrey,8b4513saddlebrown");
 
-// --- export --------------------------------
-_extendNativeObjects();
+// --- export ----------------------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Color: Color };
+}
+global.Monogram || (global.Monogram = {});
+global.Monogram.Color = Color;
 
-Color.help.add("http://code.google.com/p/mofmof-js/wiki/", ["Color"]);
-
-})();
+})(this.self || global);
 //}@color
 

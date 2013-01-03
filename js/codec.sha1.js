@@ -1,32 +1,32 @@
-// codec.sha1.js:
-// @need: codec.utf.js
+// codec.sha1.js: calc SHA-1 hash
+// @need: Monogram.UTF16.toUTF8Array in codec.utf16.js
 
 //{@sha1
-(function() {
+(function(global) {
 
 // --- header --------------------------------
-function _extendNativeObjects() {
-    wiz(Array.prototype, {
-        toSHA1Array:    Array_toSHA1Array   // [].toSHA1Array():SHA1Array
-    });
-    wiz(String.prototype, {
-        toSHA1Array:    String_toSHA1Array  // "".toSHA1Array():SHA1Array
-    });
+function SHA1(data) {
+    this._data = [];
+
+    if (Array.isArray(data)) {
+        this._data = data;
+    } else {
+        this._data = new global.Monogram.UTF16(data).toUTF8Array();
+    }
 }
+SHA1.name = "SHA1";
+SHA1.prototype = {
+    constructor:SHA1,
+    toArray:    toArray         // SHA1#toArray():SHA1Array
+};
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function Array_toSHA1Array() { // @ret SHA1Array: [...]
-                               // @help: Array#toSHA1Array
-                               // @desc: encode sha1 hash
-    return _crypto(this.valueOf());
-}
-
-function String_toSHA1Array() { // @ret SHA1Array: [...]
-                                // @help: String#toSHA1Array
-                                // @desc: encode sha1 hash
-    return _crypto(this.toUTF8Array());
+function toArray() { // @ret SHA1Array: [...]
+                     // @help: SHA1#toArray
+                     // @desc: encode sha1 hash
+    return _crypto(this._data);
 }
 
 function _crypto(data) { // @arg Byterray:
@@ -115,16 +115,14 @@ function _SHA1(data) { // @arg ByteArray:
     return [a, b, c, d, e];
 }
 
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
-    }
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { SHA1: SHA1 };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.SHA1 = SHA1;
 
-// --- export --------------------------------
-_extendNativeObjects();
-
-})();
+})(this.self || global);
 //}@sha1

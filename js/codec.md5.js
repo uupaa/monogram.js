@@ -1,18 +1,24 @@
-// codec.md5.js
-// @need: codec.utf.js
+// codec.md5.js: calc MD5 hash
+// @need: Monogram. in codec.utf16.js
 
 //{@md5
-(function() {
+(function(global) {
 
 // --- header --------------------------------
-function _extendNativeObjects() {
-    wiz(Array.prototype, {
-        toMD5Array:     Array_toMD5Array    // [].toMD5Array():MD5Array
-    });
-    wiz(String.prototype, {
-        toMD5Array:     String_toMD5Array   // "".toMD5Array():MD5Array
-    });
+function MD5(data) {
+    this._data = [];
+
+    if (Array.isArray(data)) {
+        this._data = data;
+    } else {
+        this._data = new global.Monogram.UTF16(data).toUTF8Array();
+    }
 }
+MD5.name = "MD5";
+MD5.prototype = {
+    constructor:MD5,
+    toArray:    toArray         // MD5#toArray():MD5Array
+};
 
 // --- library scope vars ----------------------------------
 var _MD5_A = [  0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf,
@@ -27,27 +33,21 @@ var _MD5_A = [  0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf,
                 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665, 0xf4292244, 0x432aff97,
                 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d,
                 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
-                0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391],
+                0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391 ],
     _MD5_S = [  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
                 5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
                 4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
-                6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21],
+                6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21 ],
     _MD5_X = [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
                 1,  6, 11,  0,  5, 10, 15,  4,  9, 14,  3,  8, 13,  2,  7, 12,
                 5,  8, 11, 14,  1,  4,  7, 10, 13,  0,  3,  6,  9, 12, 15,  2,
-                0,  7, 14,  5, 12,  3, 10,  1,  8, 15,  6, 13,  4, 11,  2,  9];
+                0,  7, 14,  5, 12,  3, 10,  1,  8, 15,  6, 13,  4, 11,  2,  9 ];
 
 // --- implement -------------------------------------------
-function Array_toMD5Array() { // @ret MD5Array: [...]
-                              // @help: Array#toMD5Array
-                              // @desc: encode md5 hash
-    return _crypto(this.valueOf());
-}
-
-function String_toMD5Array() { // @ret MD5Array: [...]
-                               // @help: String#toMD5Array
-                               // @desc: encode md5 hash
-    return _crypto(this.toUTF8Array());
+function toArray() { // @ret MD5Array: [...]
+                     // @help: MD5#toArray
+                     // @desc: encode md5 hash
+    return _crypto(this._data);
 }
 
 function _crypto(data) { // @arg ByteArray
@@ -127,16 +127,14 @@ function _MD5(data) { // @arg ByteArray:
     return [a, b, c, d];
 }
 
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
-    }
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { MD5: MD5 };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.MD5 = MD5;
 
-// --- export --------------------------------
-_extendNativeObjects();
-
-})();
+})(this.self || global);
 //}@md5

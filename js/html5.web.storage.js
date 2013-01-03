@@ -45,7 +45,9 @@ function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
     return this;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
     module.exports = { WebStorage: WebStorage };
 }
