@@ -1,6 +1,9 @@
-//{@ruby
-(function() {
+// polyfill.ruby.js: extend ruby functions
 
+//{@ruby
+(function(global) {
+
+// --- header ----------------------------------------------
 function _extendRubyLikeMethods() {
     wiz(Array.prototype, {
         assoc:      Array_assoc,        // [].assoc(find:Mix):Array/undefined
@@ -31,6 +34,8 @@ function _extendRubyLikeMethods() {
         step:       Number_step         // 0..step(limit:Number, step:Number, fn:Function)
     });
 }
+
+// --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
 function Array_assoc(find) { // @arg Mix: find value
@@ -172,16 +177,19 @@ function Number_to_s(radix) { // @arg Integer: 2 - 36
     return this.toString(radix || 10);
 }
 
+// --- build -----------------------------------------------
 function wiz(object, extend, override) {
     for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
+        if (override || !(key in object)) {
+            Object.defineProperty(object, key, {
+                configurable: true, writable: true, value: extend[key]
+            });
+        }
     }
 }
 
-// --- export ---
+// --- export ----------------------------------------------
 _extendRubyLikeMethods();
 
-})();
+})(this.self || global);
 //}@ruby

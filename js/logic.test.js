@@ -2,9 +2,9 @@
 // @need: mm.js
 
 //{@test
-(function() {
+(function(global) {
 
-// --- header --------------------------------
+// --- header ----------------------------------------------
 function _extendNativeObjects() {
     mm.wiz(Array.prototype, {
         test:   mm.mix(Array_test, {    // [ test case, ... ].test(label:String = "", arg = undefined):void
@@ -44,7 +44,7 @@ function _recursiveTestCase(plan,    // @arg StringArrayArray: [[fn1, fn2, ...],
                                      // @inner: do test
     var index = 0;
 
-    group.each(function(action) { // @param String: command string. "fn1"
+    group.forEach(function(action) { // @param String: command string. "fn1"
 
         var lval, rval, // left-value, right-value
             jrv, // judge function result value
@@ -151,7 +151,7 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
                                      // @inner: stream DSL tokenizer
     var plan = [], remain = [];
 
-    command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).each(function(token) {
+    command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).forEach(function(token) {
         token === "+" ? 0 :
         token === ">" ? (remain.length && plan.push(remain.shifts())) // Array#shifts
                       : remain.push(token);
@@ -175,9 +175,11 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
                                         plan
  */
 
-// --- export --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 _extendNativeObjects();
 
-})();
+})(this.self || global);
 //}@test
 

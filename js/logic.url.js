@@ -5,14 +5,10 @@
 
 // --- header ----------------------------------------------
 function URL(url) { // @arg URLObject/URLString(= ""):
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "URL" });
-
     return !url ? URL_parse(global.location.href)
                 : typeof url === "string" ? URL_parse(url)
                                           : URL_build(url);
 }
-
 URL.build       = URL_build;        // URL.build(URLObject):URLString
 URL.parse       = URL_parse;        // URL.parse(url:URLString):URLObject
 URL.isURL       = URL_isURL;        // URL.isURL(url:String, isRelative:Boolean = false):Boolean
@@ -217,19 +213,21 @@ function URL_parseQuery(query) { // @arg URLString/URLQueryString: "key1=a;key2=
     return rv;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { URL: URL } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.URL = URL;
+    module.exports = { URL: URL };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.URL = URL;
 
 })(this.self || global);
 //}@url
 
+// --- test ------------------------------------------------
 /*
-    var URL = require("./logic.url").Monogram.URL;
+    var URL = require("./logic.url").URL;
 
     function test1() { // parse and build
         var absurl = "http://example.com/dir/file.exe?key=value#hash";

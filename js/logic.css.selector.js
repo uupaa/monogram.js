@@ -15,6 +15,7 @@ function CSSSelector(token,     // @arg CSSSelectorTokenObject:
                                 // @ret NodeArray:
     return _selector(token, context);
 }
+CSSSelector.name = "CSSSelector";
 
 // --- library scope vars ----------------------------------
                           //  +-----------------+-----------------------------
@@ -588,21 +589,22 @@ function _trimQuote(str) { // @arg String:
     return str;
 }
 
+// --- build -----------------------------------------------
 
-// --- build and export API --------------------------------
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { CSSSelector: CSSSelector } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.CSSSelector = CSSSelector;
+    module.exports = { CSSSelector: CSSSelector };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.CSSSelector = CSSSelector;
 
 })(this.self || global, this.document);
 //}@cssselector
 
+// --- test ------------------------------------------------
 /*
-    var Tokenizer = reuqire("./logic.css.selector").Monogram.CSSSelectorTokenizer;
-    var CSSSelector = reuqire("./logic.css.selector").Monogram.CSSSelector;
+    var Tokenizer = reuqire("./logic.css.selector").CSSSelectorTokenizer;
+    var CSSSelector = reuqire("./logic.css.selector").CSSSelector;
 
     function test1() {
         var NodeArray = CSSSelector( Tokenizer("E>F>G") );

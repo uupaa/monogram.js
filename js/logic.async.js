@@ -1,8 +1,8 @@
 // logic.async.js: extend Async/Sync Array methods
 // @need: logic.stream.js
 
-//{@await
-(function() {
+//{@async
+(function(global) {
 
 // --- header ----------------------------------------------
 function _extendNativeObjects() {
@@ -125,9 +125,11 @@ function wiz(object, extend, override) {
     }
 }
 
+// --- build -----------------------------------------------
+
 // --- export --------------------------------
 _extendNativeObjects();
 
-})();
-//}@await
+})(this.self || global);
+//}@async
 

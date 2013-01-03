@@ -3,11 +3,15 @@
 //{@json
 (function(global) { // @arg Global: window or global
 
+// --- header ----------------------------------------------
 global.JSON || (global.JSON = {
     parse:          JSON_parse,         // JSON.parse(str:String):Mix
     stringify:      JSON_stringify      // JSON.stringify(obj:Mix):Object
 });
 
+// --- library scope vars ----------------------------------
+
+// --- implement -------------------------------------------
 function JSON_parse(str) { // @arg String: JSON String
                            // @ret Mix:
                            // @throw: SyntaxError("Unexpected token: ...")
@@ -93,6 +97,10 @@ function _toJSONEscapedString(str) { // @arg String:
                 return "\\u00" + ("0" + _.charCodeAt(0).toString(16)).slice(-2);
             });
 }
+
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 
 })(this.self || global);
 //}@json

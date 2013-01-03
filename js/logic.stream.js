@@ -2,9 +2,9 @@
 // @need: mm.js
 
 //{@stream
-(function() {
+(function(global) {
 
-// --- header --------------------------------
+// --- header ----------------------------------------------
 function _extendNativeObjects() {
     mm.wiz(Array.prototype, {
         stream:     Array_stream        // [].stream(delay:String/Integer = 0):Object
@@ -61,7 +61,7 @@ function _nextStream(methods, // @arg Object: { init, fin, halt, fn1, ... }
     }
     var i = 0, group = plan.shift(); // parallel execution group. [action, ...]
 
-    group && group.each(function(action) { // @param String: command string. "fn1"
+    group && group.forEach(function(action) { // @param String: command string. "fn1"
         var r, ms, delay = /^(?:(\d+ms)|(\d+s)|(\d+))$/.exec(action);
 
         if (delay) { // "1", "1s", "1ms"
@@ -156,7 +156,7 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
                                      // @inner: stream DSL tokenizer
     var plan = [], remain = [];
 
-    command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).each(function(token) {
+    command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).forEach(function(token) {
         token === "+" ? 0 :
         token === ">" ? (remain.length && plan.push(remain.shifts())) // Array#shifts
                       : remain.push(token);
@@ -165,9 +165,11 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
     return plan;
 }
 
-// --- export --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 _extendNativeObjects();
 
-})();
+})(this.self || global);
 //}@stream
 

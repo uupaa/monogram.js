@@ -14,6 +14,7 @@ function CSSSelectorTokenizer(selector) { // @arg CSSSelectorExpressionString:
                                           // @ret CSSSelectorTokenObject:
     return _tokenizer(selector);
 }
+CSSSelectorTokenizer.name = "CSSSelectorTokenizer";
 
 // --- library scope vars ----------------------------------
                           //  +-----------------+-----------------------------
@@ -201,13 +202,14 @@ function _innerLoop(expr,  // @arg String: CSS3 Selector Expression
     return expr;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { CSSSelectorTokenizer: CSSSelectorTokenizer } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.CSSSelectorTokenizer = CSSSelectorTokenizer;
+    module.exports = { CSSSelectorTokenizer: CSSSelectorTokenizer };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.CSSSelectorTokenizer = CSSSelectorTokenizer;
 
 })(this.self || global);
 //}@cssselector

@@ -3,8 +3,8 @@
 //{@es
 (function(global) {
 
+// --- header ----------------------------------------------
 function _polyfill() {
-    // --- ES6 Methods ---
     wiz(Array, {
         of:         Array_of,           // Array.of(...:Mix):Array
         from:       Array_from,         // Array.from(list:FakeArray):Array
@@ -95,9 +95,11 @@ function String_reverse() { // @ret String:
 // --- build -----------------------------------------------
 function wiz(object, extend, override) {
     for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
+        if (override || !(key in object))
+            Object.defineProperty(object, key, {
+                configurable: true, writable: true, value: extend[key]
+            });
+        }
     }
 }
 
@@ -107,4 +109,3 @@ _polyfill();
 })(this.self || global);
 //}@es
 
-// --- test ------------------------------------------------

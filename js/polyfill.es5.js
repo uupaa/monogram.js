@@ -3,6 +3,7 @@
 //{@es
 (function(global) {
 
+// --- header ----------------------------------------------
 function _polyfill() {
     if (!Object.keys) {
          Object.keys = Object_keys;     // Object.keys(obj:Mix):Array
@@ -23,7 +24,6 @@ function _polyfill() {
     }
 //}@ie8
 
-    // --- ES5 Methods ---
     wiz(Date, {
         now:        Date_now            // Date.now():Integer
     });
@@ -53,7 +53,6 @@ function _polyfill() {
 }
 
 // --- library scope vars ----------------------------------
-// none
 
 // --- implement -------------------------------------------
 function Object_keys(obj) { // @arg Object/Function/Array:
@@ -322,6 +321,4 @@ _polyfill();
 
 })(this.self || global);
 //}@es
-
-// --- test ------------------------------------------------
 

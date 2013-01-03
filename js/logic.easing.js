@@ -10,6 +10,8 @@
 // --- header ----------------------------------------------
 function Easing() {
 }
+Easing.name = "Easing";
+Easing.prototype = { constructor: Easing };
 
 // --- library scope vars ----------------------------------
 var _easing = {
@@ -57,23 +59,23 @@ var _easing = {
 };
 // --- implement -------------------------------------------
 
-// --- export --------------------------------
+// --- build -----------------------------------------------
 for (var fn in _easing) {
     Easing[fn] = new Function("t,b,c,d,q1,q2,q3,q4", "return " + _easing[fn]);
     Easing[fn].src = _easing[fn];
 }
 
-// --- build and export API --------------------------------
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { Easing: Easing } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.Easing = Easing;
+    module.exports = { Easing: Easing };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.Easing = Easing;
 
 })(this.self || global);
 //}@easing
 
+// --- test ------------------------------------------------
 /*
     var Easing = require("./logic.easing").Monogram.Easing;
 

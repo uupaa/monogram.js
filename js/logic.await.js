@@ -7,9 +7,6 @@
 function Await(events, // @arg Integer: event count
                fn) {   // @arg Function: fn(err:Error, args:MixArray)
                        // @help: Await
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "Await" });
-
     this._missable = 0;         // Integer: missable count
     this._events = events;      // Integer: event count
     this._pass  = 0;            // Integer: pass() called count
@@ -20,7 +17,7 @@ function Await(events, // @arg Integer: event count
 
     _judge(this); // events is 0 -> done
 }
-
+Await.name = "Await";
 Await.prototype = {
     constructor:Await,
     missable:   Await_missable, // Await#missable(count:Integer):this

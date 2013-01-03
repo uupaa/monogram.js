@@ -5,15 +5,13 @@
 
 // --- header ----------------------------------------------
 function Msg() {
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "Msg" });
-
-    this._init();
+    this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
+    this._broadcast   = []; // broadcast address
 }
 
+Msg.name = "Msg";
 Msg.prototype = {
     constructor:MSg,
-    _init:      Msg_init,
     bind:       Msg_bind,           // Msg#bind(...):this
     unbind:     Msg_unbind,         // Msg#unbind(...):this
     list:       Msg_list,           // Msg#list():ClassNameStringArray
@@ -23,26 +21,25 @@ Msg.prototype = {
 };
 
 // --- library scope vars ----------------------------------
+var _uid = 0; // unique class-instance id
 
 // --- implement -------------------------------------------
-function Msg_init() {
-    this._deliverable = {}; // deliverable instance db { __CLASS_UID__: instance, ... }
-    this._broadcast   = []; // broadcast address
-}
-
 function Msg_bind(ooo) { // @var_args Instance: register drain instance
                          // @ret this:
                          // @throw: Error("NOT_DELIVERABLE")
                          // @help: Msg#bind
                          // @desc: register the drain(destination of the message) instance
     Array.prototype.slice.call(arguments).forEach(function(instance) {
-        if (instance &&
-            instance.__CLASS_UID__ && typeof instance.msgbox === "function") {
-
-            this._deliverable[instance.__CLASS_UID__] = instance; // overwrite
-        } else {
-            throw new Error("NOT_DELIVERABLE");
+        if (instance) {
+            if (typeof instance.msgbox === "function") {
+                if (!instance.__CLASS_UID__) {
+                     instance.__CLASS_UID__ = ++uid;
+                }
+                this._deliverable[instance.__CLASS_UID__] = instance; // overwrite
+                return;
+            }
         }
+        throw new TypeError("NOT_DELIVERABLE");
     }, this);
 
     // update broadcast address
@@ -163,13 +160,14 @@ function _values(obj) { // @arg Object:
     return rv;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { Msg: Msg } };
-} else if (typeof mm !== "undefined") {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.Msg = Msg;
+    module.exports = { Msg: Msg };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.Msg = Msg;
 
 })(this.self || global);
 //}@msg

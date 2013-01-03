@@ -1,15 +1,13 @@
-// uri.js: polyfill encodeURIComponent and decodeURIComponent functions
+// polyfill.uri.js: polyfill encodeURIComponent and decodeURIComponent functions
 
 //{@uri
-(function(global) { // @arg Global: window or global
+(function(global) {
 
-if (!global.encodeURIComponent) {
-     global.encodeURIComponent = global_encodeURIComponent;
-}
-if (!global.decodeURIComponent) {
-     global.decodeURIComponent = global_decodeURIComponent;
-}
+// --- header ----------------------------------------------
 
+// --- library scope vars ----------------------------------
+
+// --- implement -------------------------------------------
 function global_encodeURIComponent(str) { // @arg String:
                                           // @ret String: percent encoded string
                                           // @desc: encode symbol in string.
@@ -85,6 +83,15 @@ function global_decodeURIComponent(str) { // @arg String: percent encoded string
         }
         return String.fromCharCode.apply(null, rv);
     });
+}
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
+if (!global.encodeURIComponent) {
+     global.encodeURIComponent = global_encodeURIComponent;
+}
+if (!global.decodeURIComponent) {
+     global.decodeURIComponent = global_decodeURIComponent;
 }
 
 })(this.self || global);

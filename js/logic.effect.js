@@ -4,6 +4,7 @@
 //{@fx
 (function(global) {
 
+// --- header ----------------------------------------------
 function _defineLibraryAPIs(mix) {
     mm.fx = mix(mm_fx, {
         spec:       mm_fx_spec,         // mm.fx.spec(a:Number/NumberArray, b:Number/NumberArray,
@@ -243,7 +244,9 @@ function mm_fx_tick(tick) { // @arg Function: callback
                       : { type: 0, tid: setTimeout(tick, 4) }
 }
 
-// --- build and export ---
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 _defineLibraryAPIs(mm.mix);
 
 })(this.self || global);
