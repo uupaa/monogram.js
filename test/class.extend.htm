@@ -1,0 +1,55 @@
+<!DOCTYPE html><html><head></head><body>
+<script src="../js/class.extend.js"></script>
+<script>
+
+// --- head ------------------------------------------------
+// --- Class Fish ---
+function Fish(arg) {
+    this.arg = arg;
+}
+Fish.name = "Fish";
+Fish.prototype.say = function() { return "fish"; };
+Fish.prototype.jump = function() { return "jump"; };
+
+// --- Class Ponyo extends Fish ---
+function Ponyo(arg) {
+    Fish.call(this, arg);
+}
+//Object.setPrototypeOf(Ponyo, Fish.prototype);
+Ponyo.extend(Fish);
+Ponyo.name = "Ponyo";
+Ponyo.prototype.say = function() { return "ponyo"; };
+
+// --- Class Human extends Ponyo ---
+function Human(arg) {
+    Ponyo.call(this, arg);
+}
+//Object.setPrototypeOf(Human, Ponyo.prototype);
+Human.extend(Ponyo);
+Human.name = "Human";
+Human.prototype.say = function() { return "human"; };
+Human.prototype.jump = function() { return "i can fly"; };
+
+// --- implement -------------------------------------------
+var fish  = new Fish("Fish.arg");
+var ponyo = new Ponyo("Ponyo.arg");
+var human = new Human("Human.arg");
+
+// --- test ------------------------------------------------
+console.log(fish.constructor.name  === "Fish"  ? "ok" : "ng");
+console.log(ponyo.constructor.name === "Ponyo" ? "ok" : "ng");
+console.log(human.constructor.name === "Human" ? "ok" : "ng");
+
+console.log(fish.arg  === "Fish.arg"  ? "ok" : "ng");
+console.log(ponyo.arg === "Ponyo.arg" ? "ok" : "ng");
+console.log(human.arg === "Human.arg" ? "ok" : "ng");
+
+console.log(fish.say()  === "fish"  ? "ok" : "ng"); // say impl
+console.log(ponyo.say() === "ponyo" ? "ok" : "ng"); // say impl(override)
+console.log(human.say() === "human" ? "ok" : "ng"); // say impl(override)
+
+console.log(fish.jump()  === "jump"      ? "ok" : "ng"); // jump impl
+console.log(ponyo.jump() === "jump"      ? "ok" : "ng"); // has not jump method
+console.log(human.jump() === "i can fly" ? "ok" : "ng"); // jump impl(override)
+</script></body></html>
+
