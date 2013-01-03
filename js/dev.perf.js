@@ -1,27 +1,31 @@
 // dev.perf.js: Performance API
-// @need: mm.js
 
 //{@perf
-(function(global) { // @arg Global: window or global
+(function(global) {
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs() {
-    mm.perf = mm_perf;  // mm.perf():Object
+function Perf() {
 }
+Perf.name = "Perf";
+Perf.prototype = {
+    constructor:Perf,
+    calc:       calc         // Perf#calc():Object
+};
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function mm_perf() { // @ret Object: { processing, redirect, appcache, dns, dom, load, fetch }
-                     //       processing - Number: Processing time
-                     //       redirect - Number: redirect elapsed
-                     //       appcache - Number: Application cache elapsed
-                     //       dns      - Number: DomainLookup elapsed
-                     //       dom      - Number: DOMContentLoaded event elapsed
-                     //       load     - Number: window.load event elapsed
-                     //       fetch    - Number: fetchStart to window.load event finished
-                     // @help: mm.perf
-                     // @desc: calc performance data
+function calc() { // @ret Object: { processing, redirect, appcache,
+                  //                dns, dom, load, fetch }
+                  //       processing - Number: Processing time
+                  //       redirect - Number: redirect elapsed
+                  //       appcache - Number: Application cache elapsed
+                  //       dns      - Number: DomainLookup elapsed
+                  //       dom      - Number: DOMContentLoaded event elapsed
+                  //       load     - Number: window.load event elapsed
+                  //       fetch    - Number: fetchStart to window.load event finished
+                  // @help: Perf#calc
+                  // @desc: calc performance data
 
     var tm = (global.performance || 0).timing || 0;
 
@@ -40,8 +44,9 @@ function mm_perf() { // @ret Object: { processing, redirect, appcache, dns, dom,
     };
 }
 
-// --- export --------------------------------
-_defineLibraryAPIs();
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 
 })(this.self || global);
 //}@perf
