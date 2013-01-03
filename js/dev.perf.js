@@ -7,10 +7,7 @@
 function Perf() {
 }
 Perf.name = "Perf";
-Perf.prototype = {
-    constructor:Perf,
-    calc:       calc         // Perf#calc():Object
-};
+Perf.calc = calc;
 
 // --- library scope vars ----------------------------------
 
@@ -24,7 +21,7 @@ function calc() { // @ret Object: { processing, redirect, appcache,
                   //       dom      - Number: DOMContentLoaded event elapsed
                   //       load     - Number: window.load event elapsed
                   //       fetch    - Number: fetchStart to window.load event finished
-                  // @help: Perf#calc
+                  // @help: Perf.calc
                   // @desc: calc performance data
 
     var tm = (global.performance || 0).timing || 0;
@@ -47,6 +44,11 @@ function calc() { // @ret Object: { processing, redirect, appcache,
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Perf: Perf };
+}
+global.Monogram || (global.Monogram = {});
+global.Monogram.Perf = Perf;
 
 })(this.self || global);
 //}@perf
