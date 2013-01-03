@@ -24,7 +24,7 @@ function Script_load(src,  // @arg String: JavaScript source
     };
     script.charset = "utf-8";
     script.src = src;
-    document.head.appendChild(script);
+    (document.head || _headTag()).appendChild(script);
 }
 
 function Script_run(expression, // @arg String: JavaScript Expression
@@ -34,8 +34,12 @@ function Script_run(expression, // @arg String: JavaScript Expression
 
     script.charset = "utf-8";
     script.text = expression;
-    document.head.appendChild(script);
+    (document.head || _headTag()).appendChild(script);
     fn && fn(null); // ok
+}
+
+function _headTag() {
+    return document.getElementsByTagName("head")[0] || document.body;
 }
 
 // --- build -----------------------------------------------
