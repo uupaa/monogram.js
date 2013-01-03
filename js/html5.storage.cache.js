@@ -6,32 +6,34 @@
 // --- header ----------------------------------------------
 function StorageCache() {
 }
+StorageCache.name = "StorageCache"; // fn.constructor.name -> "StorageCache"
 StorageCache.prototype = {
     constructor:StorageCache,
-    setup:      StorageCache_setup, // StorageCache#setup(storage:Instance, fn:Await/Function(= null)):this
-    name:       StorageCache_name,  // StorageCache#name():String
-    has:        StorageCache_has,   // StorageCache#has(id:String):void
-    get:        StorageCache_get,   // StorageCache#get(id:String):Object/null
-    set:        StorageCache_set,   // StorageCache#set(id:String, values:Array):this
-    list:       StorageCache_list,  // StorageCache#list():this
-    fetch:      StorageCache_fetch, // StorageCache#fetch(fn:Function = null):this
-    remove:     StorageCache_remove,// StorageCache#remove(id:String, fn:Function = null):this
-    clear:      StorageCache_clear, // StorageCache#clear(fn:Function = null):this
-    tearDown:   StorageCache_tearDown//StorageCache#tearDown(fn:Await/Function = null):this
+    setup:      setup,      // (storage:Instance, fn:Await/Function(= null)):this
+    name:       name,       // ():String
+    has:        has,        // (id:String):void
+    get:        get,        // (id:String):Object/null
+    set:        set,        // (id:String, values:Array):this
+    list:       list,       // ():Array
+    clear:      clear,      // (fn:Function = null):this
+    fetch:      fetch,      // (fn:Function = null):this
+    remove:     remove,     // (id:String, fn:Function = null):this
+    tearDown:   tearDown    // (fn:Await/Function = null):this
 };
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function StorageCache_setup(storage, // @arg Instance: SQLStorage or WebStorage
-                            fn) {    // @arg Await/Function(= null): fn(err:Error)
-                                     // @ret this:
+function setup(storage, // @arg Instance: SQLStorage / WebStorage / RAMStorage
+               fn) {    // @arg Await/Function(= null): fn(err:Error)
+                        // @ret this:
+                        // @help: StorageCache#setup
     var that = this;
-    var isAwait = !!(fn && fn.ClassName === "Await");
+    var isAwait = !!(fn && fn.constructor.name === "Await");
 
     this._storage = storage;
-    this._cache = {};   // Object: on memory cache data. { id: { hash, time, data }, ... }
-    this._queue = [];   // Array: insert queue [ [id, hash, time, data], ...]
+    this._cache = {};   // Object: on memory cache data. { id: { ... }, ... }
+    this._queue = [];   // Array: insert queue [ values, ...]
     this._timerID = 0;  // Integer: timer id
 
     storage.fetch(function(err, result) {
@@ -39,45 +41,51 @@ function StorageCache_setup(storage, // @arg Instance: SQLStorage or WebStorage
 
         that._cache = result;
         if (fn) {
-            isAwait ? fn.miss() : fn( new TypeError("WebStorage NOT_IMPL") );
+            isAwait ? fn.pass()
+                    : fn(null); // ok
         }
-        //fn(null);
     });
     return this;
 }
 
-function StorageCache_name() { // @ret String:
-                               // @desc: get storage class name
+function name() { // @ret String:
+                  // @help: StorageCache#name
+                  // @desc: get storage class name
     return this._storage.constructor.name;
 }
 
-function StorageCache_has(id) { // @arg String:
-                                // @ret Boolean:
-                                // @desc: has id
+function has(id) { // @arg String:
+                   // @ret Boolean:
+                   // @help: StorageCache#has
+                   // @desc: has id
     return id in this._cache;
 }
 
-function StorageCache_get(id) { // @arg String:
-                                // @ret Object/null:
+function get(id) { // @arg String:
+                   // @ret Object/null:
+                   // @help: StorageCache#get
     return this._cache[id] || null;
 }
 
-function StorageCache_set(id,       // @arg String:
-                          values) { // @arg Array: [col2value, col3value, ...]
-                                    // @ret this:
-                                    // @desc: add/update row
+function set(id,       // @arg String:
+             values) { // @arg Array: [col2value, col3value, ...]
+                       // @ret this:
+                       // @help: StorageCache#set
+                       // @desc: add/update row
     this._cache[id] = values;
     this._queue.push([id].concat(values));
     _startQueue(this);
     return this;
 }
 
-function StorageCache_list() { // @ret Array:
+function list() { // @ret Array:
+                  // @help: StorageCache#list
     return Object.keys(this._cache);
 }
 
-function StorageCache_fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
-                                  // @ret this:
+function fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
+                     // @ret this:
+                     // @help: StorageCache#fetch
     var that = this;
 
     this._storage.fetch(function(err, result) {
@@ -89,26 +97,29 @@ function StorageCache_fetch(fn) { // @arg Function(= null): fn(err:Error, result
     return this;
 }
 
-function StorageCache_remove(id,   // @arg String:
-                             fn) { // @arg Function(= null): fn(err:Error)
-                                   // @ret this:
+function remove(id,   // @arg String:
+                fn) { // @arg Function(= null): fn(err:Error)
+                      // @ret this:
+                      // @help: StorageCache#remove
     delete this._cache[id];
     this._storage.remove(id, fn);
     return this;
 }
 
-function StorageCache_clear(fn) { // @arg Function(= null): fn(err:Error)
-                                  // @ret this:
-                                  // @desc: clear all data
+function clear(fn) { // @arg Function(= null): fn(err:Error)
+                     // @ret this:
+                     // @help: StorageCache#clear
+                     // @desc: clear all data
     _stopQueue(this);
     this._cache = {};
     this._storage.clear(fn);
     return this;
 }
 
-function StorageCache_tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
-                                     // @ret this:
-                                     // @desc: drop table
+function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
+                        // @ret this:
+                        // @help: StorageCache#tearDown
+                        // @desc: drop table
     _stopQueue(this);
     this._cache = {};
     this._storage.tearDown(fn);
@@ -145,13 +156,14 @@ function _tick(that) {
     });
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { StorageCache: StorageCache } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.StorageCache = StorageCache;
+    module.exports = { StorageCache: StorageCache };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.StorageCache = StorageCache;
 
 })(this.self || global);
 //}@storagecache

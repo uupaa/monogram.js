@@ -6,54 +6,54 @@
 
 // --- header ----------------------------------------------
 function Ajax() {
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "Ajax" });
 }
-
+Ajax.name = "Ajax";         // fn.constructor.name -> "Ajax"
 Ajax.prototype = {
-    constructor:Ajax
-    load:       Ajax_load   // Ajax#load(url:String, param:Object, fn:Function):this
+    constructor:Ajax,
+    load:       load        // (url:String, param:Object, fn:Function):this
 };
 
 // --- library scope vars ----------------------------------
-//
+
 // --- implement -------------------------------------------
-function Ajax_load(url,   // @arg String:
-                   param, // @arg Object: { type }
-                          //    param.type - String(= "text"):
-                          //        "binary"        -> load Binary to Binary
-                          //        "binary/base64" -> load Binary to Base64String
-                          //        "image"         -> load Binary to Binary
-                          //        "image/base64"  -> load Binary to Base64String
-                          //        "text"          -> load Text to Text
-                          //        "text/js"       -> load Text to evvalJavaScript
-                          //        "text/node"     -> load Text to HTMLFragment
-                   fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node, time:Integer)
-                          //    fn.err - Error: error Object or null
-                          //    fn.data - String/Base64String/Node:
-                          //    fn.time - Integer: from Last-Modified header or current time
-                          // @ret this:
-                          // @desc: get remote data
+function load(url,   // @arg String:
+              param, // @arg Object: { type }
+                     //    param.type - String(= "text"):
+                     //        "binary"        -> load Binary to Binary
+                     //        "binary/base64" -> load Binary to Base64String
+                     //        "image"         -> load Binary to Binary
+                     //        "image/base64"  -> load Binary to Base64String
+                     //        "text"          -> load Text to Text
+                     //        "text/js"       -> load Text to evvalJavaScript
+                     //        "text/node"     -> load Text to HTMLFragment
+              fn) {  // @arg Await/Function(= null): fn(err:Error, data:String/Base64String/Node, time:Integer)
+                     //    fn.err - Error: error Object or null
+                     //    fn.data - String/Base64String/Node:
+                     //    fn.time - Integer: Last-Modified header value or 0
+                     // @ret this:
+                     // @help: Ajax#load
+                     // @desc: get remote data
     param = param || {};
 
     var type = param.type || "text";
     var xhr = new XMLHttpRequest();
-    var isAwait = fn.ClassName === "Await";
+    var isAwait = fn.constructor.name === "Await";
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             var text = xhr.responseText;
             var mod  = xhr.getResponseHeader("Last-Modified") || "";
-            var time = mod ? Date.parse(mod) : Date.now();
+            var time = mod ? Date.parse(mod) : 0;
 
             switch (xhr.status) {
             case 200:
             case 201:
                 // "image/base64" -> Base64String
                 if (/base64$/i.test(type)) {
-                    return isAwait ? fn.pass({ data: Monogram.Base64.btoa(text, true),
-                                               time: time })
-                                   : fn(null, Monogram.Base64.btoa(text, true), time);
+                    return isAwait ? fn.pass({
+                                            data: global.Monogram.Base64.btoa(text, true),
+                                            time: time })
+                                   : fn(null, global.Monogram.Base64.btoa(text, true), time);
                 }
                 // "text/node" -> <body>
                 if (/node$/i.test(type)) {
@@ -89,19 +89,20 @@ function Ajax_load(url,   // @arg String:
     return this;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { Ajax: Ajax } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.Ajax = Ajax;
+    module.exports = { Ajax: Ajax };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.Ajax = Ajax;
 
 })(this.self || global);
 //}@ajax
 
 /*
-    var Ajax = require("./Ajax").Monogram.Ajax;
+    var Ajax = require("./Ajax").Ajax;
 
     new Ajax().load(url, { type: "text" }, function(err, result, time) {
     });

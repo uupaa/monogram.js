@@ -1,4 +1,4 @@
-// html5.ram.storage.js: RAMStorage
+// html5.ram.storage.js: On Memory Storage
 
 //{@ramstorage
 (function(global) {
@@ -6,26 +6,28 @@
 // --- header ----------------------------------------------
 function RAMStorage() {
 }
+RAMStorage.name = "RAMStorage"; // fn.constructor.name -> "RAMStorage"
 RAMStorage.prototype = {
     constructor:RAMStorage,
-    setup:      RAMStorage_setup,   // RAMStorage#setup(dbName:String, tableName:String, fn:Await/Function = null):void
-    has:        RAMStorage_has,     // RAMStorage#has(id:String, fn:Function = null):Boolean
-    get:        RAMStorage_get,     // RAMStorage#get(id:String, fn:Function = null):Object
-    set:        RAMStorage_set,     // RAMStorage#set(id:String, values:Array, fn:Function = null):this
-    list:       RAMStorage_list,    // RAMStorage#list(fn:Function = null):Array
-    clear:      RAMStorage_clear,   // RAMStorage#clear(fn:Function = null):this
-    fetch:      RAMStorage_fetch,   // RAMStorage#fetch(fn:Function = null):Object
-    remove:     RAMStorage_remove,  // RAMStotage#remove(id:String, fn:Function = null):this
-    tearDown:   RAMStorage_tearDown // RAMStorage#tearDown(fn:Await/Function = null):this
+    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):void
+    has:        has,        // (id:String, fn:Function = null):Boolean
+    get:        get,        // (id:String, fn:Function = null):Object
+    set:        set,        // (id:String, values:Array, fn:Function = null):this
+    list:       list,       // (fn:Function = null):Array
+    clear:      clear,      // (fn:Function = null):this
+    fetch:      fetch,      // (fn:Function = null):Object
+    remove:     remove,     // (id:String, fn:Function = null):this
+    tearDown:   tearDown    // (fn:Await/Function = null):this
 };
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function RAMStorage_setup(dbName,    // @arg String: db name
-                          tableName, // @arg String: table name
-                          fn) {      // @arg Await/Function(= null): fn(err:Error)
-                                     // @ret this:
+function setup(dbName,    // @arg String: db name
+               tableName, // @arg String: table name
+               fn) {      // @arg Await/Function(= null): fn(err:Error)
+                          // @ret this:
+                          // @help: RAMStorage#setup
     var isAwait = !!(fn && fn.constructor.name === "Await");
 
     this._db = {};
@@ -35,20 +37,22 @@ function RAMStorage_setup(dbName,    // @arg String: db name
     return this;
 }
 
-function RAMStorage_has(id,   // @arg String:
-                        fn) { // @arg Function(= null): fn(err:Error, has:Boolean)
-                              // @ret Boolean:
+function has(id,   // @arg String:
+             fn) { // @arg Function(= null): fn(err:Error, has:Boolean)
+                   // @ret Boolean:
+                   // @help: RAMStorage#has
     var rv = (this._tableName + id) in this._db;
 
     fn && fn(null, rv);
     return rv;
 }
 
-function RAMStorage_get(id,   // @arg String:
-                        fn) { // @arg Function(= null): fn(err:Error, result:Object)
-                              // @ret Object:
+function get(id,   // @arg String:
+             fn) { // @arg Function(= null): fn(err:Error, result:Object)
+                   // @ret Object:
+                   // @help: RAMStorage#get
     if ((this._tableName + id) in this._db) {
-        var rv = {}, ary = this._db[this._tableName + id].split("¥t");
+        var rv = {}, ary = this._db[this._tableName + id].split("\v");
 
         rv["id"]   =  id;
         rv["hash"] =  ary[0];
@@ -61,16 +65,18 @@ function RAMStorage_get(id,   // @arg String:
     return null;
 }
 
-function RAMStorage_set(id,     // @arg String:
-                        values, // @arg Array: [col2value, col3value, ...]
-                        fn) {   // @arg Function(= null): fn(err:Error)
-                                // @ret this:
-    this._db[this._tableName + id] = values.join("¥t");
+function set(id,     // @arg String:
+             values, // @arg Array: [col2value, col3value, ...]
+             fn) {   // @arg Function(= null): fn(err:Error)
+                     // @ret this:
+                     // @help: RAMStorage#set
+    this._db[this._tableName + id] = values.join("\v");
     fn && fn(null); // ok
     return this;
 }
 
-function RAMStorage_list(fn) { // @arg Function(= null): fn(err:Error, list:Array)
+function list(fn) { // @arg Function(= null): fn(err:Error, list:Array)
+                    // @help: RAMStorage#list
     var list = [], key, id;
 
     for (key in this._db) {
@@ -83,8 +89,9 @@ function RAMStorage_list(fn) { // @arg Function(= null): fn(err:Error, list:Arra
     return list;
 }
 
-function RAMStorage_clear(fn) { // @arg Function(= null): fn(err:Error)
-                                // @ret this:
+function clear(fn) { // @arg Function(= null): fn(err:Error)
+                     // @ret this:
+                     // @help: RAMStorage#clear
     for (var key in this._db) {
         if (key.indexOf(this._tableName) === 0) {
             delete this._db[key];
@@ -94,13 +101,14 @@ function RAMStorage_clear(fn) { // @arg Function(= null): fn(err:Error)
     return this;
 }
 
-function RAMStorage_fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
-                                // @ret Object: result
+function fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
+                     // @ret Object: result
+                     // @help: RAMStorage#fetch
     var rv = {}, key, ary, id;
 
     for (key in this._db) {
         if (key.indexOf(this._tableName) === 0) {
-            ary = this._db[key].split("¥t");
+            ary = this._db[key].split("\v");
             id = key.split(this._tableName)[1];
             rv[id] = {
                 id:     id,
@@ -114,16 +122,18 @@ function RAMStorage_fetch(fn) { // @arg Function(= null): fn(err:Error, result:O
     return rv;
 }
 
-function RAMStorage_remove(id,   // @arg String:
-                           fn) { // @arg Function(= null): fn(err:Error)
-                                 // @ret this:
+function remove(id,   // @arg String:
+                fn) { // @arg Function(= null): fn(err:Error)
+                      // @ret this:
+                      // @help: RAMStorage#remove
     delete this._db[this._tableName + id];
     fn && fn(null);
     return this;
 }
 
-function RAMStorage_tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
-                                   // @ret this:
+function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
+                        // @ret this:
+                        // @help: RAMStorage#tearDown
     var isAwait = !!(fn && fn.constructor.name === "Await");
 
     this._db = {};
@@ -132,13 +142,14 @@ function RAMStorage_tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
     return this;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { RAMStorage: RAMStorage } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.RAMStorage = RAMStorage;
+    module.exports = { RAMStorage: RAMStorage };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.RAMStorage = RAMStorage;
 
 })(this.self || global);
 //}@ramstorage

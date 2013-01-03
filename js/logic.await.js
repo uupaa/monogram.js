@@ -131,19 +131,21 @@ function Await_getStatus() { // @ret Object: { missable, events, pass, miss, sta
     };
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
+
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { Await: Await } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.Await = Await;
+    module.exports = { Await: Await };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.Await = Await;
 
 })(this.self || global);
 //}@await
 
+// --- test ------------------------------------------------
 /*
-    var Await = require("./logic.await").Monogram.Await;
+    var Await = require("./logic.await").Await;
 
     function test1() { // await sync 4 events
         var await = new Await(4, callback);

@@ -6,33 +6,8 @@
 // --- header ----------------------------------------------
 function Base64(data,                 // @arg String/Array:
                 decodeBase64String) { // @arg Boolean(= false):
-    Object.defineProperty &&
-        Object.defineProperty(this, "ClassName", { value: "Base64" });
-
     this._data = [];
-    this._init(data, decodeBase64String);
-}
 
-Base64.prototype = {
-    constructor:    Base64,
-    _init:          Base64_init,
-    toArray:        Base64_toArray,         // Base64#toArray():Array/Base64Array
-    toString:       Base64_toString,        // Base64#toString():String
-    toBase64String: Base64_toBase64String   // Base64#toBase64String(safe:Boolean = false):Base64String
-};
-
-Base64.btoa = Base64_btoa;  // Base64#btoa(binary:String, fromXHR:Boolean = false):Base64String
-Base64.atob = Base64_atob;  // Base64#atob(base64:String):BinaryString
-
-// --- library scope vars ----------------------------------
-var _DB = {
-        chars: [],                          // ["A", "B", ... "/"]
-        codes: { "=": 0, "-": 62, "_": 63 } // { 65: 0, 66: 1 }
-                                            // charCode and URLSafe64 chars("-", "_")
-    };
-
-// --- implement -------------------------------------------
-function Base64_init(data, decodeBase64String) {
     if (Array.isArray(data)) {
         this._data = data; // by ref (not copy)
     } else if (typeof data === "string") {
@@ -40,28 +15,29 @@ function Base64_init(data, decodeBase64String) {
                                         : _toByteArray(data);
     }
 }
+Base64.name = "Base64";             // fn.constructor.name -> "Base64"
+Base64.btoa = Base64_btoa;          // (binary:String, fromXHR:Boolean = false):Base64String
+Base64.atob = Base64_atob;          // (base64:String):BinaryString
+Base64.prototype = {
+    constructor:    Base64,
+    toArray:        toArray,        // ():Array/Base64Array
+    toString:       toString,       // ():String
+    toBase64String: toBase64String  // (safe:Boolean = false):Base64String
+};
 
-function Base64_toString() { // @ret String:
-                             // @help: Base64#toString
-                             // @desc: to
-    return _toString(this._data);
-}
+// --- library scope vars ----------------------------------
+var _CODE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+    _DB = {
+        chars: _CODE.split(""),             // ["A", "B", ... "/"]
+        codes: { "=": 0, "-": 62, "_": 63 } // { 65: 0, 66: 1 }
+                                            // charCode and URLSafe64 chars("-", "_")
+    };
 
-function Base64_toArray() { // @ret Array/Base64Array:
-                            // @help: Base64#toArray
-                            // @desc: get raw data
-    return this._data;
-}
-
-function Base64_toBase64String(safe) { // @arg Boolean(= false):
-                                       // @ret Base64String:
-                                       // @help: Base64#toBase64String
-    return _encode(this._data, safe);
-}
-
+// --- implement -------------------------------------------
 function Base64_btoa(binary,    // @arg String:
-                     fromXHR) { // @arg Boolean(= false):
+                     fromXHR) { // @arg Boolean(= false): true is non ascii values
                                 // @ret Base64String:
+                                // @help: Base64.btoa
     if (global.btoa) {
         if (!fromXHR) {
             try {
@@ -77,6 +53,7 @@ function Base64_btoa(binary,    // @arg String:
 
 function Base64_atob(base64) { // @arg Base64String:
                                // @ret BinaryString:
+                               // @help: Base64.atob
     if (global.atob) {
         try {
             return global.atob(base64);
@@ -85,6 +62,24 @@ function Base64_atob(base64) { // @arg Base64String:
         }
     }
     return _toString( _decode(base64) );
+}
+
+function toArray() { // @ret Array/Base64Array:
+                     // @help: Base64#toArray
+                     // @desc: get raw data
+    return this._data;
+}
+
+function toString() { // @ret String:
+                      // @help: Base64#toString
+                      // @desc: to
+    return _toString(this._data);
+}
+
+function toBase64String(safe) { // @arg Boolean(= false):
+                                // @ret Base64String:
+                                // @help: Base64#toBase64String
+    return _encode(this._data, safe);
 }
 
 function _toAsciiString(binary) { // @arg String: has non ascii value
@@ -172,30 +167,26 @@ function _decode(str) { // @arg Base64String:
     return rv;
 }
 
-// --- build and export API --------------------------------
+// --- build -----------------------------------------------
 (function() { // @inner: init base64
-    var CODE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-               "abcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    _DB.chars = CODE.split("");
-
     for (var i = 0; i < 64; ++i) {
-        _DB.codes[CODE.charAt(i)] = i;
+        _DB.codes[_CODE.charAt(i)] = i;
     }
+    console.log(_DB.codes);
 })();
 
+// --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
-    module.exports = { Monogram: { Base64: Base64 } };
-} else {
-    global.Monogram || (global.Monogram = {});
-    global.Monogram.Base64 = Base64;
+    module.exports = { Base64: Base64 };
 }
+global.Monogram || (global.Monogram = {});
+global.Monogram.Base64 = Base64;
 
 })(this.self || global);
 //}@base64
 
 /*
-    var Base64 = require("./codec.base64").Monogram.Base64;
+    var Base64 = require("./codec.base64").Base64;
 
     function test1() { // encode/decode String <-> Base64String
         var base64String = new Base64("abc").toBase64String(); // -> "YWJj"
