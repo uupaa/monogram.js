@@ -95,6 +95,20 @@ function complex(arg1,   // @arg String/Object(= undefined):
 }
 
 // --- build -----------------------------------------------
+//{@ie
+if (!Date.name) { // JavaScript Lv0
+    Date.name = "Date";
+    Array.name = "Array";
+    Number.name = "Number";
+    RegExp.name = "RegExp";
+    String.name = "String";
+    Boolean.name = "Boolean";
+    Function.name = "Function";
+    Error.name = "Error";
+    TypeError.name = "TypeError";
+    SyntaxError.name = "SyntaxError";
+}
+//}@ie
 
 // --- export ----------------------------------------------
 if (typeof module !== "undefined") { // is modular
