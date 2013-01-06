@@ -41,6 +41,7 @@ function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
     var isAwait = !!(fn && fn.constructor.name === "Await");
 
     this._db.clear();
+
     fn && ( isAwait ? fn.pass() : fn(null) ); // ok
     return this;
 }

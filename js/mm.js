@@ -1,3 +1,9 @@
+// mm.js
+
+// @need: Monogram.Env (in logic.env.js)
+//        Monogram.UID (in logic.uid.js)
+//        Monogram.Type (in logic.Type.js)
+
 var mm; // global.mm - monogram.js library name space
 
 mm || (function(global) { // @arg Global: window or global
@@ -69,11 +75,6 @@ function _defineLibraryAPIs(mix) {
         alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
         deny:       mm_deny,            // mm.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
         allow:      mm_allow,           // mm.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-        // --- type detection ---
-        type:   mix(mm_type, {          // mm.type(mix:Mix):String
-            alias:  mm_type_alias       // mm.type.alias(obj:Object):void
-        }),
-        complex:    mm_complex,         // mm.complex(arg1:String/Object, arg2:String/Number):Integer
         // --- log / log group ---
         log:    mix(mm_log, {           // mm.log(...:Mix):void
             copy:   mm_log_copy,        // mm.log.copy():Object
@@ -87,72 +88,15 @@ function _defineLibraryAPIs(mix) {
             nest:   0                   // mm.logg.nest - Number: nest level
         })
     });
-    // --- environment ---
-    mm.env = _detectEnv({
-        ua:         "",                 // mm.env.ua     - String: user agent
-        lang:       "en",               // mm.env.lang   - String: language. "en", "ja", ...
-        secure:     false,              // mm.env.secure - Boolean: is SSL page
-        // --- browser ---
-        ie:         false,// mm.env.ie     - Boolean: is IE
-        ie8:        false,              // mm.env.ie8    - Boolean: is IE 8
-        ie9:        false,              // mm.env.ie9    - Boolean: is IE 9
-        ie10:       false,              // mm.env.ie10   - Boolean: is IE 10
-        ipad:       false,              // mm.env.ipad   - Boolean: is iPad
-        gecko:      !!global.netscape,  // mm.env.gecko  - Boolean: is Gecko
-        opera:      !!global.opera,     // mm.env.opera  - Boolean: is Opera
-        chrome:     false,              // mm.env.chrome - Boolean: is Chrome, Chrome for Android, Chrome for iOS
-        webkit:     false,              // mm.env.webkit - Boolean: is WebKit
-        safari:     false,              // mm.env.safari - Boolean: is Safari, MobileSafari
-        mobile:     false,              // mm.env.mobile - Boolean: is Mobile device
-        // --- run at ... ---
-        node:       !!(global.require &&
-                       global.process), // mm.env.node   - Boolean: is node.js (run at Server)
-        ngcore:     !!global.Core,      // mm.env.ngcore - Boolean: is ngCore (run at ngCore)
-        worker:     !!global.importScripts,
-                                        // mm.env.worker - Boolean: is WebWorkers (run at Worker)
-        browser:    false,
-        titanium:   !!global.Ti,        // mm.env.titanium - Boolean: is Titanium (run at Titanium)
-
-        // --- os ---
-        ios:        false,              // mm.env.ios    - Boolean: is iOS
-        mac:        false,              // mm.env.mac    - Boolean: is Mac OS X
-        android:    false,              // mm.env.android - Boolean: is Android
-        windows:    false,              // mm.env.windows - Boolean: is Windows
-        // --- device ---
-        touch:      false,              // mm.env.touch  - Boolean: is Touch device
-        retina:     false               // mm.env.retina - Boolean: is Retina display. devicePixelRatio >= 2.0
-    });
-    // --- version ---
-    mm.ver = {
-        ie:         !mm.env.ie      ? 0 : _ver("MSIE "),        // 10, 9
-        ios:        !mm.env.ios     ? 0 : _ver("OS "),          // 6, 5.1
-        mac:        !mm.env.mac     ? 0 : _ver("Mac OS X"),     // 10.6
-        gecko:      !mm.env.gecko   ? 0 : _ver("rv:"),          // 16, 15
-        opera:      !mm.env.opera   ? 0 : parseFloat(global.opera.version()),
-        chrome:     !mm.env.chrome  ? 0 : _ver("Chrome/"),      // 22
-        webkit:     !mm.env.webkit  ? 0 : _ver("AppleWebKit/"), // 537,4, 534
-        safari:     !mm.env.safari  ? 0 : _ver("Version/"),     // 6.0, 5.1
-        android:    !mm.env.android ? 0 : _ver("Android"),      // 4.1, 4.0, 2.3
-        windows:    !mm.env.windows ? 0 : _ver("Windows NT ")   // win8: 6.2, win7: 6.1, vista: 6, xp: 5.1
-    };
-    function _ver(rex) {
-        return parseFloat(mm.env.ua.split(rex)[1].replace("_", ".")) || 1;
-    }
-    // --- vendor prefix ---
-    // mm.vendor.fn - String: vendor function prefix
-    // mm.vendor.css - String: vendor css prefix
-    // mm.vendor.style - String: vendor style property prefix
-    mm.vendor = mm.env.webkit ? { fn: "webkit",css: "-webkit-",style: "webkit" }
-              : mm.env.gecko  ? { fn: "moz",   css: "-moz-",   style: "Moz"    }
-              : mm.env.opera  ? { fn: "o",     css: "-o-",     style: "O"      }
-              : mm.env.ie     ? { fn: "ms",    css: "-ms-",    style: "ms"     }
-                              : { fn: "",      css: "",        style: ""       };
+    mm.type = Monogram.Type;
+    mm.env = new Monogram.Env();
 }
 
 // --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
 function _extendNativeObjects(mix, wiz) {
 
     // --- Type Detection, API Versioning ---
+/*
     wiz(Function.prototype, { ClassName: "Function",typeFunction: true, api: Object_api });
     wiz( Boolean.prototype, { ClassName: "Boolean", typeBoolean:  true, api: Object_api });
     wiz(  String.prototype, { ClassName: "String",  typeString:   true, api: Object_api });
@@ -160,6 +104,7 @@ function _extendNativeObjects(mix, wiz) {
     wiz(  RegExp.prototype, { ClassName: "Regexp",  typeRegExp:   true, api: Object_api });
     wiz(   Array.prototype, { ClassName: "Array",   typeArray:    true, api: Object_api });
     wiz(    Date.prototype, { ClassName: "Date",    typeDate:     true, api: Object_api });
+ */
 
     // --- Extension ---
     wiz(Date, {
@@ -297,12 +242,7 @@ function _extendNativeObjects(mix, wiz) {
     wiz(Function.prototype, {
 //[ES]  bind:       Function_bind,      // fn#bind():Function
         argsApply:  Function_argsApply, // fn#argsApply(that, ...):Mix
-        nickname:   Function_nickname,  // fn#nickname(defaultName:String = ""):String
-        // --- help ---
-        help:   mix(Function_help, {    // fn#help(that:Object = null):String
-            add:    Function_help_add,  // fn#help.add(url:URLString, word:String/StringArray/RegExp):void
-            url:    Function_help_url   // fn#help.url(fn:Function):String
-        })
+        nickname:   Function_nickname   // fn#nickname(defaultName:String = ""):String
     });
     wiz(RegExp, {
         esc:        RegExp_esc,         // RegExp.esc(str:String):EscapedString
@@ -328,10 +268,11 @@ function Hash(obj) { // @arg Object:
                      // @help: mm.Hash
     Object_collectOwnProperties(this, obj);
 }
+Hash.name = "Hash";
 
 function _defineHashPrototype(wiz) {
     wiz(Hash.prototype, {
-        ClassName:  "Hash",
+        constructor:Hash,
         // --- mixin ---
         mix:        function(extend, override) {
                                       mm_mix(this, extend.valueOf(), override); return this; /* @help: Hash#mix */ },
@@ -371,18 +312,9 @@ function _defineHashPrototype(wiz) {
 }
 
 // --- library scope vars ----------------------------------
-var _uid_db  = {},
-    _help_db = [], // [ <url, rex>, ... ]
-    _log_db  = [],
+var _log_db  = [],
     _log_index = 0,
-    _conv_db,
-    _type_alias_db = {
-        "NodeList": "list",
-        "Arguments": "list",
-        "NamedNodeMap": "attr",
-        "HTMLCollection": "list",
-        "CSSStyleDeclaration": "style"
-    };
+    _conv_db;
 
 // --- implement -------------------------------------------
 function mm_api(version) { // @arg Integer: API version
@@ -446,16 +378,19 @@ function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseCl
     mm[spec.klass] = spec.traits.has("Singleton") ? SingletonClass
                                                   : GenericClass;
 
-    if (spec.base) {
+    if (spec.base) { // Class extend BaseClass
         InheritBaseClass = function() {};
         InheritBaseClass.prototype = mm[spec.base].prototype;
         mm[spec.klass].prototype = new InheritBaseClass();
 
         mm_mix(mm[spec.klass].prototype, properties, true); // override mixin prototype.methods
+        mm[spec.klass].name = spec.klass;
         mm[spec.klass].prototype.constructor = mm[spec.klass];
         mm[spec.klass].prototype.__BASE__ = mm_mix({}, mm[spec.base].prototype);
     } else {
         mm_mix(mm[spec.klass].prototype, properties); // mixin prototype.methods
+        mm[spec.klass].name = spec.klass;
+        mm[spec.klass].prototype.constructor = mm[spec.klass];
         mm[spec.klass].prototype.__BASE__ = null;
     }
     mm[spec.klass].prototype.callSuper = _callSuperMethod;
@@ -481,7 +416,6 @@ function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseCl
     }
 
     function _factory(that, args) { // @lookup: className, properties,
-        Object.defineProperty(that, "ClassName",     { value: spec.klass });
         Object.defineProperty(that, "__CLASS_UID__", { value: mm_uid("mm.class") });
 
         var obj = that, stack = [];
@@ -741,20 +675,14 @@ function mm_uid(group) { // @arg String(= ""): uid group name.
                          // @ret Integer: unique number, at 1 to 0x1fffffffffffff
                          // @help: mm.uid
                          // @desc: get unique id
-    _uid_db[group] || (_uid_db[group] = 0);
-
-    // IEEE754 fraction size. 0x1fffffffffffff = Math.pow(2, 53) - 1
-    if (++_uid_db[group] >= 0x1fffffffffffff) { // overflow?
-          _uid_db[group] = 1; // reset
-    }
-    return _uid_db[group];
+    return global.Monogram.UID.create(group);
 }
 
 function mm_cast(mix) { // @arg Attr/Hash/List/FakeArray/Style/DateString/Mix:
                         // @ret Object/Array/Date/Mix:
                         // @help: mm.cast
                         // @desc: remove the characteristic
-    switch (mm_type(mix)) {
+    switch (mm.type(mix)) {
     case "attr":    return _mm_cast_attr(mix);    // cast(Attr) -> Object
     case "hash":    return mix.valueOf();         // cast(Hash) -> Object
     case "list":    return Array.from(mix);       // cast(List) -> Array
@@ -819,7 +747,7 @@ function _recursiveCopy(mix, depth, hook, nest) { // @inner:
     }
     var rv, keys, i = 0, iz;
 
-    switch (mm_type(mix)) {
+    switch (mm.type(mix)) {
     // --- deep copy ---
     case "undefined":
     case "null":    return "" + mix; // "null" or "undefined"
@@ -949,7 +877,11 @@ function _recursiveDump(mix,    // @arg Mix: value
                 return mix.nickname("") + "()" + sp;
             }
             // Class name detection
-            return mix.ClassName ? "mm." + mix.ClassName + sp : "";
+            if (mix.constructor && mix.constructor.name &&
+                mix.constructor.name !== "Object") {
+                return "mm." + mix.constructor.name + sp;
+            }
+            return "";
         }
     }
 
@@ -977,7 +909,7 @@ function _recursiveDump(mix,    // @arg Mix: value
         sp = spaces > 0 ? " "  : "", // a space
         indent = " ".repeat(spaces * nest);
 
-    switch (mm_type(mix)) {
+    switch (mm.type(mix)) {
     case "null":
     case "global":
     case "number":
@@ -1184,84 +1116,11 @@ function _judgeType(mix, type) {
         return true;
     }
     return type === "void"      ? mix === void 0
-         : type === "this"      ? !!mix.ClassName
-         : type === "class"     ? !!mix.ClassName
+         : type === "this"      ? !!mix.constructor.name
+         : type === "class"     ? !!mix.constructor.name
          : type === "integer"   ? Number.isInteger(mix)
          : type === "primitive" ? mix == null || typeof mix !== "object"
-         : type === mm_type(mix);
-}
-
-// --- type / detect ---
-function mm_type(mix) { // @arg Mix: search
-                        // @ret TypeLowerCaseString:
-                        // @help: mm.type
-                        // @desc: get type/class name
-    var rv, type;
-
-    rv = mix === null   ? "null"
-       : mix === void 0 ? "undefined"
-       : mix === global ? "global"
-       : mix.nodeType   ? "node"
-       : mix.ClassName  ? mix.ClassName.toLowerCase() // ES Spec: [[Class]] like internal property
-       : "";
-
-    if (rv) {
-        return rv;
-    }
-    // typeof primitive -> "number", "string", "boolean"
-    type = typeof mix;
-    if (type !== "object") {
-        return type;
-    }
-
-    // Object.prototype.toString.call(Hoge) -> "[object Hoge]"
-    // (new Hoge).constructor.name -> "Hoge" (except IE)
-    // (new Hoge).constructor + "" -> "[object Hoge]" or "function Hoge()..."
-
-    type = Object.prototype.toString.call(mix);
-    if (type === "[object Object]") {
-        rv = mix.constructor.name;
-        if (!rv) {
-            type = mix.constructor + "";
-        }
-    }
-    if (!rv) {
-        rv = ( /^\[object (\w+)\]$/.exec(type)   ||
-               /^\s*function\s+(\w+)/.exec(type) || ["", ""] )[1];
-    }
-
-    if (!rv || rv === "Object") {
-        if (mix[mm.strict ? "" : "callee"] ||
-            typeof mix.item === "function") {
-            return "list"; // Arguments
-        }
-    }
-    if (rv in _type_alias_db) {
-        return _type_alias_db[rv];
-    }
-    return rv ? rv.toLowerCase() : "object";
-}
-
-function mm_type_alias(obj) { // @arg Object: { fullTypeName: shortTypeName, ... }
-                                 // @help: mm.type.add
-    Object_each(obj, function(value, key) {
-        _type_alias_db["[object " + key + "]"] = value;
-    });
-}
-
-function mm_complex(arg1,   // @arg String/Object(= undefined):
-                    arg2) { // @arg String/Number(= undefined):
-                            // @ret Integer: 1 ~ 4
-                            // @help: mm.complex
-                            // @desc: detect argument combinations
-    //  [1][get all items]  mm.complex() -> 1
-    //  [2][get one item]   mm.complex(key:String) -> 2
-    //  [3][set one item]   mm.complex(key:String, value:Mix) -> 3
-    //  [4][set all items]  mm.complex({ key: value:Mix, ... }) -> 4
-
-    return arg1 === void 0 ? 1
-         : arg2 !== void 0 ? 3
-         : arg1 && typeof arg1 === "string" ? 2 : 4;
+         : type === mm.type(mix);
 }
 
 // --- log ---
@@ -2366,55 +2225,6 @@ function Function_nickname(defaultName) { // @arg String(= ""): default nickname
                 : defaultName; // [IE][Opera<11]
 }
 
-function Function_help(that) { // @arg this:
-                               // @ret String:
-                               // @help: Function#help
-                               // @desc: show help url
-    that = that || this;
-    var url = Function_help_url(that),
-        src = that.__SRC__ ? that.__SRC__ : that;
-
-    return url + "\n\n" + that + "\n\n" + url;
-}
-
-function Function_help_url(fn) { // @arg Function/undefined:
-                                 // @ret String:
-                                 // @desc: get help url
-    var src  = fn.__SRC__ ? fn.__SRC__ : fn,
-        help = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + src + "\n");
-
-    return help ? _findHelp(help[1].trim()) : "";
-
-    function _findHelp(help) {
-        var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
-
-        for (; i < iz; i += 2) {
-            url = ary[i];
-            rex = ary[i + 1];
-            m   = rex.exec(help);
-
-            if (m) {
-                return m[2] === "#" ? url + m[1] + "#" + m[1] + ".prototype." + m[3]
-                     : m[2] === "." ? url + m[1] + "#" + m[1] + "."           + m[3]
-                                    : url + m[1];
-            }
-        }
-        return "";
-    }
-}
-
-function Function_help_add(url,    // @arg URLString: help url string
-                           word) { // @arg String/StringArray/RegExp: keywords or pattern
-                                   // @desc: add help chain
-    if (typeof word === "string") {
-        word = [word];
-    }
-    if (Array.isArray(word)) {
-        word = RegExp("^(" + word.join("|") + ")(?:([#\\.])([\\w\\,]+))?$");
-    }
-    _help_db.push(url, word);
-}
-
 function RegExp_esc(str) { // @arg String:
                            // @ret EscapedString:
                            // @help: RegExp.esc
@@ -2465,7 +2275,7 @@ function Object_has(data,   // @arg Object/Function:
 }
 
 function _Object_has(data, find) {
-    if (data.ClassName !== find.ClassName) {
+    if (data.constructor.name !== find.constructor.name) {
         return false;
     }
     switch (mm_type(data)) {
@@ -2651,43 +2461,6 @@ function Object_pack(obj,     // @arg Object:
     return rv.join(joint || ";");
 }
 
-// --- env -------------------------------------------------
-// http://code.google.com/p/monogram-js/wiki/UserAgentStrings
-// http://googlewebmastercentral-ja.blogspot.com/2011/05/android.html
-// http://blogs.msdn.com/b/ie/archive/2012/07/12/ie10-user-agent-string-update.aspx
-function _detectEnv(rv) { // @inner:
-    if (rv.node || rv.ngcore || rv.worker || rv.titanium) {
-        return rv;
-    }
-
-    rv.browser = true;
-
-    var nav = global.navigator, ua = nav.userAgent;
-
-    rv.ua       = ua;
-    rv.lang     = (nav.language || nav.browserLanguage || "").split("-", 1)[0]; // "en-us" -> "en"
-    rv.secure   = global.location.protocol === "https:";
-//{@ie
-    if (rv.ie) {
-        rv.ie8  = !!document.querySelector;
-        rv.ie9  = !!global.getComputedStyle;
-        rv.ie10 = !!global.msSetImmediate;
-    }
-//}@ie
-    rv.ipad     = /iPad/.test(ua);
-    rv.chrome   = /Chrome/.test(ua);
-    rv.webkit   = /WebKit/.test(ua);
-    rv.safari   = rv.webkit && !rv.chrome;
-    rv.mobile   = /mobile/i.test(ua);
-    rv.ios      = /iPhone|iPad|iPod/.test(ua);
-    rv.mac      = /Mac/.test(ua);
-    rv.android  = /android/i.test(ua);
-    rv.windows  = /windows/i.test(ua);
-    rv.touch    = rv.ios || rv.android || (rv.ie && /touch/.test(ua));
-    rv.retina   = (global.devicePixelRatio || 1) >= 2;
-    return rv;
-}
-
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
     module.exports = { mm: HashFactory };
@@ -2697,10 +2470,12 @@ _extendNativeObjects(mm_mix, mm_wiz);
 _defineLibraryAPIs(mm_mix);
 _defineHashPrototype(mm_wiz);
 
+/*
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
             "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
             "mm,Class,Hash,Await,Msg".split(","));
+ */
 
 })(this.self || global);
 

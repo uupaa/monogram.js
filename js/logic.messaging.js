@@ -1,4 +1,5 @@
 // logic.messaging.js: Messaging API
+// @need: UID in (logic.uid.js)
 
 //{@msg
 (function(global) {
@@ -21,7 +22,6 @@ Msg.prototype = {
 };
 
 // --- library scope vars ----------------------------------
-var _uid = 0; // unique class-instance id
 
 // --- implement -------------------------------------------
 function Msg_bind(ooo) { // @var_args Instance: register drain instance
@@ -33,7 +33,7 @@ function Msg_bind(ooo) { // @var_args Instance: register drain instance
         if (instance) {
             if (typeof instance.msgbox === "function") {
                 if (!instance.__CLASS_UID__) {
-                     instance.__CLASS_UID__ = ++uid;
+                     instance.__CLASS_UID__ = global.Monogram.UID.create("class");
                 }
                 this._deliverable[instance.__CLASS_UID__] = instance; // overwrite
                 return;

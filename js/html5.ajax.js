@@ -102,7 +102,7 @@ global.Monogram.Ajax = Ajax;
 //}@ajax
 
 /*
-    var Ajax = require("./Ajax").Ajax;
+    var Ajax = require("./html5.ajax").Ajax;
 
     new Ajax().load(url, { type: "text" }, function(err, result, time) {
     });

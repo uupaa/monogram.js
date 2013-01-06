@@ -10,12 +10,12 @@ RAMStorage.name = "RAMStorage"; // fn.constructor.name -> "RAMStorage"
 RAMStorage.prototype = {
     constructor:RAMStorage,
     setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):void
-    has:        has,        // (id:String, fn:Function = null):Boolean
-    get:        get,        // (id:String, fn:Function = null):Object
-    set:        set,        // (id:String, values:Array, fn:Function = null):this
+    has:        has,        // (ids:String/StringArray, fn:Function = null):Boolean
+    get:        get,        // (ids:String/StringArray, fn:Function = null):ObjectArray
+    set:        set,        // (values:Array, fn:Function = null):this
     list:       list,       // (fn:Function = null):Array
-    clear:      clear,      // (fn:Function = null):this
     fetch:      fetch,      // (fn:Function = null):Object
+    clear:      clear,      // (fn:Function = null):this
     remove:     remove,     // (id:String, fn:Function = null):this
     tearDown:   tearDown    // (fn:Await/Function = null):this
 };
@@ -37,40 +37,67 @@ function setup(dbName,    // @arg String: db name
     return this;
 }
 
-function has(id,   // @arg String:
-             fn) { // @arg Function(= null): fn(err:Error, has:Boolean)
-                   // @ret Boolean:
+function has(ids,  // @arg String/StringArray:
+             fn) { // @arg Function(= null): fn(err:Error, hasAll:Boolean, ids:StringArray)
+                   // @ret Boolean: true is has all
                    // @help: RAMStorage#has
-    var rv = (this._tableName + id) in this._db;
+    if (typeof ids === "string") {
+        ids = [ids];
+    }
 
-    fn && fn(null, rv);
+    var rv = false, i = 0, iz = ids.length;
+
+    for (; i < iz; ++i) {
+        if (ids[i] && (this._tableName + ids[i]) in this._db) {
+            rv = true;
+        } else {
+            rv = false;
+            break;
+        }
+    }
+    fn && fn(null, rv, ids);
     return rv;
 }
 
-function get(id,   // @arg String:
-             fn) { // @arg Function(= null): fn(err:Error, result:Object)
-                   // @ret Object:
+function get(ids,  // @arg String/StringArray:
+             fn) { // @arg Function(= null): fn(err:Error, result:ObjectArray)
+                   // @ret ObjectArray:
                    // @help: RAMStorage#get
-    if ((this._tableName + id) in this._db) {
-        var rv = {}, ary = this._db[this._tableName + id].split("\v");
-
-        rv["id"]   =  id;
-        rv["hash"] =  ary[0];
-        rv["time"] = +ary[1];
-        rv["data"] =  ary[2];
-        fn && fn(null, rv); // fn(null, { id, hash, time, data })
-        return rv;
+    if (typeof ids === "string") {
+        ids = [ids];
     }
-    fn && fn(null, null); // not found
-    return null;
+
+    var rv = [], result, ary, i = 0, iz = ids.length;
+
+    for (; i < iz; ++i) {
+        result = this._db[this._tableName + ids[i]];
+        if (result) {
+            ary = result.split("\v");
+            rv.push({
+                id:     ids[i],
+                hash:   ary[0],
+                time:  +ary[1],
+                data:   ary[2]
+            });
+        }
+    }
+    fn && fn(null, rv); // fn(null, [{ id, hash, time, data }, ...])
+    return rv;
 }
 
-function set(id,     // @arg String:
-             values, // @arg Array: [col2value, col3value, ...]
+function set(values, // @arg Array: [<id, hash, time, data>, <...>, ...]
              fn) {   // @arg Function(= null): fn(err:Error)
                      // @ret this:
                      // @help: RAMStorage#set
-    this._db[this._tableName + id] = values.join("\v");
+    var rv = [], id, i = 0, iz = values.length;
+
+    for (; i < iz; i += 4) {
+        id = values[i];
+        this._db[this._tableName + id] =
+                id + "\v" + values[i + 1] +
+                     "\v" + values[i + 2] +
+                     "\v" + values[i + 3];
+    }
     fn && fn(null); // ok
     return this;
 }
@@ -89,6 +116,26 @@ function list(fn) { // @arg Function(= null): fn(err:Error, list:Array)
     return list;
 }
 
+function fetch(fn) { // @arg Function(= null): fn(err:Error, result:ObjectArray)
+                     // @ret Object: result
+                     // @help: RAMStorage#fetch
+    var rv = [], key, ary;
+
+    for (key in this._db) {
+        if (key.indexOf(this._tableName) === 0) {
+            ary = this._db[key].split("\v");
+            rv.push( {
+                id:     ary[0],
+                hash:   ary[1],
+                time:  +ary[2],
+                data:   ary[3]
+            };
+        }
+    }
+    fn && fn(null, rv);
+    return rv;
+}
+
 function clear(fn) { // @arg Function(= null): fn(err:Error)
                      // @ret this:
                      // @help: RAMStorage#clear
@@ -99,27 +146,6 @@ function clear(fn) { // @arg Function(= null): fn(err:Error)
     }
     fn && fn(null);
     return this;
-}
-
-function fetch(fn) { // @arg Function(= null): fn(err:Error, result:Object)
-                     // @ret Object: result
-                     // @help: RAMStorage#fetch
-    var rv = {}, key, ary, id;
-
-    for (key in this._db) {
-        if (key.indexOf(this._tableName) === 0) {
-            ary = this._db[key].split("\v");
-            id = key.split(this._tableName)[1];
-            rv[id] = {
-                id:     id,
-                hash:   ary[0],
-                time:  +ary[1],
-                data:   ary[2]
-            };
-        }
-    }
-    fn && fn(null, rv);
-    return rv;
 }
 
 function remove(id,   // @arg String:

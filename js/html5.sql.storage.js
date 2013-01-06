@@ -9,14 +9,14 @@ function SQLStorage() {
 SQLStorage.name = "SQLStorage"; // fn.constructor.name -> "SQLStorage"
 SQLStorage.prototype = {
     constructor:SQLStorage,
+    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):this
     DDL:        DDL,        // ():Object - { SETUP, TEAR_DOWN }
     DML:        DML,        // ():Object - { HAS, GET, SET, REMOVE, FETCH, CLEAR }
-    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):this
-    has:        has,        // (id:String, fn:Function):this
-    get:        get,        // (id:String, fn:Function):this
-    set:        set,        // (id:String, values:Array, fn:Function = null):this
+    has:        has,        // (ids:String/StringArray, fn:Function):this
+    get:        get,        // (ids:String/StringArray, fn:Function):this
+    set:        set,        // (values:Array, fn:Function = null):this
     list:       list,       // (fn:Function):this
-    fetch:      fetch,      // (id:String, fn:Function):this
+    fetch:      fetch,      // (fn:Function):this
     clear:      clear,      // (fn:Function = null):this
     remove:     remove,     // (id:String, fn:Function = null):this
     tearDown:   tearDown,   // (fn:Await/Function = null):this
@@ -32,117 +32,132 @@ function setup(dbName,    // @arg String: db name
                fn) {      // @arg Await/Function(= null): fn(err:Error)
                           // @ret this:
                           // @help: SQLStorage#setup
-    fn = fn || (function() {});
-
-    var that = this;
     var isAwait = !!(fn && fn.constructor.name === "Await");
 
+    this._db = null;
     this._tableName = tableName;
     this._DDL = this.DDL(tableName);
     this._DML = this.DML(tableName);
 
     // [iPhone] LIMIT 5MB, Sometimes throw exception in openDatabase
-    if (!global.openDatabase) {
-        isAwait ? fn.miss() : fn( new TypeError("NOT_IMPL") );
-        return this;
+    if (global.openDatabase) {
+        this._db = global.openDatabase(dbName, "1.0", dbName, SQLStorage.LIMIT);
     }
-    this._db = global.openDatabase(dbName, "1.0", dbName, SQLStorage.LIMIT);
     if (!this._db) {
-        isAwait ? fn.miss() : fn( new TypeError("DB_OPEN") );
+        var err = new TypeError("NOT_FUNCTION");
+        if (fn) {
+            isAwait ? fn.miss(err) : fn(err);
+        }
         return this;
     }
-    this._db.transaction(function(tr) {
-        tr.executeSql(that._DDL.SETUP, [],
-            function(tr, result) {
-                isAwait ? fn.pass() : fn(null);
-            },
-            function(tr, err) {
-                isAwait ? fn.miss() : fn(err);
-            });
+    return _exec(this, false, this._DDL.SETUP, [], function(err, result) {
+        if (fn) {
+            err ? (isAwait ? fn.miss(err) : fn(err))
+                : (isAwait ? fn.pass()    : fn());
+        }
     });
-    return this;
 }
 
 function DDL(tableName) { // @arg String: table name
                           // @ret Object: { SETUP, TEAR_DOWN }
-                          //      SETUP - String:
-                          //      TEARDOWN - String:
-                          // @help: SQLStorage#DDL
     return {
         SETUP: "CREATE TABLE IF NOT EXISTS " + tableName +
                " (id TEXT PRIMARY KEY,hash TEXT,time INTEGER,data TEXT)",
         TEAR_DOWN: "DROP TABLE " + tableName,
-        SHOW_TABLE: "SELECT * FROM sqlite_master WHERE type='table'"
+        SHOW_TABLE: "SELECT * FROM sqlite_master " +
+                    "WHERE type='table' and name='" + tableName + '"'
     };
 }
 
 function DML(tableName) { // @arg String: table name
                           // @ret Object: { HAS, GET, SET, REMOVE, FETCH, CLEAR }
-                          //      HAS - String:
-                          //      GET - String:
-                          //      SET - String:
-                          //      REMOVE - String:
-                          //      FETCH - String:
-                          //      CLEAR - String:
-                          // @help: SQLStorage#DML
     return {
         HAS:    "SELECT COUNT(*) AS length FROM " + tableName + " WHERE id=?",
         GET:    "SELECT id,hash,time,data FROM " + tableName + " WHERE id=?",
         SET:    "INSERT OR REPLACE INTO " + tableName + " VALUES(?,?,?,?)",
         LIST:   "SELECT id FROM " + tableName,
-        REMOVE: "DELETE FROM " + tableName + " WHERE id=?",
         FETCH:  "SELECT * FROM " + tableName,
-        CLEAR:  "DELETE FROM " + tableName
+        CLEAR:  "DELETE FROM " + tableName,
+        REMOVE: "DELETE FROM " + tableName + " WHERE id=?"
     };
 }
 
-function has(id,   // @arg String:
-             fn) { // @arg Function: fn(err:Error, has:Boolean)
+function has(ids,  // @arg String/StringArray:
+             fn) { // @arg Function: fn(err:Error, hasAll:Boolean, ids:StringArray)
                    // @ret this:
                    // @desc: has id
                    // @help: SQLStorage#has
-    return _exec(this._db, this._DML.HAS, [id], function(err, result) {
-        err ? fn(err,  false)
-            : fn(null, !!result.rows.item(0).length);
-    });
-}
+    var sql = this._DML.HAS;
 
-function get(id,   // @arg String:
-             fn) { // @arg Function: fn(err:Error, result:Object)
-                   // @ret this:
-                   // @desc: fetch a row
-                   // @help: SQLStorage#get
-    return _exec(this._db, this._DML.GET, [id], function(err, result) {
+    if (typeof ids === "string") {
+        ids = [ids];
+    } else {
+        sql += new Array(ids.length).join(" OR id=?");
+    }
+    return _exec(this, true, sql, ids, function(err, result) {
         if (err) {
-            fn(err,  null);
+            fn(err, false, []);
         } else {
-            if (result.rows.length) {
-                fn(null, result.rows.item(0)); // found
-            } else {
-                fn(null, null); // not found
+            var rv = [], i = 0, iz = result.rows.length;
+
+            for (; i < iz; ++i) {
+                rv.push( result.rows.item(i).id );
             }
+            fn(null, rv.length === ids.length, rv);
         }
     });
 }
 
-function set(id,     // @arg String:
-             values, // @arg Array: [col2value, col3value, ...]
+function get(ids,  // @arg String/StringArray:
+             fn) { // @arg Function: fn(err:Error, result:ObjectArray)
+                   // @ret this:
+                   // @desc: fetch a row
+                   // @help: SQLStorage#get
+    var sql = this._DML.GET;
+
+    if (typeof ids === "string") {
+        ids = [ids];
+    } else {
+        sql += new Array(ids.length).join(" OR id=?");
+    }
+
+    return _exec(this, true, sql, ids, function(err, result) {
+        if (err) {
+            fn(err,  []);
+        } else {
+            var rv = [], i = 0, iz = result.rows.length;
+
+            for (; i < iz; ++i) {
+                rv.push( result.rows.item(i) );
+            }
+            fn(null, rv);
+    });
+}
+
+function set(values, // @arg Array: [<id, hash, time, data>, <...>, ...]
              fn) {   // @arg Function(= null): fn(err:Error)
                      // @ret this:
                      // @desc: add/update row
                      // @help: SQLStorage#set
-    return _exec(this._db, this._DML.SET, [id].concat(values), fn);
+    var sql = this._DML.SET;
+
+    // insert multiple rows.
+    //      INSERT OR REPLACE INTO tableName VALUES(?,?,?,?),(?,?,?,?)...
+    if (values.length > 4) {
+        sql += new Array((values.length / 4) | 0).join(",(?,?,?,?)");
+    }
+    return _exec(this, false, sql, values, fn);
 }
 
 function list(fn) { // @arg Function: fn(err:Error, list:Array)
                     // @ret this:
                     // @desc: add/update row
                     // @help: SQLStorage#list
-    return _exec(this._db, this._DML.LIST, [], function(err, result) {
+    return _exec(this, true, this._DML.LIST, [], function(err, result) {
         if (err) {
             fn(err, []);
         } else {
-            var rv = [], i = 0, iz = result.rows.length, obj;
+            var rv = [], i = 0, iz = result.rows.length;
 
             for (; i < iz; ++i) {
                 rv.push( result.rows.item(i).id );
@@ -152,19 +167,18 @@ function list(fn) { // @arg Function: fn(err:Error, list:Array)
     });
 }
 
-function fetch(fn) { // @arg Function: fn(err:Error, result:Object)
-                     //    result - Object: { id: { column: value, ...} }
+function fetch(fn) { // @arg Function: fn(err:Error, result:ObjectArray)
+                     //    result - ObjectArray: [{ id, hash, time, data }, ...]
                      // @ret this:
                      // @help: SQLStorage#fetch
-    return _exec(this._db, this._DML.FETCH, [], function(err, result) {
+    return _exec(this, true, this._DML.FETCH, [], function(err, result) {
         if (err) {
-            fn(err, {});
+            fn(err, []);
         } else {
-            var rv = {}, i = 0, iz = result.rows.length, obj;
+            var rv = [], i = 0, iz = result.rows.length;
 
             for (; i < iz; ++i) {
-                obj = result.rows.item(i);
-                rv[obj.id] = obj;
+                rv.push( result.rows.item(i) );
             }
             fn(null, rv); // ok
         }
@@ -175,28 +189,26 @@ function clear(fn) { // @arg Function(= null): fn(err:Error)
                      // @ret this:
                      // @desc: clear all data
                      // @help: SQLStorage#clear
-    return _exec(this._db, this._DML.CLEAR, [], fn);
+    return _exec(this, false, this._DML.CLEAR, [], fn);
 }
 
 function remove(id,   // @arg String:
                 fn) { // @arg Function(= null): fn(err:Error)
                       // @ret this:
                       // @help: SQLStorage#remove
-    return _exec(this._db, this._DML.REMOVE, [id], fn);
+    return _exec(this, false, this._DML.REMOVE, [id], fn);
 }
 
 function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
                         // @ret this:
                         // @desc: drop table
                         // @help: SQLStorage#tearDown
-    var isAwait = !!(fn && fn.constructor.name === "Await");
-
-    return _exec(this._db, this._DDL.TEAR_DOWN, [], function(err, result) {
+    return _exec(this, false, this._DDL.TEAR_DOWN, [], function(err, result) {
         if (fn) {
-            if (isAwait) {
-                err ? fn.miss() : fn.pass();
+            if (fn.constructor.name === "Await") {
+                err ? fn.miss(err) : fn.pass();
             } else {
-                err ? fn(err) : fn(null);
+                err ? fn(err) : fn();
             }
         }
     });
@@ -204,7 +216,7 @@ function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
 
 function showTable() { // @ret this:
                        // @help: SQLStorage#showTable
-    return _exec(this._db, this._DDL.SHOW_TABLE, [], function(err, result) {
+    return _exec(this, true, this._DDL.TABLE, [], function(err, result) {
         var i = 0, iz = result.rows.length, obj, key;
 
         for (; i < iz; ++i) {
@@ -216,25 +228,22 @@ function showTable() { // @ret this:
     });
 }
 
-function _exec(db,   // @arg DataBase:
+function _exec(that, // @arg DataBase:
+               read, // @arg Boolean: true is read, false is write
                sql,  // @arg String:
                args, // @arg Array(= []): [arg, ...]
                fn) { // @arg Function(= null): fn(err:Error, result:SQLResultSet)
-                     // @ret this:
+                     // @ret that:
                      // @inner: execute sql statement
-    db.transaction(function(tr) {
+    that._db[read ? "readTransaction" : "transaction"](function(tr) {
         tr.executeSql(sql, args || [],
             function(tr, result) {
                 fn && fn(null, result); // ok
             }, function(tr, err) {
-                if (fn) {
-                    fn(err, {});
-                } else {
-                    throw new TypeError(err.message);
-                }
+                fn && fn(err, {});
             });
     });
-    return this;
+    return that;
 }
 
 // --- build -----------------------------------------------

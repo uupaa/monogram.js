@@ -83,7 +83,8 @@ function String_repeat(count) { // @arg Integer: repeat count. negative is 0
                                 // @ret String: repeated string
                                 // @desc: repeat strings
                                 // @help: String#repeat
-    return (this.length && count > 0) ? Array((count + 1) | 0).join(this) : "";
+    count = count | 0;
+    return (this.length && count > 0) ? Array(count + 1).join(this) : "";
 }
 
 function String_reverse() { // @ret String:
@@ -95,7 +96,7 @@ function String_reverse() { // @ret String:
 // --- build -----------------------------------------------
 function wiz(object, extend, override) {
     for (var key in extend) {
-        if (override || !(key in object))
+        if (override || !(key in object)) {
             Object.defineProperty(object, key, {
                 configurable: true, writable: true, value: extend[key]
             });
