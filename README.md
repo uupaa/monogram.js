@@ -6,12 +6,13 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 ====
 ```html
 <!DOCTYPE html><html><head><meta charset="utf-8">
-<script src="js/polyfill.es.js"></script>
+<script src="js/polyfill.es5.js"></script>
+<script src="js/polyfill.es6.js"></script>
 <script src="js/polyfill.ruby.js"></script>
-
-<script src="js/mm.js"></script>
-
+<script src="js/class.extend.js"></script>
+<script src="js/logic.uid.js"></script>
 <script src="js/logic.url.js"></script>
+<script src="js/logic.type.js"></script>
 <script src="js/logic.test.js"></script>
 <script src="js/logic.async.js"></script>
 <script src="js/logic.await.js"></script>
@@ -32,6 +33,8 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 <script src="js/dev.prof.js"></script>
 <script src="js/dev.perf.js"></script>
 <script src="js/dev.pollution.js"></script>
+
+<script src="js/mm.js"></script>
 </head><body>
 </body></html>
 ```
