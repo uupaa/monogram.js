@@ -683,11 +683,11 @@ function mm_cast(mix) { // @arg Attr/Hash/List/FakeArray/Style/DateString/Mix:
                         // @help: mm.cast
                         // @desc: remove the characteristic
     switch (mm.type(mix)) {
-    case "attr":    return _mm_cast_attr(mix);    // cast(Attr) -> Object
-    case "hash":    return mix.valueOf();         // cast(Hash) -> Object
-    case "list":    return Array.from(mix);       // cast(List) -> Array
-    case "style":   return _mm_cast_style(mix);   // cast(Style) -> Object
-    case "string":  return Date.from(mix) || mix; // cast(DateString) -> Date/String
+    case "Attr":    return _mm_cast_attr(mix);    // cast(Attr) -> Object
+    case "Hash":    return mix.valueOf();         // cast(Hash) -> Object
+    case "List":    return Array.from(mix);       // cast(List) -> Array
+    case "Style":   return _mm_cast_style(mix);   // cast(Style) -> Object
+    case "String":  return Date.from(mix) || mix; // cast(DateString) -> Date/String
     }
     return mix;
 }
@@ -749,27 +749,27 @@ function _recursiveCopy(mix, depth, hook, nest) { // @inner:
 
     switch (mm.type(mix)) {
     // --- deep copy ---
-    case "undefined":
-    case "null":    return "" + mix; // "null" or "undefined"
-    case "boolean":
-    case "string":
-    case "number":  return mix.valueOf();
-    case "regexp":  return RegExp(mix.source,
+    case "Undefined":
+    case "Null":    return "" + mix; // "null" or "undefined"
+    case "Boolean":
+    case "String":
+    case "Number":  return mix.valueOf();
+    case "RegExp":  return RegExp(mix.source,
                                   (mix + "").slice(mix.source.length + 2));
-    case "date":    return new Date(+mix);
-    case "array":
+    case "Date":    return new Date(+mix);
+    case "Array":
         for (rv = [], iz = mix.length; i < iz; ++i) {
             rv[i] = _recursiveCopy(mix[i], depth, hook, nest + 1);
         }
         return rv;
-    case "hash":
-    case "object":
+    case "Hash":
+    case "Object":
         for (rv = {}, keys = Object.keys(mix), iz = keys.length; i < iz; ++i) {
             rv[keys[i]] = _recursiveCopy(mix[keys[i]], depth, hook, nest + 1);
         }
         return rv;
     // --- shallow copy (by reference) ---
-    case "function":
+    case "Function":
         return mix;
     }
     if (hook) {
@@ -910,22 +910,22 @@ function _recursiveDump(mix,    // @arg Mix: value
         indent = " ".repeat(spaces * nest);
 
     switch (mm.type(mix)) {
-    case "null":
-    case "global":
-    case "number":
-    case "boolean":
-    case "undefined":   return "" + mix;
-    case "date":        return mix.toJSON();
-    case "node":        return _dumpNode(mix);
-    case "attr":        return _dumpObject(_mm_cast_attr(mix));
-    case "list":
-    case "array":       return _dumpArray(mix);
-    case "style":       return _dumpObject(_mm_cast_style(mix));
-    case "regexp":      return "/" + mix.source + "/";
-    case "hash":        return _dumpObject(mix.valueOf());
-    case "object":
-    case "function":    return _dumpObject(mix);
-    case "string":      return '"' + _toJSONEscapedString(mix) + '"';
+    case "Null":
+    case "Global":
+    case "Number":
+    case "Boolean":
+    case "Undefined":   return "" + mix;
+    case "Date":        return mix.toJSON();
+    case "Node":        return _dumpNode(mix);
+    case "Attr":        return _dumpObject(_mm_cast_attr(mix));
+    case "List":
+    case "Array":       return _dumpArray(mix);
+    case "Style":       return _dumpObject(_mm_cast_style(mix));
+    case "RegExp":      return "/" + mix.source + "/";
+    case "Hash":        return _dumpObject(mix.valueOf());
+    case "Object":
+    case "Function":    return _dumpObject(mix);
+    case "String":      return '"' + _toJSONEscapedString(mix) + '"';
     }
     return "";
 }
@@ -1025,7 +1025,7 @@ function mm_allow(name,         // @arg String: argument name, function spec
                   mix,          // @arg Mix:
                   judge,        // @arg Function/Boolean/InterfaceNameString/TypeNameString:
                                 //          types: "Primitive/Global/List/Node/Hash/Class"
-                                //                 "null/undefined/Boolean/Number/Integer/String"
+                                //                 "Null/Undefined/Boolean/Number/Integer/String"
                                 //                 "Date/Object/Array/Function/RegExp/Array"
                   __negate__) { // @hidden Boolean(= false):
                                 // @help: mm.allow
@@ -1120,7 +1120,7 @@ function _judgeType(mix, type) {
          : type === "class"     ? !!mix.constructor.name
          : type === "integer"   ? Number.isInteger(mix)
          : type === "primitive" ? mix == null || typeof mix !== "object"
-         : type === mm.type(mix);
+         : type === mm.type(mix).toLowerCase();
 }
 
 // --- log ---
@@ -1631,9 +1631,9 @@ function Array_fill(value, // @arg Primitive/Object/Array/Date(= undefined): fil
     var rv = this.concat(), i = from || 0, iz = to || rv.length;
 
     switch (mm_type(value)) {
-    case "date":   for (; i < iz; ++i) { rv[i] = new Date(value); } break;
-    case "array":  for (; i < iz; ++i) { rv[i] = value.concat();  } break;
-    case "object": for (; i < iz; ++i) { rv[i] = mm_copy(value);  } break;
+    case "Date":   for (; i < iz; ++i) { rv[i] = new Date(value); } break;
+    case "Array":  for (; i < iz; ++i) { rv[i] = value.concat();  } break;
+    case "Object": for (; i < iz; ++i) { rv[i] = mm_copy(value);  } break;
     default:       for (; i < iz; ++i) { rv[i] = value; }
     }
     return rv;
@@ -2206,7 +2206,7 @@ function Function_argsApply(that,  // @arg this: method this
     var ary = [], args = arguments, i = 1, iz = args.length;
 
     for (; i < iz; ++i) {
-        if (mm_type(args[i]) === "list") {
+        if (mm.type(args[i]) === "List") {
             Array.prototype.push.apply(ary, Array.from(args[i]));
         } else {
             ary.push( args[i] );
@@ -2278,13 +2278,13 @@ function _Object_has(data, find) {
     if (data.constructor.name !== find.constructor.name) {
         return false;
     }
-    switch (mm_type(data)) {
-    case "list":    return Array.from(data).has(Array.from(find));
-    case "array":   return data.has(find);
-    case "regexp":  return data.source === find.source;
-    case "string":  return data.has(find);
-    case "object":  return Object_has(data, find);
-    case "number":  return isNaN(data) && isNaN(find) ? true : data === find;
+    switch (mm.type(data)) {
+    case "List":    return Array.from(data).has(Array.from(find));
+    case "Array":   return data.has(find);
+    case "RegExp":  return data.source === find.source;
+    case "String":  return data.has(find);
+    case "Object":  return Object_has(data, find);
+    case "Number":  return isNaN(data) && isNaN(find) ? true : data === find;
     }
     return data === find;
 }
@@ -2295,14 +2295,14 @@ function Object_like(lval,   // @arg Mix: left value
                              // @inner: Like and deep matching.
                              //         This function does not search inside
                              //         the prototype chain of the object.
-    var ltype = mm_type(lval),
-        rtype = mm_type(rval),
-        alike = { string: 1, date: 1, list: 2, array: 2, object: 3, hash: 3 };
+    var ltype = mm.type(lval),
+        rtype = mm.type(rval),
+        alike = { String: 1, Date: 1, List: 2, Array: 2, Object: 3, Hash: 3 };
 
     if (ltype !== rtype) { // String <-> Date, List <-> Array, Object <-> Hash
         if (alike[ltype] &&
             alike[ltype] === alike[rtype]) {
-            if (rtype === "string" || rtype === "list" || rtype === "hash") {
+            if (rtype === "String" || rtype === "List" || rtype === "Hash") {
                 return Object_like(lval, mm_cast(rval));
             }
             return Object_like(mm_cast(lval), rval);
@@ -2310,15 +2310,15 @@ function Object_like(lval,   // @arg Mix: left value
         return false;
     }
     switch (ltype) {
-    case "list":    return "" + Array.from(lval).sort() ===
+    case "List":    return "" + Array.from(lval).sort() ===
                            "" + Array.from(rval).sort();
-    case "array":   return "" + lval.sort() === "" + rval.sort();
-    case "regexp":  return      lval.source ===      rval.source;
-    case "object":  if (Object.keys(lval).length !== Object.keys(rval).length) {
+    case "Array":   return "" + lval.sort() === "" + rval.sort();
+    case "RegExp":  return      lval.source ===      rval.source;
+    case "Object":  if (Object.keys(lval).length !== Object.keys(rval).length) {
                         return false;
                     }
                     return Object_has(lval, rval);
-    case "number":  return isNaN(lval) && isNaN(rval) ? true : lval === rval;
+    case "Number":  return isNaN(lval) && isNaN(rval) ? true : lval === rval;
     }
     return (lval && lval.toJSON) ? lval.toJSON() === rval.toJSON()
                                  : lval === rval;
