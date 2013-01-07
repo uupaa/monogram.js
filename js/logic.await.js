@@ -150,9 +150,9 @@ global.Monogram.Await = Await;
         [1,2,3].forEach(function(value) {
             await.pass(value);
         });
-        await.pass(4);
+        await.pass(4); // fire callback
 
-        function callback(err, args) {
+        function callback(err, args) { // err = null, args = [1,2,3,4]
             if (err) {
                 switch (err.message) {
                 case "halt":  console.log("halt",  args.join()); break;
@@ -174,7 +174,7 @@ global.Monogram.Await = Await;
         setTimeout(function() { await.miss(4); }, Math.random() * 1000); // boo?
         setTimeout(function() { await.miss(5); }, Math.random() * 1000); // boo?
 
-        function callback(err, args) {
+        function callback(err, args) { // random result
             if (err) {
                 console.log("boo!", args.join()); // eg: "boo! 4,1,5"
             } else {

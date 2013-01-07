@@ -7,7 +7,7 @@
 function _polyfill() {
     wiz(Array, {
         of:         Array_of,           // Array.of(...:Mix):Array
-        from:       Array_from,         // Array.from(list:FakeArray):Array
+        from:       Array_from          // Array.from(list:FakeArray):Array
     });
     wiz(String.prototype, {
         repeat:     String_repeat,      // "".repeat(count:Integer):String

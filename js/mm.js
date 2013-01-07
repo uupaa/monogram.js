@@ -122,7 +122,7 @@ function _extendNativeObjects(mix, wiz) {
 //[ES]  of:         Array_of,           // Array.of(...:Mix):MixArray
 //[ES]  from:       Array_from,         // Array.from(list:FakeArray):Array
         range:      Array_range,        // Array.range(begin:Integer, end:Integer, filterOrStep:Function/Integer = 1):Array
-        toArray:    Array_toArray,      // Array.toArray(mix:Mix/Array):Array
+        toArray:    Array_toArray       // Array.toArray(mix:Mix/Array):Array
 //[ES]  isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
     });
     wiz(Array.prototype, {
