@@ -6,68 +6,68 @@
 
 // --- header ---------------------------------------------
 function UTF16(data) { // @arg UTF16Array/UTF16String(= ""):
+    this._ary = []; // UTF16Array
+
     if (Array.isArray(data)) {
         this.fromArray(data);
     } else if (typeof data === "string") {
         this.fromString(data);
-    } else {
-        this._ary = []; // UTF16Array
     }
 }
 
 UTF16.name = "UTF16";
 UTF16.prototype = {
     constructor:    UTF16,
-    fromUTF8Array:  UTF16_fromUTF8Array,// UTF16#fromUTF8Array(ary:UTF8Array):this
-    toUTF8Array:    UTF16_toUTF8Array,  // UTF16#toUTF8Array():UTF8Array
-    fromString:     UTF16_fromString,   // UTF16#fromString(str:String):this
-    fromArray:      UTF16_fromArray,    // UTF16#fromArray(ary:UTF16Array):this
-    toString:       UTF16_toString,     // UTF16#toString():String
-    toArray:        UTF16_toArray       // UTF16#toArray():UTF16Array
+    fromUTF8Array:  fromUTF8Array,  // UTF16#fromUTF8Array(ary:UTF8Array):this
+    toUTF8Array:    toUTF8Array,    // UTF16#toUTF8Array():UTF8Array
+    fromString:     fromString,     // UTF16#fromString(str:String):this
+    fromArray:      fromArray,      // UTF16#fromArray(ary:UTF16Array):this
+    toString:       toString,       // UTF16#toString():String
+    toArray:        toArray         // UTF16#toArray():UTF16Array
 };
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function UTF16_toUTF8Array() { // @ret UTF8Array:
-                               // @help: UTF16#toUTF8Array
-                               // @desc: convert UTF16Array to UTF8Array
-    return _16to8(this._ary);
-}
-
-function UTF16_fromUTF8Array(ary) { // @arg UTF8Array
-                                    // @ret this:
-                                    // @help: UTF16#fromUTF8Array
-                                    // @desc: convert UTF16Array from UTF8Array
+function fromUTF8Array(ary) { // @arg UTF8Array
+                              // @ret this:
+                              // @help: UTF16#fromUTF8Array
+                              // @desc: convert UTF16Array from UTF8Array
     this._ary = _8to16(ary);
     return this;
 }
 
-function UTF16_toString() { // @ret String:
-                            // @help: UTF16#toString
-                            // @desc: convert UTF16Array to String
-    return _toString(this._ary);
+function toUTF8Array() { // @ret UTF8Array:
+                         // @help: UTF16#toUTF8Array
+                         // @desc: convert UTF16Array to UTF8Array
+    return _16to8(this._ary);
 }
 
-function UTF16_fromString(str) { // @arg UTF16String:
-                                 // @ret this:
-                                 // @help UTF16#fromString
-                                 // @desc: convert UTF16String to UTF16Array
+function fromString(str) { // @arg UTF16String:
+                           // @ret this:
+                           // @help UTF16#fromString
+                           // @desc: convert UTF16String to UTF16Array
     this._ary = _fromString(str);
     return this;
 }
 
-function UTF16_fromArray(ary) { // @arg UTF16Array:
-                                // @ret this:
-                                // @help UTF16#fromArray
-                                // @desc: set UTF16Array (by ref)
+function fromArray(ary) { // @arg UTF16Array:
+                          // @ret this:
+                          // @help UTF16#fromArray
+                          // @desc: set UTF16Array (by ref)
     this._ary = ary;
     return this;
 }
 
-function UTF16_toArray() { // @ret UTF16Array:
-                           // @help UTF16#toArray
-                           // @desc: get UTF16Array (by ref)
+function toString() { // @ret String:
+                      // @help: UTF16#toString
+                      // @desc: convert UTF16Array to String
+    return _toString(this._ary);
+}
+
+function toArray() { // @ret UTF16Array:
+                     // @help UTF16#toArray
+                     // @desc: get UTF16Array (by ref)
     return this._ary;
 }
 

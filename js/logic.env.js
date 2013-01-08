@@ -9,9 +9,9 @@ function Env() { // @help: Env
     _init(this);
 }
 Env.name = "Env";           // fn.constructor.name -> "UID"
-Env.prototype.constructor = Env;
 
 // --- library scope vars ----------------------------------
+
 // --- implement -------------------------------------------
 function _init(that) {
     var keys = _detect({

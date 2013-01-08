@@ -172,7 +172,6 @@ function _decode(str) { // @arg Base64String:
     for (var i = 0; i < 64; ++i) {
         _DB.codes[_CODE.charAt(i)] = i;
     }
-    console.log(_DB.codes);
 })();
 
 // --- export ----------------------------------------------

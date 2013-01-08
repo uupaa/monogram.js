@@ -1,5 +1,5 @@
 // polyfill.ruby.js: extend ruby functions
-// @need: Wiz (in mixin.js)
+// @need: Monogram.wiz (in mixin.js)
 
 //{@ruby
 (function(global) {
@@ -181,7 +181,7 @@ function Number_to_s(radix) { // @arg Integer: 2 - 36
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_extendRubyLikeMethods(global.Monogram.Wiz);
+_extendRubyLikeMethods(global.Monogram.wiz);
 
 })(this.self || global);
 //}@ruby

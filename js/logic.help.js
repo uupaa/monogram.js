@@ -9,12 +9,16 @@ function Help(that) { // @arg Function:
     return that.help();
 }
 Help.name = "Help";
-
-Object.defineProperty(Function.prototype, "help", {
-    value: help      // fn#help(that:Object = null):String
-});
 help.add = help_add; // fn#help.add(url:URLString, word:String/StringArray/RegExp):void
 help.url = help_url; // fn#help.url(fn:Function):String
+
+if (!Object.defineProperty) {
+    Function.prototype.help = help;
+} else {
+    Object.defineProperty(Function.prototype, "help", {
+        value: help  // fn#help(that:Object = null):String
+    });
+}
 
 // --- library scope vars ----------------------------------
 var _help_db = [];

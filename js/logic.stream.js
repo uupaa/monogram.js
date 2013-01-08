@@ -1,44 +1,23 @@
-// logic.stream.js
-// @need: mm.js
+// logic.stream.js:
 
 //{@stream
 (function(global) {
 
 // --- header ----------------------------------------------
-function _extendNativeObjects() {
-    mm.wiz(Array.prototype, {
-        stream:     Array_stream        // [].stream(delay:String/Integer = 0):Object
-    });
-    mm.wiz(String.prototype, {
-        stream:     String_stream       // "".stream(methods:Object/Array, delay:String/Integer = 0):Object
-    });
-}
+function Stream(command, // @arg String: command string. "fn1 > delay > fn2 + fn3"
+                methods, // @arg Object/Array: { key: fn, ... }
+                delay) { // @arg String/Integer: base delay. ms
+                         // @ret this: { halt: function }
+                         // @throw: TypeError("FUNCTION_NOT_FOUND: ...")
+                         //         TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
+                         // @desc: create stream
+                         // @help: Stream
+    var commands = "",
+        plan = []; // plan: [ [ "fn1" ], [ delay ], [ "fn2", "fn3" ] ]
 
-// --- library scope vars ----------------------------------
-
-// --- implement -------------------------------------------
-function Array_stream(delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
-                               // @this - FunctionArray
-                               // @ret Object: { uid: number, halt: function }
-                               // @help: Array#stream
-                               // @desc: create Stream
-    var names = _enumNicknames(this); // { array, object }
-
-    return names.array.join(" > ").stream(names.object, delay);
-}
-
-function String_stream(methods, // @arg Object: { key: fn, ... }
-                       delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
-                                // @ret Object: { halt: function }
-                                // @this: command string. "fn1 > delay > fn2 + fn3"
-                                //            fn - FunctionNameString:
-                                //            delay - IntegerString/UnitizedIntegerString: "1" or "1s" is 1sec, "1ms" is 1ms
-                                // @throw: TypeError("FUNCTION_NOT_FOUND: ...")
-                                //         TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
-                                // @desc: create stream
-                                // @help: String#stream
-    var commands = this.split(/\s*>+\s*/).join(delay ? ">" + delay + ">" : ">"),
-        plan = _streamTokenizer(commands); // plan: [ [ "fn1" ], [ delay ], [ "fn2", "fn3" ] ]
+    commands = command.split(/\s*>+\s*/).join(delay ? ">" + delay + ">"
+                                                    : ">");
+    plan = _streamTokenizer(commands);
 
     methods.__cancel__ = false;
     methods.__halt__ = function(action, error) {
@@ -49,6 +28,41 @@ function String_stream(methods, // @arg Object: { key: fn, ... }
     plan.length && _nextStream(methods, plan);
 
     return { halt: methods.__halt__ }; // provide halt method
+}
+Stream.name = "Stream";
+
+global.Monogram.wiz(String.prototype, {
+    stream: String_stream   // "".stream(methods:Object/Array,
+                            //           delay:String/Integer = 0):Object
+});
+global.Monogram.wiz(Array.prototype, {
+    stream: Array_stream    // [].stream(delay:String/Integer = 0):Object
+});
+
+// --- library scope vars ----------------------------------
+
+// --- implement -------------------------------------------
+function Array_stream(delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
+                               // @this - FunctionArray
+                               // @ret Object: { uid: number, halt: function }
+                               // @help: Array#stream
+                               // @desc: create Stream
+
+    var names = _enumNicknames(this); // { array, object }
+
+    return Stream(names.array.join(" > "), names.object, delay);
+}
+
+function String_stream(methods, // @arg Object: { key: fn, ... }
+                       delay) { // @arg String/Integer(= 0): base delay. 1 / "1" / "1s" / "1000ms"
+                                // @ret Object: { halt: function }
+                                // @this: command string. "fn1 > delay > fn2 + fn3"
+                                //            fn - FunctionNameString:
+                                // @throw: TypeError("FUNCTION_NOT_FOUND: ...")
+                                //         TypeError("NEED_BOOLEAN_RESULT_VALUE: ...")
+                                // @desc: create stream
+                                // @help: String#stream
+    return Stream(this + "", methods, delay);
 }
 
 function _nextStream(methods, // @arg Object: { init, fin, halt, fn1, ... }
@@ -77,8 +91,8 @@ function _nextStream(methods, // @arg Object: { init, fin, halt, fn1, ... }
                 r = methods[action](_judge);
             } catch (O_o) { // wow?
 //{@debug
-                mm.log(mm.env.chrome ? O_o.stack.replace(/at eval [\s\S]+$/m, "")
-                                     : O_o + "");
+                global.Monogram.log(mm.env.chrome ? O_o.stack.replace(/at eval [\s\S]+$/m, "")
+                                                  : O_o + "");
                 debugger;
 //}@debug
                 return methods.__halt__(action, true); // halt
@@ -132,7 +146,7 @@ function _enumNicknames(ary) { // @arg FunctionArray/MixArray:
 }
 
 /*
-        "fn1 > fn2 + fn3".stream({ ... })
+ Stream("fn1 > fn2 + fn3", { ... })
         ~~~~~~~~~~~~~~~~~  +---------------------------+
               command    > > _streamTokenizer(command) |
                            +------------v--------------+
@@ -157,18 +171,34 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
     var plan = [], remain = [];
 
     command.match(/([\w\-\u00C0-\uFFEE]+|[/+>])/g).forEach(function(token) {
+/*
         token === "+" ? 0 :
         token === ">" ? (remain.length && plan.push(remain.shifts())) // Array#shifts
                       : remain.push(token);
+ */
+        if (token === "+") {
+            ;
+        } else if (token === ">") {
+            if (remain.length) {
+                plan.push( remain.concat() );
+                remain.length = 0;
+            }
+        } else {
+            remain.push(token);
+        }
     });
-    remain.length && plan.push(remain.concat());
+    remain.length && plan.push( remain.concat() );
     return plan;
 }
 
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_extendNativeObjects();
+if (typeof module !== "undefined") { // is modular
+    module.exports = { Stream: Stream };
+}
+global.Monogram || (global.Monogram = {});
+global.Monogram.Stream = Stream;
 
 })(this.self || global);
 //}@stream

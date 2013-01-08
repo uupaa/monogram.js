@@ -1,19 +1,36 @@
 // logic.effect.js: Mass effect API
-// @need: mm.js, Math.Easing.js
+// @need: Monogram.mixin (in mixin.js)
+//        Monogram.Easing (in logic.easing.js)
+//        Monogram.UID (in logic.uid.js)
 
 //{@fx
 (function(global) {
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs(mix) {
-    mm.fx = mix(mm_fx, {
-        spec:       mm_fx_spec,         // mm.fx.spec(a:Number/NumberArray, b:Number/NumberArray,
-                                        //            time:Number = 200, delay:Number = 0, easing:Function = Math.inoutcubic, freeze:Boolean = false):Object
-        defs:       mm_fx_defs,         // mm.fx.defs(time:Number = 200, delay:Number = 0, easing:Function = Math.inoutcubic, freeze:Boolean = false):Object
-        kill:       mm_fx_kill,         // mm.fx.kill(uid)
-        tick:       mm_fx_tick          // mm.fx.tick(fn):Hash { type, tid }
-    });
+function MassEffect(spec,   // @arg Object: MassEffect.spec() result { a, b, time, delay, easing, freeze }
+                    tick,   // @arg Function: tick(step, spec, result, elapsed)
+                            //   tick.step - Number: 0 is setup, 1 is tick, 2 is teardown
+                            //   tick.spec - Object: mm.fx spec
+                            //   tick.result - Object: result value { key: value, ... }
+                            //   tick.elapsed - Number: elapsed time
+                    defs) { // @arg Object(= null): MassEffect.defs() result { time, delay, easing, freeze }
+                            // @ret Number: fx uid, killingTicket for killing animation
+                            // @help: MassEffect
+                            // @desc: easing, mass effect
 }
+MassEffect.name = "MassEffect";
+MassEffect.spec = spec; // (a:Number/NumberArray, b:Number/NumberArray,
+                        //  time:Number = 200, delay:Number = 0,
+                        //  easing:Function = Easing.inoutcubic,
+                        //  freeze:Boolean = false):Object
+MassEffect.defs = defs; // (time:Number = 200, delay:Number = 0,
+                        //  easing:Function = Easing.inoutcubic,
+                        //  freeze:Boolean = false):Object
+MassEffect.prototype = {
+    constructor:MassEffect,
+    kill:       kill,   // kill(uid)
+    tick:       tick    // tick(fn):Object { type, tid }
+};
 
 // --- library scope vars ----------------------------------
 // http://d.hatena.ne.jp/uupaa/20110622
@@ -23,57 +40,56 @@ var _frame = global.requestAnimationFrame    ||
              global.msRequestAnimationFrame  ||
              global.mozRequestAnimationFrame ||
              global.webkitRequestAnimationFrame, // -> cancelRequestAnimationFrame
-    _immediate = global.setImmediate       ||
-                 global.oSetImmediate      ||
-                 global.msSetImmediate     ||
-                 global.mozSetImmediate    ||
-                 global.webkitSetImmediate, // -> clearImmediate
-    _mm_fx_db = [], // uid db
-    _mm_fx_kill_db = []; // kill uid db
+    _fx_db = [], // uid db
+    _fx_kill_db = []; // kill uid db
 
 // --- implement -------------------------------------------
-function mm_fx_spec(a,        // @arg Number/NumberArray: point A. begin point
-                    b,        // @arg Number/NumberArray: point B. end point
-                    time,     // @arg Number(= 200): duration time (msec value)
-                    delay,    // @arg Number(= 0): delay time (msec value)
-                    easing,   // @arg Function(= Math.inoutcubic): easing function
-                    freeze) { // @arg Boolean(= false): true is freeze
-                              // @ret Object: { a, b, time, delay, easing, freeze }
-                              // @help: mm.fx.spec
-                              // @desc: build mm.fx spec param
+function spec(a,        // @arg Number/NumberArray: point A. begin point
+              b,        // @arg Number/NumberArray: point B. end point
+              time,     // @arg Number(= 200): duration time (msec value)
+              delay,    // @arg Number(= 0): delay time (msec value)
+              easing,   // @arg Function(= Easing.inoutcubic): easing function
+              freeze) { // @arg Boolean(= false): true is freeze
+                        // @ret Object: { a, b, time, delay, easing, freeze }
+                        // @help: MassEffect.spec
+                        // @desc: build MassEffect spec param
 //{@debug
+/*
     mm.allow("a", a, "Number/Array");
     mm.allow("b", b, "Number/Array");
+ */
 //}@debug
 
-    var rv = mm_fx_defs(time, delay, easing, freeze);
+    var rv = defs(time, delay, easing, freeze);
 
     rv.a = a;
     rv.b = b;
     return rv;
 }
 
-function mm_fx_defs(time,     // @arg Number(= 200): duration time (msec value)
-                    delay,    // @arg Number(= 0): delay time (msec value)
-                    easing,   // @arg Function(= Math.inoutcubic): easing function
-                    freeze) { // @arg Boolean(= false): true is freeze
-                              // @ret Object: { time, delay, easing, freeze }
-                              // @help: mm.fx.defs
-                              // @desc: build mm.fx default spec
+function defs(time,     // @arg Number(= 200): duration time (msec value)
+              delay,    // @arg Number(= 0): delay time (msec value)
+              easing,   // @arg Function(= Easing.inoutcubic): easing function
+              freeze) { // @arg Boolean(= false): true is freeze
+                        // @ret Object: { time, delay, easing, freeze }
+                        // @help: MassEffect.defs
+                        // @desc: build MassEffect default spec
 //{@debug
+/*
     mm.allow("time",   time,   "Number/undefined");
     mm.allow("delay",  delay,  "Number/undefined");
     mm.allow("easing", easing, "Function/undefined");
     mm.allow("freeze", freeze, "Boolean/undefined");
+ */
 //}@debug
 
     return { time: time || 200,
              delay: delay || 0,
-             easing: easing || Math.inoutcubic,
+             easing: easing || global.Monogram.Easing.inoutcubic,
              freeze: freeze || false };
 }
 
-function mm_fx(spec,   // @arg Hash: mm.fx.spec() result { a, b, time, delay, easing, freeze }
+function mm_fx(spec,   // @arg Object: mm.fx.spec() result { a, b, time, delay, easing, freeze }
                tick,   // @arg Function: tick(step, spec, result, elapsed)
                        //   tick.step - Number: 0 is setup, 1 is tick, 2 is teardown
                        //   tick.spec - Object: mm.fx spec
@@ -86,10 +102,10 @@ function mm_fx(spec,   // @arg Hash: mm.fx.spec() result { a, b, time, delay, ea
 
     function _kill() { // @lookup: fxuid, fxdb
         var i = 0, iz = fxdb.length,
-            index = _mm_fx_kill_db.indexOf(fxuid) + 1;
+            index = _fx_kill_db.indexOf(fxuid) + 1;
 
         if (index) {
-            _mm_fx_kill_db.splice(index - 1, 1);
+            _fx_kill_db.splice(index - 1, 1);
         }
         for (i = 0; i < iz; ++i) {
             if (fxdb[i].state !== COMPLETED) {
@@ -106,8 +122,8 @@ function mm_fx(spec,   // @arg Hash: mm.fx.spec() result { a, b, time, delay, ea
             updateState = false,
             i = 0, iz = fxdb.length, j, jz, remain = iz;
 
-        if (_mm_fx_kill_db.length &&
-            _mm_fx_kill_db.indexOf(fxuid) >= 0) {
+        if (_fx_kill_db.length &&
+            _fx_kill_db.indexOf(fxuid) >= 0) {
             _kill();
         }
         for (; i < iz; ++i) {
@@ -173,7 +189,7 @@ function mm_fx(spec,   // @arg Hash: mm.fx.spec() result { a, b, time, delay, ea
             _frame ? _frame(_tick)
                    : setTimeout(_tick, 4);
         } else {
-            _mm_fx_db.remove(fxuid); // Array#remove
+            _fx_db.remove(fxuid); // Array#remove
             tick(2, spec, {}, 0); // teardown
         }
     }
@@ -205,51 +221,53 @@ function mm_fx(spec,   // @arg Hash: mm.fx.spec() result { a, b, time, delay, ea
     }
 
     var WAIT = 0, RUNNING = 1, FREEZE = 2, COMPLETED = 4,
-        fxuid = mm.uid("mm.fx"),
+        fxuid = global.Monogram.UID.create("MassEffect"),
         fxdb = _buildMassEffectDB(spec);
 
-    _mm_fx_db.push(fxuid);
+    _fx_db.push(fxuid);
 
     tick(0, spec, {}, 0); // setup
 //    _frame(_tick);
     return fxuid;
 }
 
-function mm_fx_kill(uid) { // @arg Number: mm.fx() result id
-                           // @help: mm.fx.kill
-                           // @desc: killing animation
+function kill(uid) { // @arg Number: mm.fx() result id
+                     // @help: MassEffect#kill
+                     // @desc: killing animation
 //{@debug
-    mm.allow("uid", uid, "Number");
+//    mm.allow("uid", uid, "Number");
 //}@debug
 
-    if (_mm_fx_kill_db.indexOf(uid) < 0) {
-        _mm_fx_kill_db.push(uid);
+    if (_fx_kill_db.indexOf(uid) < 0) {
+        _fx_kill_db.push(uid);
     }
 }
 
-function mm_fx_tick(tick) { // @arg Function: callback
-                            // @ret Object: { tid, type }
-                            //          tid - Number: timer id
-                            //          type - Number: 0 is setTimeout
-                            //                         1 is requestAnimationFrame
-                            //                         2 is setImmediate
-                            // @help: mm.fx.tick
-                            // @desc: timer api wrapper
+function tick(tick) { // @arg Function: callback
+                      // @ret Object: { tid, type }
+                      //          tid - Number: timer id
+                      //          type - Number: 0 is setTimeout
+                      //                         1 is requestAnimationFrame
+                      //                         2 is setImmediate
+                      // @help: MassEffect#tick
+                      // @desc: timer api wrapper
 //{@debug
-    mm.allow("tick", tick, "Function");
+//    mm.allow("tick", tick, "Function");
 //}@debug
 
-    return _frame     ? { type: 1, tid: _frame(tick) } :
-           _immediate ? { type: 2, tid: _immediate(tick) }
-                      : { type: 0, tid: setTimeout(tick, 4) }
+    return _frame ? { type: 1, tid: _frame(tick) } :
+                  : { type: 0, tid: setTimeout(tick, 4) }
 }
 
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_defineLibraryAPIs(mm.mix);
+if (typeof module !== "undefined") { // is modular
+    module.exports = { MassEffect: MassEffect };
+}
+global.Monogram || (global.Monogram = {});
+global.Monogram.MassEffect = MassEffect;
 
 })(this.self || global);
-
 //}@fx
 

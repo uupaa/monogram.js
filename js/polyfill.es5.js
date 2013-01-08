@@ -1,5 +1,5 @@
 // polyfill.es5.js: polyfill ECMAScript 262-3rd and 5th method and properties
-// @need: Wiz (in mixin.js)
+// @need: Monogram.wiz (in mixin.js)
 
 //{@es
 (function(global) {
@@ -7,6 +7,15 @@
 // --- header ----------------------------------------------
 function _polyfill(wiz) {
 //{@ie
+    if (!Object.keys) {
+         Object.keys = Object_keys; // Object.keys(obj:Mix):Array
+    }
+    if (Object.defineProperty && !Object.defineProperties) { // [IE8]
+        Object.__defineProperty__ = Object.defineProperty; // keep native
+    }
+    if (!Object.defineProperty) { // for legacy browser
+         Object.defineProperty = Object_defineProperty; // Object.defineProperty
+    }
     if (!Object.freeze) {
          Object.freeze = function(obj) {};
     }
@@ -28,8 +37,8 @@ function _polyfill(wiz) {
         isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
     });
     wiz(Array.prototype, {
-        map:        Array_map,          // [].map(fn:Function, that:this):Array
         forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
+        map:        Array_map,          // [].map(fn:Function, that:this):Array
         some:       Array_some,         // [].some(fn:Function, that:this):Boolean
         every:      Array_every,        // [].every(fn:Function, that:this):Boolean
         indexOf:    Array_indexOf,      // [].indexOf(mix:Mix, index:Integer = 0):Integer
@@ -42,13 +51,58 @@ function _polyfill(wiz) {
         trim:       String_trim         // "".trim():String
     });
     wiz(Function.prototype, {
-        bind:       Function_bind       // Function#bind():Function
+        bind:       Function_bind,      // Function#bind():Function
+        nickname:   Function_nickname   // Function#nickname(defaultName = ""):String
     });
+    // alias
+    Array.prototype.each = Array_forEach;
 }
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
+//{@ie
+function Object_keys(obj) { // @arg Object/Function/Array:
+                            // @ret KeyStringArray: [key, ... ]
+                            // @help: Object.keys
+    var rv = [], key, i = 0;
+
+    // [IE6][IE7][IE8] host-objects has not hasOwnProperty
+    if (!obj.hasOwnProperty) {
+        for (key in obj) {
+            rv[i++] = key;
+        }
+    } else {
+        for (key in obj) {
+            obj.hasOwnProperty(key) && (rv[i++] = key);
+        }
+    }
+    return rv;
+}
+//}@ie
+
+//{@ie
+function Object_defineProperty(obj,          // @arg Object:
+                               prop,         // @arg String: property name
+                               descriptor) { // @arg Hash: { writable, get, set,
+                                             //              value, enumerable,
+                                             //              configurable }
+                                             // @ret Object:
+                                             // @help: Object.defineProperty
+    if (obj.nodeType && Object.__defineProperty__) { // [IE8]
+        return Object.__defineProperty__(obj, prop, descriptor); // call native
+    }
+
+    // data descriptor
+    "value" in descriptor && (obj[prop] = descriptor.value);
+
+    // accessor descriptor
+    descriptor.get && obj.__defineGetter__(prop, descriptor.get);
+    descriptor.set && obj.__defineSetter__(prop, descriptor.set);
+    return obj;
+}
+//}@ie
+
 function Date_now() { // @ret Integer: milli seconds
                       // @desc: get current time
                       // @help: Date.now
@@ -251,10 +305,20 @@ function Function_bind(context, // @arg that: context
     return rv;
 }
 
+function Function_nickname(defaultName) { // @arg String(= ""): default nickname
+                                          // @ret String: function name
+                                          // @help: Function#nickname
+                                          // @desc: get function name
+   var name = this.name || (this + "").split("\x28")[0].trim().slice(9);
+
+    return name ? name.replace(/^mm_/, "mm.") // mm_like -> mm.like
+                : defaultName; // [IE][Opera<11]
+}
+
 // --- build -----------------------------------------------
+_polyfill(global.Monogram.wiz);
 
 // --- export ----------------------------------------------
-_polyfill(global.Monogram.Wiz);
 
 })(this.self || global);
 //}@es

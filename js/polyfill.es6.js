@@ -1,5 +1,5 @@
 // polyfill.es6.js: polyfill ECMAScript 262-6th method and properties
-// @need: Wiz (in mixin.js)
+// @need: Monogram.wiz (in mixin.js)
 
 //{@es
 (function(global) {
@@ -97,7 +97,7 @@ function String_reverse() { // @ret String:
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_polyfill(global.Monogram.Wiz);
+_polyfill(global.Monogram.wiz);
 
 })(this.self || global);
 //}@es

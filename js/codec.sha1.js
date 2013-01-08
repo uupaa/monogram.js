@@ -1,18 +1,13 @@
 // codec.sha1.js: calc SHA-1 hash
-// @need: Monogram.UTF16.toUTF8Array in codec.utf16.js
+// @need: Monogram.UTF16 (in codec.utf16.js)
 
 //{@sha1
 (function(global) {
 
 // --- header --------------------------------
 function SHA1(data) {
-    this._data = [];
-
-    if (Array.isArray(data)) {
-        this._data = data;
-    } else {
-        this._data = new global.Monogram.UTF16(data).toUTF8Array();
-    }
+    this._data = Array.isArray(data) ? data
+                                     : new global.Monogram.UTF16(data).toUTF8Array();
 }
 SHA1.name = "SHA1";
 SHA1.prototype = {

@@ -1,5 +1,5 @@
 // logic.messaging.js: Messaging API
-// @need: UID in (logic.uid.js)
+// @need: Monogram.UID in (logic.uid.js)
 
 //{@msg
 (function(global) {

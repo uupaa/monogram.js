@@ -1,13 +1,16 @@
 // class.extend.js: Class Extends
-// @need: Object.defineProperty (in mixin.js)
 
 //{@class
 (function(global) {
 
 // --- header ----------------------------------------------
-Object.defineProperty(Function.prototype, "extend", {
-    value: extend       // Function#extend(baseClass:Function)
-});
+if (!Object.defineProperty) {
+    Function.prototype.extend = extend;
+} else {
+    Object.defineProperty(Function.prototype, "extend", {
+        value: extend // Function#extend(baseClass:Function)
+    });
+}
 
 // --- library scope vars ----------------------------------
 

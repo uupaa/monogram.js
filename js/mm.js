@@ -1,6 +1,9 @@
 // mm.js
 
-// @need: Monogram.Env (in logic.env.js)
+// @need: Monogram.mixin (in mixin.js)
+//        Monogram.args (in mixin.js)
+//        Monogram.wiz (in mixin.js)
+//        Monogram.Env (in logic.env.js)
 //        Monogram.UID (in logic.uid.js)
 //        Monogram.Type (in logic.Type.js)
 
@@ -9,7 +12,7 @@ var mm; // global.mm - monogram.js library name space
 mm || (function(global) { // @arg Global: window or global
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs(mix) {
+function _defineLibraryAPIs(mixin) {
 
     // --- Typical types ---
     //  Mix: Any type
@@ -21,7 +24,7 @@ function _defineLibraryAPIs(mix) {
     //  Function: Executable Object
     //  Primitive: undefined, null, Boolean, Number and String
     //
-    mm = mix(HashFactory, {             // mm(obj:Object/Hash):Hash
+    mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
         api:        mm_api,             // mm.api(version:Integer = 0):Object/Function
         // --- Interface and Class ---
         Interface:  Interface,          // mm.Interface(name:String, spec:Object):void
@@ -31,9 +34,9 @@ function _defineLibraryAPIs(mix) {
         // --- key / value store ---
         Hash:       Hash,               // mm.Hash(obj:Object):Hash
         // --- mixin ---
-        arg:        mm_arg,             // mm.arg(arg:Object/Function/undefined, defaults:Object):Object
-        mix:        mm_mix,             // mm.mix(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
-        wiz:        mm_wiz,             // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
+        mixin:      global.Monogram.mixin, // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
+        args:       global.Monogram.args,  // mm.args(arg:Object/Function/undefined, defaults:Object):Object
+        wiz:        global.Monogram.wiz,   // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
         // --- match ---
         has:        mm_has,             // mm.has(data:Mix, find:Mix):Boolean
         like:       mm_like,            // mm.like(lval:Mix, rval:Mix):Boolean
@@ -76,7 +79,7 @@ function _defineLibraryAPIs(mix) {
         deny:       mm_deny,            // mm.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
         allow:      mm_allow,           // mm.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
         // --- log / log group ---
-        log:    mix(mm_log, {           // mm.log(...:Mix):void
+        log:    mixin(mm_log, {           // mm.log(...:Mix):void
             copy:   mm_log_copy,        // mm.log.copy():Object
             dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
             warn:   mm_log_warn,        // mm.log.warn(...:Mix):void
@@ -84,7 +87,7 @@ function _defineLibraryAPIs(mix) {
             clear:  mm_log_clear,       // mm.log.clear():void
             limit:  0                   // mm.log.limit - Integer: stock length
         }),
-        logg:   mix(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
+        logg:   mixin(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
             nest:   0                   // mm.logg.nest - Number: nest level
         })
     });
@@ -93,7 +96,7 @@ function _defineLibraryAPIs(mix) {
 }
 
 // --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
-function _extendNativeObjects(mix, wiz) {
+function _extendNativeObjects(mixin, wiz) {
 
     // --- Type Detection, API Versioning ---
 /*
@@ -216,7 +219,7 @@ function _extendNativeObjects(mix, wiz) {
         exec:       String_exec         // "".exec():Mix/undefined
     });
 
-//  mix(Number, {
+//  mixin(Number, {
 //[ES]  isNaN:      Number_isNaN,       // Number.isNaN(mix:Mix):Boolean
 //[ES]  isFinite:   Number_isFinite,    // Number.isFinite(mix:Mix):Boolean
 //[ES]  isInteger:  Number_isInteger,   // Number.isInteger(mix:Mix):Boolean
@@ -241,8 +244,7 @@ function _extendNativeObjects(mix, wiz) {
     });
     wiz(Function.prototype, {
 //[ES]  bind:       Function_bind,      // fn#bind():Function
-        argsApply:  Function_argsApply, // fn#argsApply(that, ...):Mix
-        nickname:   Function_nickname   // fn#nickname(defaultName:String = ""):String
+        argsApply:  Function_argsApply  // fn#argsApply(that, ...):Mix
     });
     wiz(RegExp, {
         esc:        RegExp_esc,         // RegExp.esc(str:String):EscapedString
@@ -275,7 +277,7 @@ function _defineHashPrototype(wiz) {
         constructor:Hash,
         // --- mixin ---
         mix:        function(extend, override) {
-                                      mm_mix(this, extend.valueOf(), override); return this; /* @help: Hash#mix */ },
+                                      mixin(this, extend.valueOf(), override); return this; /* @help: Hash#mix */ },
         // --- match ---
         has:        function(find)  { return Object_has(this, find.valueOf());  /* @help: Hash#has   */ },
         like:       function(value) { return Object_like(this, value.valueOf());/* @help: Hash#like  */ },
@@ -383,19 +385,19 @@ function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseCl
         InheritBaseClass.prototype = mm[spec.base].prototype;
         mm[spec.klass].prototype = new InheritBaseClass();
 
-        mm_mix(mm[spec.klass].prototype, properties, true); // override mixin prototype.methods
+        mixin(mm[spec.klass].prototype, properties, true); // override mixin prototype.methods
         mm[spec.klass].name = spec.klass;
         mm[spec.klass].prototype.constructor = mm[spec.klass];
-        mm[spec.klass].prototype.__BASE__ = mm_mix({}, mm[spec.base].prototype);
+        mm[spec.klass].prototype.__BASE__ = mixin({}, mm[spec.base].prototype);
     } else {
-        mm_mix(mm[spec.klass].prototype, properties); // mixin prototype.methods
+        mixin(mm[spec.klass].prototype, properties); // mixin prototype.methods
         mm[spec.klass].name = spec.klass;
         mm[spec.klass].prototype.constructor = mm[spec.klass];
         mm[spec.klass].prototype.__BASE__ = null;
     }
     mm[spec.klass].prototype.callSuper = _callSuperMethod;
 
-    statics && mm_mix(mm[spec.klass], statics);
+    statics && mixin(mm[spec.klass], statics);
 
     if (spec.traits.has("Singleton") && !spec.traits.has("SelfInit")) {
         mm["i" + spec.klass] = new mm[spec.klass];
@@ -507,62 +509,6 @@ function _parseClassSpec(ident) { // @arg StringArray: "Class:Trait:Base"
         }
     }
     return rv;
-}
-
-// --- mixin ---
-function mm_arg(arg,        // @arg Object/Function/undefined: { argument-name: value, ... }
-                defaults) { // @arg Object: default argument. { argument-name: value, ... }
-                            // @ret Object: arg
-                            // @help: mm.arg
-                            // @desc: supply default argument values
-/*                            
-//{@debug
-    mm.allow("arg",      arg,      "Object/Function/undefined");
-    mm.allow("defaults", defaults, "Object");
-//}@debug
- */
-    return arg ? mm_mix(arg, defaults) : defaults;
-}
-
-function mm_mix(base,       // @arg Object/Function: base object. { key: value, ... }
-                extend,     // @arg Object: key/value object. { key: value, ... }
-                override) { // @arg Boolean(= false): override
-                            // @ret Object/Function: base
-                            // @help: mm.mix
-                            // @desc: mixin values. do not look prototype chain.
-// [!] mm.allow prohibited
-
-    override = override || false;
-
-    var key, keys = Object.keys(extend), i = 0, iz = keys.length;
-
-    for (; i < iz; ++i) { // uupaa-looper
-        key = keys[i];
-        if (override || !(key in base)) {
-            base[key] = extend[key];
-        }
-    }
-    return base;
-}
-
-function mm_wiz(base,       // @arg Object/Function:
-                extend,     // @arg Object:
-                override) { // @arg Boolean(= false): override
-                            // @help: mm.wiz
-                            // @desc: prototype extend without enumerability,
-                            //        mixin with "invisible" magic.
-                            //        do not look prototype chain.
-// [!] mm.allow prohibited
-    for (var key in extend) {
-        if (override || !(key in base)) {
-            Object.defineProperty(base, key, {
-                configurable: true, // false is immutable
-                enumerable: false,  // false is invisible
-                writable: true,     // false is read-only
-                value: extend[key]
-            });
-        }
-    }
 }
 
 // --- match ---
@@ -2215,16 +2161,6 @@ function Function_argsApply(that,  // @arg this: method this
     return this.apply(that, ary);
 }
 
-function Function_nickname(defaultName) { // @arg String(= ""): default nickname
-                                          // @ret String: function name
-                                          // @help: Function#nickname
-                                          // @desc: get function name
-   var name = this.name || (this + "").split("\x28")[0].trim().slice(9);
-
-    return name ? name.replace(/^mm_/, "mm.") // mm_like -> mm.like
-                : defaultName; // [IE][Opera<11]
-}
-
 function RegExp_esc(str) { // @arg String:
                            // @ret EscapedString:
                            // @help: RegExp.esc
@@ -2466,9 +2402,9 @@ if (typeof module !== "undefined") { // is modular
     module.exports = { mm: HashFactory };
 }
 
-_extendNativeObjects(mm_mix, mm_wiz);
-_defineLibraryAPIs(mm_mix);
-_defineHashPrototype(mm_wiz);
+_extendNativeObjects(global.Monogram.mixin, global.Monogram.wiz);
+_defineLibraryAPIs(global.Monogram.mixin);
+_defineHashPrototype(global.Monogram.mixin);
 
 /*
 mm.help.add("http://code.google.com/p/mofmof-js/wiki/",

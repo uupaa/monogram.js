@@ -11,7 +11,6 @@
 function Easing() {
 }
 Easing.name = "Easing";
-Easing.prototype.constructor = Easing;
 
 // --- library scope vars ----------------------------------
 var _easing = {

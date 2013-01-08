@@ -1,5 +1,5 @@
 // html5.web.storage.js: WebStorage (LocalStorage)
-// @need: Function#extend in class.extend.js
+// @need: Function#extend (in class.extend.js)
 
 //{@webstorage
 (function(global) {
