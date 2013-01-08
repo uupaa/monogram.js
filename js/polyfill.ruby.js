@@ -1,10 +1,11 @@
 // polyfill.ruby.js: extend ruby functions
+// @need: Wiz (in mixin.js)
 
 //{@ruby
 (function(global) {
 
 // --- header ----------------------------------------------
-function _extendRubyLikeMethods() {
+function _extendRubyLikeMethods(wiz) {
     wiz(Array.prototype, {
         assoc:      Array_assoc,        // [].assoc(find:Mix):Array/undefined
         index:      Array_index,        // [].index(mix:Mix):Number/undefined
@@ -178,18 +179,9 @@ function Number_to_s(radix) { // @arg Integer: 2 - 36
 }
 
 // --- build -----------------------------------------------
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        if (override || !(key in object)) {
-            Object.defineProperty(object, key, {
-                configurable: true, writable: true, value: extend[key]
-            });
-        }
-    }
-}
 
 // --- export ----------------------------------------------
-_extendRubyLikeMethods();
+_extendRubyLikeMethods(global.Monogram.Wiz);
 
 })(this.self || global);
 //}@ruby

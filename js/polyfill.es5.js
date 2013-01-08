@@ -1,18 +1,12 @@
 // polyfill.es5.js: polyfill ECMAScript 262-3rd and 5th method and properties
+// @need: Wiz (in mixin.js)
 
 //{@es
 (function(global) {
 
 // --- header ----------------------------------------------
-function _polyfill() {
-    if (!Object.keys) {
-         Object.keys = Object_keys;     // Object.keys(obj:Mix):Array
-    }
-//{@ie8
-    if (!Object.defineProperties) {
-         Object.__defineProperty__ = Object.defineProperty; // keep original
-         Object.defineProperty = Object_defineProperty; // Object.defineProperty
-    }
+function _polyfill(wiz) {
+//{@ie
     if (!Object.freeze) {
          Object.freeze = function(obj) {};
     }
@@ -22,7 +16,7 @@ function _polyfill() {
     if (Date.prototype.toJSON && (new Date).toJSON().length < 24) {
         Date.prototype.toJSON = Date_toJSON;
     }
-//}@ie8
+//}@ie
 
     wiz(Date, {
         now:        Date_now            // Date.now():Integer
@@ -55,54 +49,6 @@ function _polyfill() {
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
-function Object_keys(obj) { // @arg Object/Function/Array:
-                            // @ret KeyStringArray: [key, ... ]
-                            // @help: Object.keys
-    var rv = [], key, i = 0;
-
-//{@ie
-    if (!obj.hasOwnProperty) {
-        // [IE6][IE7][IE8] host-objects has not hasOwnProperty
-        for (key in obj) {
-            rv[i++] = key;
-        }
-    } else
-//}@ie
-    {
-        for (key in obj) {
-            obj.hasOwnProperty(key) && (rv[i++] = key);
-        }
-    }
-    return rv;
-}
-
-//{@ie8
-function Object_defineProperty(obj,          // @arg Object:
-                               prop,         // @arg String: property name
-                               descriptor) { // @arg Hash: { writable, get, set,
-                                             //              value, enumerable,
-                                             //              configurable }
-                                             // @help: Object.defineProperty
-    if (obj.nodeType) {
-        Object.__defineProperty__(obj, prop, descriptor); // call original
-        return;
-    }
-
-    var type = 0;
-
-    "value" in descriptor && (type |= 0x1); // data descriptor
-    "get"   in descriptor && (type |= 0x2); // accessor descriptor
-    "set"   in descriptor && (type |= 0x4); // accessor descriptor
-
-    if (type & 0x1 && type & 0x6) {
-        throw new TypeError("BAD_DESCRIPTOR");
-    }
-    type & 0x1 && (obj[prop] = descriptor.value);
-    type & 0x2 && obj.__defineGetter__(prop, descriptor.get);
-    type & 0x4 && obj.__defineSetter__(prop, descriptor.set);
-}
-//}@ie8
-
 function Date_now() { // @ret Integer: milli seconds
                       // @desc: get current time
                       // @help: Date.now
@@ -306,18 +252,9 @@ function Function_bind(context, // @arg that: context
 }
 
 // --- build -----------------------------------------------
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        if (override || !(key in object)) {
-            Object.defineProperty(object, key, {
-                configurable: true, writable: true, value: extend[key]
-            });
-        }
-    }
-}
 
 // --- export ----------------------------------------------
-_polyfill();
+_polyfill(global.Monogram.Wiz);
 
 })(this.self || global);
 //}@es

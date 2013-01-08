@@ -1,4 +1,5 @@
 // class.extend.js: Class Extends
+// @need: Object.defineProperty (in mixin.js)
 
 //{@class
 (function(global) {
@@ -41,6 +42,7 @@ function extend(baseClass) {
 
 // --- test ------------------------------------------------
 /*
+    <script src="mixin.js"></script>
     <script src="class.extend.js"></script>
     <script>
     // --- header ----------------------------------------------

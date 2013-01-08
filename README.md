@@ -6,10 +6,15 @@ monogram.js - Write once, run anywhere :) JavaScript Library
 ====
 ```html
 <!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="js/mixin.js"></script>
+<script src="js/class.extend.js"></script>
+
 <script src="js/polyfill.es5.js"></script>
 <script src="js/polyfill.es6.js"></script>
+<script src="js/polyfill.uri.js"></script>
 <script src="js/polyfill.ruby.js"></script>
-<script src="js/class.extend.js"></script>
+<script src="js/polyfill.json.js"></script>
+
 <script src="js/logic.uid.js"></script>
 <script src="js/logic.url.js"></script>
 <script src="js/logic.type.js"></script>

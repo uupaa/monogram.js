@@ -1,10 +1,11 @@
 // polyfill.es6.js: polyfill ECMAScript 262-6th method and properties
+// @need: Wiz (in mixin.js)
 
 //{@es
 (function(global) {
 
 // --- header ----------------------------------------------
-function _polyfill() {
+function _polyfill(wiz) {
     wiz(Array, {
         of:         Array_of,           // Array.of(...:Mix):Array
         from:       Array_from          // Array.from(list:FakeArray):Array
@@ -94,18 +95,9 @@ function String_reverse() { // @ret String:
 }
 
 // --- build -----------------------------------------------
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        if (override || !(key in object)) {
-            Object.defineProperty(object, key, {
-                configurable: true, writable: true, value: extend[key]
-            });
-        }
-    }
-}
 
 // --- export ----------------------------------------------
-_polyfill();
+_polyfill(global.Monogram.Wiz);
 
 })(this.self || global);
 //}@es
