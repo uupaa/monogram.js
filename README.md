@@ -1,7 +1,7 @@
-monogram.js
+Monogram.js
 ===========
 
-monogram.js - Write once, run anywhere :) JavaScript Library
+Monogram.js - Write once, run anywhere :) JavaScript Library
 
 ====
 ```html
