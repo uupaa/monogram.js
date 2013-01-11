@@ -12,7 +12,7 @@ function Msg() {
 
 Msg.name = "Msg";
 Msg.prototype = {
-    constructor:MSg,
+    constructor:Msg,
     bind:       Msg_bind,           // Msg#bind(...):this
     unbind:     Msg_unbind,         // Msg#unbind(...):this
     list:       Msg_list,           // Msg#list():ClassNameStringArray

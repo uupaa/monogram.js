@@ -255,7 +255,7 @@ function tick(tick) { // @arg Function: callback
 //    mm.allow("tick", tick, "Function");
 //}@debug
 
-    return _frame ? { type: 1, tid: _frame(tick) } :
+    return _frame ? { type: 1, tid: _frame(tick) }
                   : { type: 0, tid: setTimeout(tick, 4) }
 }
 

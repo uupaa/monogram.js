@@ -124,12 +124,12 @@ function fetch(fn) { // @arg Function(= null): fn(err:Error, result:ObjectArray)
     for (key in this._db) {
         if (key.indexOf(this._tableName) === 0) {
             ary = this._db[key].split("\v");
-            rv.push( {
+            rv.push({
                 id:     ary[0],
                 hash:   ary[1],
                 time:  +ary[2],
                 data:   ary[3]
-            };
+            });
         }
     }
     fn && fn(null, rv);

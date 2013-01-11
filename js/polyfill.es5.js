@@ -2,61 +2,59 @@
 // @need: Monogram.wiz (in mixin.js)
 
 //{@es
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-function _polyfill(wiz) {
 //{@ie
-    if (!Object.keys) {
-         Object.keys = Object_keys; // Object.keys(obj:Mix):Array
-    }
-    if (Object.defineProperty && !Object.defineProperties) { // [IE8]
-        Object.__defineProperty__ = Object.defineProperty; // keep native
-    }
-    if (!Object.defineProperty) { // for legacy browser
-         Object.defineProperty = Object_defineProperty; // Object.defineProperty
-    }
-    if (!Object.freeze) {
-         Object.freeze = function(obj) {};
-    }
-    // --- force override Date#toJSON result ---
-    // [IE8] (original) "2012-09-16T21:53:39Z"
-    //       (fix to)   "2012-09-16T21:53:39.000Z" (supply Milliseconds)
-    if (Date.prototype.toJSON && (new Date).toJSON().length < 24) {
-        Date.prototype.toJSON = Date_toJSON;
-    }
+if (!Object.keys) {
+     Object.keys = Object_keys; // Object.keys(obj:Mix):Array
+}
+if (Object.defineProperty && !Object.defineProperties) { // [IE8]
+    Object.__defineProperty__ = Object.defineProperty; // keep native
+}
+if (!Object.defineProperty) { // for legacy browser
+     Object.defineProperty = Object_defineProperty; // Object.defineProperty
+}
+if (!Object.freeze) {
+     Object.freeze = function(obj) {};
+}
+// --- force override Date#toJSON result ---
+// [IE8] (original) "2012-09-16T21:53:39Z"
+//       (fix to)   "2012-09-16T21:53:39.000Z" (supply Milliseconds)
+if (Date.prototype.toJSON && new Date().toJSON().length < 24) {
+    Date.prototype.toJSON = Date_toJSON;
+}
 //}@ie
 
-    wiz(Date, {
-        now:        Date_now            // Date.now():Integer
-    });
-    wiz(Date.prototype, {
-        toJSON:     Date_toJSON         // Date#toJSON():JSONObject
-    });
-    wiz(Array, {
-        isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
-    });
-    wiz(Array.prototype, {
-        forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
-        map:        Array_map,          // [].map(fn:Function, that:this):Array
-        some:       Array_some,         // [].some(fn:Function, that:this):Boolean
-        every:      Array_every,        // [].every(fn:Function, that:this):Boolean
-        indexOf:    Array_indexOf,      // [].indexOf(mix:Mix, index:Integer = 0):Integer
-        lastIndexOf:Array_lastIndexOf,  // [].lastIndexOf(mix:Mix, index:Integer = 0):Integer
-        filter:     Array_filter,       // [].filter(fn:Function, that:this):Array
-        reduce:     Array_reduce,       // [].reduce(fn:Function, init:Mix):Mix
-        reduceRight:Array_reduceRight   // [].reduceRight(fn:Function, init:Mix):Mix
-    });
-    wiz(String.prototype, {
-        trim:       String_trim         // "".trim():String
-    });
-    wiz(Function.prototype, {
-        bind:       Function_bind,      // Function#bind():Function
-        nickname:   Function_nickname   // Function#nickname(defaultName = ""):String
-    });
-    // alias
-    Array.prototype.each = Array_forEach;
-}
+wiz(Date, {
+    now:        Date_now            // Date.now():Integer
+});
+wiz(Date.prototype, {
+    toJSON:     Date_toJSON         // Date#toJSON():JSONObject
+});
+wiz(Array, {
+    isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
+});
+wiz(Array.prototype, {
+    forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
+    map:        Array_map,          // [].map(fn:Function, that:this):Array
+    some:       Array_some,         // [].some(fn:Function, that:this):Boolean
+    every:      Array_every,        // [].every(fn:Function, that:this):Boolean
+    indexOf:    Array_indexOf,      // [].indexOf(mix:Mix, index:Integer = 0):Integer
+    lastIndexOf:Array_lastIndexOf,  // [].lastIndexOf(mix:Mix, index:Integer = 0):Integer
+    filter:     Array_filter,       // [].filter(fn:Function, that:this):Array
+    reduce:     Array_reduce,       // [].reduce(fn:Function, init:Mix):Mix
+    reduceRight:Array_reduceRight   // [].reduceRight(fn:Function, init:Mix):Mix
+});
+wiz(String.prototype, {
+    trim:       String_trim         // "".trim():String
+});
+wiz(Function.prototype, {
+    bind:       Function_bind,      // Function#bind():Function
+    nickname:   Function_nickname   // Function#nickname(defaultName = ""):String
+});
+// alias
+Array.prototype.each = Array_forEach;
 
 // --- library scope vars ----------------------------------
 
@@ -270,20 +268,20 @@ function String_trim() { // @ret String:
 
 function Date_toJSON() { // @ret String: "2000-01-01T00:00:00.000Z"
                          // @help: Date#toJSON
-    var dates = { y:  this.getUTCFullYear(),         // 1970 -
-                  m:  this.getUTCMonth() + 1,        //    1 - 12
-                  d:  this.getUTCDate() },           //    1 - 31
-        times = { h:  this.getUTCHours(),            //    0 - 23
-                  m:  this.getUTCMinutes(),          //    0 - 59
-                  s:  this.getUTCSeconds(),          //    0 - 59
-                  ms: this.getUTCMilliseconds() };   //    0 - 999
+    var dy = this.getUTCFullYear(),         // 1970 -
+        dm = this.getUTCMonth() + 1,        //    1 - 12
+        dd = this.getUTCDate(),             //    1 - 31
+        th = this.getUTCHours(),            //    0 - 23
+        tm = this.getUTCMinutes(),          //    0 - 59
+        ts = this.getUTCSeconds(),          //    0 - 59
+        tms = this.getUTCMilliseconds();    //    0 - 999
 
-    return dates.y + "-" + (dates.m < 10 ? "0" : "") + dates.m + "-" +
-                           (dates.d < 10 ? "0" : "") + dates.d + "T" +
-                           (times.h < 10 ? "0" : "") + times.h + ":" +
-                           (times.m < 10 ? "0" : "") + times.m + ":" +
-                           (times.s < 10 ? "0" : "") + times.s + "." +
-                           ("00" + times.ms).slice(-3) + "Z";
+    return dy + "-" + (dm < 10 ? "0" : "") + dm + "-" +
+                      (dd < 10 ? "0" : "") + dd + "T" +
+                      (th < 10 ? "0" : "") + th + ":" +
+                      (tm < 10 ? "0" : "") + tm + ":" +
+                      (ts < 10 ? "0" : "") + ts + "." +
+                      ("00" + tms).slice(-3) + "Z";
 }
 
 function Function_bind(context, // @arg that: context
@@ -316,10 +314,9 @@ function Function_nickname(defaultName) { // @arg String(= ""): default nickname
 }
 
 // --- build -----------------------------------------------
-_polyfill(global.Monogram.wiz);
 
 // --- export ----------------------------------------------
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@es
 

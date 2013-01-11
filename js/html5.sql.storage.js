@@ -124,13 +124,14 @@ function get(ids,  // @arg String/StringArray:
     return _exec(this, true, sql, ids, function(err, result) {
         if (err) {
             fn(err,  []);
-        } else {
-            var rv = [], i = 0, iz = result.rows.length;
+            return;
+        }
+        var rv = [], i = 0, iz = result.rows.length;
 
-            for (; i < iz; ++i) {
-                rv.push( result.rows.item(i) );
-            }
-            fn(null, rv);
+        for (; i < iz; ++i) {
+            rv.push( result.rows.item(i) );
+        }
+        fn(null, rv);
     });
 }
 

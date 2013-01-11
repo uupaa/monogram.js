@@ -2,16 +2,14 @@
 // @need: mm.js
 
 //{@test
-(function(global) {
+(function(global, wiz, mixin) {
 
 // --- header ----------------------------------------------
-function _extendNativeObjects() {
-    mm.wiz(Array.prototype, {
-        test:   mm.mix(Array_test, {    // [ test case, ... ].test(label:String = "", arg = undefined):void
-            tick:   null                // Array#.test.tick({ok,msg,name,pass,miss}) - Tick Callback Function
-        })
-    });
-}
+wiz(Array.prototype, {
+    test:  mixin(Array_test, {  // [ test case, ... ].test(label:String = "", arg = undefined):void
+        tick:   null            // Array#.test.tick({ok,msg,name,pass,miss}) - Tick Callback Function
+    })
+});
 
 // --- library scope vars ----------------------------------
 
@@ -30,8 +28,8 @@ function Array_test(label, // @arg String(= ""): label
 
     plan  = _streamTokenizer( nicknames.array.join(" > ") );
     group = plan.shift();
-    param = mm.mix(nicknames.object, { arg: arg, pass: 0, miss: 0,
-                                       logg: mm.logg(label || "") });
+    param = mixin(nicknames.object, { arg: arg, pass: 0, miss: 0,
+                                      logg: mm.logg(label || "") });
 
     group && _recursiveTestCase( plan, group, param );
 }
@@ -178,8 +176,7 @@ function _streamTokenizer(command) { // @arg String: command string. "a>b+c>d>fo
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_extendNativeObjects();
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz, Monogram.mixin);
 //}@test
 

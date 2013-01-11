@@ -2,25 +2,23 @@
 // @need: Monogram.wiz (in mixin.js)
 
 //{@es
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-function _polyfill(wiz) {
-    wiz(Array, {
-        of:         Array_of,           // Array.of(...:Mix):Array
-        from:       Array_from          // Array.from(list:FakeArray):Array
-    });
-    wiz(String.prototype, {
-        repeat:     String_repeat,      // "".repeat(count:Integer):String
-        reverse:    String_reverse      // "".reverse():String
-    });
-    wiz(Number, {
-        isNaN:      Number_isNaN,       // Number.isNaN(mix:Mix):Boolean
-        isFinite:   Number_isFinite,    // Number.isFinite(mix:Mix):Boolean
-        isInteger:  Number_isInteger,   // Number.isInteger(mix:Mix):Boolean
-        toInteger:  Number_toInteger    // Number.toInteger(mix:Mix):Integer
-    });
-}
+wiz(Array, {
+    of:         Array_of,           // Array.of(...:Mix):Array
+    from:       Array_from          // Array.from(list:FakeArray):Array
+});
+wiz(String.prototype, {
+    repeat:     String_repeat,      // "".repeat(count:Integer):String
+    reverse:    String_reverse      // "".reverse():String
+});
+wiz(Number, {
+    isNaN:      Number_isNaN,       // Number.isNaN(mix:Mix):Boolean
+    isFinite:   Number_isFinite,    // Number.isFinite(mix:Mix):Boolean
+    isInteger:  Number_isInteger,   // Number.isInteger(mix:Mix):Boolean
+    toInteger:  Number_toInteger    // Number.toInteger(mix:Mix):Integer
+});
 
 // --- library scope vars ----------------------------------
 
@@ -97,8 +95,7 @@ function String_reverse() { // @ret String:
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
-_polyfill(global.Monogram.wiz);
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@es
 
