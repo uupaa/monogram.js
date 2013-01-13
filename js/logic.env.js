@@ -8,7 +8,7 @@ function Env() { // @help: Env
                  // @desc:
     _init(this);
 }
-Env.name = "Env";           // fn.constructor.name -> "UID"
+Env.name = "Env";
 
 // --- library scope vars ----------------------------------
 

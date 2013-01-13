@@ -1,10 +1,11 @@
 <!DOCTYPE html><html><head></head><body>
+<script src="../js/mixin.js"></script>
+<script src="../js/extend.class.js"></script>
 <script src="../js/logic.help.js"></script>
 <script src="../js/logic.env.js"></script>
-<script src="../js/class.extend.js"></script>
 <script>
+// --- header ----------------------------------------------
 
-// --- head ------------------------------------------------
 // --- Class Fish ---
 function Fish(arg) {
     this.arg = arg;
@@ -17,7 +18,6 @@ Fish.prototype.jump = function() { return "jump"; };
 function Ponyo(arg) {
     Fish.call(this, arg);
 }
-//Object.setPrototypeOf(Ponyo, Fish.prototype);
 Ponyo.extend(Fish);
 Ponyo.name = "Ponyo";
 Ponyo.prototype.say = function() { return "ponyo"; };
@@ -26,7 +26,6 @@ Ponyo.prototype.say = function() { return "ponyo"; };
 function Human(arg) {
     Ponyo.call(this, arg);
 }
-//Object.setPrototypeOf(Human, Ponyo.prototype);
 Human.extend(Ponyo);
 Human.name = "Human";
 Human.prototype.say = function() { return "human"; };
@@ -46,12 +45,13 @@ console.log(fish.arg  === "Fish.arg"  ? "ok" : "ng");
 console.log(ponyo.arg === "Ponyo.arg" ? "ok" : "ng");
 console.log(human.arg === "Human.arg" ? "ok" : "ng");
 
-console.log(fish.say()  === "fish"  ? "ok" : "ng"); // say impl
-console.log(ponyo.say() === "ponyo" ? "ok" : "ng"); // say impl(override)
-console.log(human.say() === "human" ? "ok" : "ng"); // say impl(override)
+console.log(fish.say()  === "fish"  ? "ok" : "ng"); // fish#say impl
+console.log(ponyo.say() === "ponyo" ? "ok" : "ng"); // ponyo#say impl(override)
+console.log(human.say() === "human" ? "ok" : "ng"); // human#say impl(override)
 
-console.log(fish.jump()  === "jump"      ? "ok" : "ng"); // jump impl
-console.log(ponyo.jump() === "jump"      ? "ok" : "ng"); // has not jump method
-console.log(human.jump() === "i can fly" ? "ok" : "ng"); // jump impl(override)
+console.log(fish.jump()  === "jump"      ? "ok" : "ng"); // fish#jump impl
+console.log(ponyo.jump() === "jump"      ? "ok" : "ng"); // ponyo#jump not impl(call fish#jump)
+console.log(human.jump() === "i can fly" ? "ok" : "ng"); // human#jump impl(override)
+
 </script></body></html>
 

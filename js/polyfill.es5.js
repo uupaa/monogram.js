@@ -50,11 +50,24 @@ wiz(String.prototype, {
     trim:       String_trim         // "".trim():String
 });
 wiz(Function.prototype, {
-    bind:       Function_bind,      // Function#bind():Function
-    nickname:   Function_nickname   // Function#nickname(defaultName = ""):String
+    bind:       Function_bind       // Function#bind():Function
 });
 // alias
 Array.prototype.each = Array_forEach;
+
+//{@ie
+wiz(Date,       { name: "Date" });
+wiz(Array,      { name: "Array" });
+wiz(Error,      { name: "Error" });
+wiz(Number,     { name: "Number" });
+wiz(Object,     { name: "Object" });
+wiz(RegExp,     { name: "RegExp" });
+wiz(String,     { name: "String" });
+wiz(Boolean,    { name: "Boolean" });
+wiz(Function,   { name: "Function" });
+wiz(TypeError,  { name: "TypeError" });
+wiz(SyntaxError,{ name: "SyntaxError" });
+//}@ie
 
 // --- library scope vars ----------------------------------
 
@@ -301,16 +314,6 @@ function Function_bind(context, // @arg that: context
     fn.prototype = that.prototype;
     rv.prototype = new fn();
     return rv;
-}
-
-function Function_nickname(defaultName) { // @arg String(= ""): default nickname
-                                          // @ret String: function name
-                                          // @help: Function#nickname
-                                          // @desc: get function name
-   var name = this.name || (this + "").split("\x28")[0].trim().slice(9);
-
-    return name ? name.replace(/^mm_/, "mm.") // mm_like -> mm.like
-                : defaultName; // [IE][Opera<11]
 }
 
 // --- build -----------------------------------------------

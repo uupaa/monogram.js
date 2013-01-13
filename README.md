@@ -8,7 +8,8 @@ Monogram.js - Write once, run anywhere :) JavaScript Library
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <!-- mixin and extend -->
 <script src="../js/mixin.js"></script>
-<script src="../js/class.extend.js"></script>
+<script src="../js/extend.class.js"></script>
+<script src="../js/extend.function.js"></script>
 
 <!-- polyfill -->
 <script src="../js/polyfill.es5.js"></script>

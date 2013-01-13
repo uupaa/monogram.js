@@ -4,13 +4,42 @@
 (function(global) {
 
 // --- header ----------------------------------------------
+// Monogram.wiz(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
 // Monogram.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
 // Monogram.args(arg:Object/Function/undefined, defaults:Object):Object
-// Monogram.wiz(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
+// Monogram.require(src:String)
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
+function wiz(base,       // @arg Object/Function:
+             extend,     // @arg Object:
+             override) { // @arg Boolean(= false): override
+                         // @ret Object/Function:
+                         // @help: Monogram.wiz
+                         // @desc: prototype extend without enumerability,
+                         //        mixin with "invisible" magic.
+                         //        do not look prototype chain.
+    override = override || false;
+
+//{@ie
+    if (!Object.defineProperty) {
+        return _mixin(base, extend, override);
+    }
+//}@ie
+    for (var key in extend) {
+        if (override || !(key in base)) {
+            Object.defineProperty(base, key, {
+                configurable: true, // false is immutable
+                enumerable: false,  // false is invisible
+                writable: true,     // false is read-only
+                value: extend[key]
+            });
+        }
+    }
+    return base;
+}
+
 function mixin(base,       // @arg Object/Function: base object. { key: value, ... }
                extend,     // @arg Object: key/value object. { key: value, ... }
                override) { // @arg Boolean(= false): override
@@ -55,41 +84,27 @@ function args(arg,        // @arg Object/Function/undefined: { argument-name: va
                 : defaults;
 }
 
-function wiz(base,       // @arg Object/Function:
-             extend,     // @arg Object:
-             override) { // @arg Boolean(= false): override
-                         // @ret Object/Function:
-                         // @help: Monogram.wiz
-                         // @desc: prototype extend without enumerability,
-                         //        mixin with "invisible" magic.
-                         //        do not look prototype chain.
-    override = override || false;
-
-//{@ie
-    if (!Object.defineProperty) {
-        return _mixin(base, extend, override);
-    }
-//}@ie
-    for (var key in extend) {
-        if (override || !(key in base)) {
-            Object.defineProperty(base, key, {
-                configurable: true, // false is immutable
-                enumerable: false,  // false is invisible
-                writable: true,     // false is read-only
-                value: extend[key]
-            });
-        }
-    }
-    return base;
+function require(src) {
+    var node = document.createElement("script");
+    node.src = src;
+    node.onload = function() {
+        console.log(src + " loaded");
+    };
+    document.head.appendChild(node);
 }
 
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
 global.Monogram || (global.Monogram = {});
+global.Monogram.wiz = wiz;
 global.Monogram.mixin = mixin;
 global.Monogram.args = args;
-global.Monogram.wiz = wiz;
+if (global.document) {
+    global.Monogram.require = require;
+} else if (typeof module !== "undefined") { // is modular
+    global.Monogram.require = global.require;
+}
 
 })(this.self || global);
 //}@mixin

@@ -3,10 +3,10 @@
 //        Monogram.Stream (in logic.stream.js)
 
 //{@async
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-global.Monogram.wiz(Array.prototype, {
+wiz(Array.prototype, {
     sync:   Array_sync, // [].sync():ModArray { each, map, some, every }
     async:  Array_async // [].async(callback:Function, wait:Integer = 0,
                         //          unit:Integer = 1000):ModArray { each, map, some, every }
@@ -123,6 +123,6 @@ function _async_iter(ary,      // @arg Array:
 
 // --- export --------------------------------
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@async
 
