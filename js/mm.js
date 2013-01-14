@@ -30,11 +30,6 @@ function _defineLibraryAPIs(mixin) {
     //
     mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
         api:        mm_api,             // mm.api(version:Integer = 0):Object/Function
-        // --- Interface and Class ---
-        Interface:  Interface,          // mm.Interface(name:String, spec:Object):void
-        Class:      ClassFactory,       // mm.Class(specs:String,
-                                        //          properties:Object = undefined,
-                                        //          statics:Object = undefined):Function
         // --- mixin ---
         mixin:      global.Monogram.mixin, // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
         args:       global.Monogram.args,  // mm.args(arg:Object/Function/undefined, defaults:Object):Object
@@ -64,7 +59,7 @@ function _defineLibraryAPIs(mixin) {
         keys:       mm_keys,            // mm.keys(data:Object/Function/Array/Hash/Style/Node/Global):Array
         values:     mm_values,          // mm.values(data:Object/Function/Array/Hash/Style/Node/Global):Array
         // --- manipulate ---
-        clear:      Hash.clear,         // mm.clear(obj:Object/Function/Class/Hash):Object/Function/Class/Hash
+        clear:      mm_clear,           // mm.clear(obj:Object/Function/Class/Hash):Object/Function/Class/Hash
         // --- type detection ---
         type:       Type,
         // --- utility ---
@@ -80,9 +75,7 @@ function _defineLibraryAPIs(mixin) {
         // --- assert / debug ---
         say:        mm_say,             // mm.say(mix:Mix):Boolean
         alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
-        deny:       mm_deny,            // mm.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-        allow:      mm_allow,           // mm.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-        // --- log / log group ---
+       // --- log / log group ---
         log:    mixin(mm_log, {           // mm.log(...:Mix):void
             copy:   mm_log_copy,        // mm.log.copy():Object
             dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
@@ -99,8 +92,6 @@ function _defineLibraryAPIs(mixin) {
 }
 
 // --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
-function _extendNativeObjects(mixin, wiz) {
-
     // --- Type Detection, API Versioning ---
 /*
     wiz(Function.prototype, { ClassName: "Function",typeFunction: true, api: Object_api });
@@ -111,7 +102,6 @@ function _extendNativeObjects(mixin, wiz) {
     wiz(   Array.prototype, { ClassName: "Array",   typeArray:    true, api: Object_api });
     wiz(    Date.prototype, { ClassName: "Date",    typeDate:     true, api: Object_api });
  */
-}
 
 // --- Class Hash ------------------------------------------
 function HashFactory(obj) { // @arg Object/Hash:
@@ -138,185 +128,6 @@ function Object_api(version) { // @arg Integer API version
                                // @ret Object/Function:
                                // @desc: API Versioning
     return this["ver" + version] ? this["ver" + version](this) : this;
-}
-
-function Interface(name,   // @arg String:
-                   spec) { // @arg Object: { key: typeString, ... }
-                           // @help: mm.Interface
-//
-//  TypeScript:
-//      interface Point { x: number; y: number; }
-//
-//  monogram.js:
-//      mm.Interface("Point", { x: "number", y: "number" });
-//
-    if (name in mm) {
-        throw new TypeError("ALREADY_EXISTS: " + name);
-    }
-    mm.Interface[name] = spec;
-}
-
-function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseClass"
-                      properties, // @arg Object(= undefined): prototype method and literals
-                      statics) {  // @arg Object(= undefined): static method and literals
-                                  // @ret Function: initializer
-                                  // @help: mm.Class
-/*
-//{@debug
-    mm.allow("specs",      specs,      "String"); // "Class:Singleton:Interface:Base"
-    mm.allow("properties", properties, "Object/undefined");
-    mm.allow("statics",    statics,    "Object/undefined");
-//}@debug
- */
-
-    properties = properties || {};
-
-    var InheritBaseClass,
-        spec = _parseClassSpec(specs); // { klass: String, traits: StringArray,
-                                       //   base: String, ifs: StringArray }
-    // --- validate class ---
-    if (mm.Class[spec.klass]) { // already?
-        return mm[spec.klass];
-    }
-    // --- validate interface ---
-    spec.ifs.each(function(name) {
-        mm_allow("properties", properties, name);
-    });
-
-    // --- class definition ---
-    mm.Class[spec.klass] = spec.klass;
-    mm[spec.klass] = spec.traits.has("Singleton") ? SingletonClass
-                                                  : GenericClass;
-
-    if (spec.base) { // Class extend BaseClass
-        InheritBaseClass = function() {};
-        InheritBaseClass.prototype = mm[spec.base].prototype;
-        mm[spec.klass].prototype = new InheritBaseClass();
-
-        mixin(mm[spec.klass].prototype, properties, true); // override mixin prototype.methods
-        mm[spec.klass].name = spec.klass;
-        mm[spec.klass].prototype.constructor = mm[spec.klass];
-        mm[spec.klass].prototype.__BASE__ = mixin({}, mm[spec.base].prototype);
-    } else {
-        mixin(mm[spec.klass].prototype, properties); // mixin prototype.methods
-        mm[spec.klass].name = spec.klass;
-        mm[spec.klass].prototype.constructor = mm[spec.klass];
-        mm[spec.klass].prototype.__BASE__ = null;
-    }
-    mm[spec.klass].prototype.callSuper = _callSuperMethod;
-
-    statics && mixin(mm[spec.klass], statics);
-
-    if (spec.traits.has("Singleton") && !spec.traits.has("SelfInit")) {
-        mm["i" + spec.klass] = new mm[spec.klass];
-    }
-    return mm[spec.klass];
-
-    function SingletonClass(ooo) { // @var_args Mix: constructor arguments
-        if (!SingletonClass.__INSTANCE__) {
-             SingletonClass.__INSTANCE__ = this; // keep self instance
-
-            _factory(this, arguments);
-        }
-        return SingletonClass.__INSTANCE__;
-    }
-
-    function GenericClass(ooo) { // @var_args Mix: constructor arguments
-        _factory(this, arguments);
-    }
-
-    function _factory(that, args) { // @lookup: className, properties,
-        Object.defineProperty(that, "__CLASS_UID__", { value: mm_uid("mm.class") });
-
-        var obj = that, stack = [];
-
-        // --- constructor chain --- (Base#init -> Class#init)
-        while (obj = obj.__BASE__) {
-            obj.init && stack.push(obj);
-        }
-        while (obj = stack.pop()) {
-            obj.init.apply(that, args);
-        }
-
-        // [!] call Class#init(args, ...)
-        properties.init && properties.init.apply(that, args);
-
-        that.gc = function() {
-            // [!] call Class#gc
-            properties.gc && properties.gc.call(that);
-
-            // --- gc chain --- (Class#gc -> Base#gc)
-            obj = that;
-            while (obj = obj.__BASE__) {
-                obj.gc && obj.gc.call(that);
-            }
-
-            if (spec.traits.has("Singleton")) {
-                delete SingletonClass.__INSTANCE__;
-                delete mm["i" + spec.klass];
-            }
-            Hash.clear(that); // destroy them all
-            that.gc = function GCSentinel() {
-                mm_log("GC_BAD_CALL");
-            };
-        };
-    }
-}
-
-function _callSuperMethod(name,  // @arg String: method name
-                          ooo) { // @var_args Mix: args
-                                 // @ret Mix/undefined:
-                                 // @inner: this.callSuper("method", args, ...)
-/*
-//{@debug
-    mm.allow("name", name, "String");
-//}@debug
- */
-    var obj = this,
-        args = Array.prototype.slice.call(arguments, 1);
-
-    while (obj = obj.__BASE__) {
-        if (typeof obj[name] === "function") {
-            return obj[name].apply(this, args);
-        }
-    }
-    args.unshift(name);
-    return this.trap.apply(this, args); // call trap(method, ...)
-}
-
-function _parseClassSpec(ident) { // @arg StringArray: "Class:Trait:Base"
-                                  // @ret Object: { klass, traits, base, ifs }
-                                  //        klass - String: "Class"
-                                  //        traits - StringArray: ["Singleton", "SelfInit"]
-                                  //        base - String: "BaseClass"
-                                  //        ifs - StringArray: ["Interface", ...]
-                                  // @throw: TypeError("CLASS_NAME_NOT_FOUND"),
-                                  //         TypeError("CLASS_NAME_MULTIPLE_INHERITANCE: ..."),
-                                  //         TypeError("TRAITS_OR_CLASS_NAME_NOT_FOUND: ...")
-                                  // @inner: parse traits and base class string
-    var TRAITS = ["Singleton", "SelfInit"],
-        ary = ident.split(":"), name,
-        rv = { klass: "", traits: [], base: "", ifs: [] };
-
-    rv.klass = ary.shift(); // "Class:Base" -> "Class"
-    if (!rv.klass) {
-        throw new TypeError("CLASS_NAME_NOT_FOUND");
-    }
-    while (name = ary.shift()) {
-        if (name in mm.Interface) {
-            rv.ifs.push(name);
-        } else if (TRAITS.has(name)) {
-            rv.traits.push(name);
-        } else if (mm.Class[name]) { // already Class
-            if (rv.base) {
-                throw new TypeError("CLASS_NAME_MULTIPLE_INHERITANCE: " + name);
-            }
-            rv.base = name;
-        } else {
-            throw new TypeError("TRAITS_OR_CLASS_NAME_NOT_FOUND: " + name);
-        }
-    }
-    return rv;
 }
 
 // --- match ---
@@ -418,6 +229,14 @@ function mm_values(data) { // @arg Object/Function/Array/Hash/Style/Node/Global:
                            // @desc: enumerate values
     return !mm && typeof data.values === "function" ? data.values()
                                                     : Hash.values(data);
+}
+
+function mm_clear(data) { // @arg Object/Function/Class/Hash:
+                          // @ret Object/Function/Class/Hash:
+                          // @help: mm.clear
+                          // @desc: clear
+    return !mm && typeof data.clear === "function" ? data.clear()
+                                                   : Hash.clear(data);
 }
 
 // --- utility ---
@@ -532,116 +351,6 @@ function mm_alert(mix) { // @args Mix:
     return true;
 }
 
-function mm_deny(name,    // @arg String: argument name, function spec
-                 mix,     // @arg Mix:
-                 judge) { // @arg Function/Boolean/TypeNameString:
-                          // @help: mm.deny
-                          // @desc: raise an assertion in a type match
-    mm_allow(mix, judge, name, true);
-}
-
-function mm_allow(name,         // @arg String: argument name, function spec
-                  mix,          // @arg Mix:
-                  judge,        // @arg Function/Boolean/InterfaceNameString/TypeNameString:
-                                //          types: "Primitive/Global/List/Node/Hash/Class"
-                                //                 "Null/Undefined/Boolean/Number/Integer/String"
-                                //                 "Date/Object/Array/Function/RegExp/Array"
-                  __negate__) { // @hidden Boolean(= false):
-                                // @help: mm.allow
-                                // @desc: raise an assertion in a type mismatch
-    __negate__ = __negate__ || false;
-
-    var assert = false, origin = "";
-
-    if (judge == null) { // mm.allow(mix, undefined or null) -> nop
-        return;
-    }
-    switch (typeof judge) {
-    case "function": assert = !(judge(mix) ^ __negate__); break;
-    case "boolean":  assert = !(judge      ^ __negate__); break;
-    case "string":   assert = !(judge.split("/").some(function(type) {
-            if (mix) {
-                if (type in mm.Interface) {
-                    // http://uupaa.hatenablog.com/entry/2012/10/05/173226
-                    origin = "interface";
-                    return _judgeInterface(mix, mm.Interface[type]);
-                }
-                if (type in mm.Class) {
-                    return true;
-                }
-            }
-            return _judgeType(mix, type);
-        }) ^ __negate__);
-        break;
-    default:
-        throw new TypeError("BAD_ARG");
-    }
-    if (assert) { // http://uupaa.hatenablog.com/entry/2011/11/18/115409
-        debugger;
-        try {
-            var caller   = mm.strict ? null : (arguments.callee || 0).caller,
-                nickname = caller ? caller.nickname() : "???",
-                asserter = __negate__ ? "mm.deny" : "mm.allow",
-                msg      = "";
-
-            msg = _msg(name, caller, nickname, asserter);
-
-            if (origin === "interface") {
-                msg += "\ninterface @@ @@\n".at(judge, Dump(mm.Interface[judge]));
-            }
-            throw new TypeError(msg);
-        } catch (o_o) {
-            mm_log(mm.env.chrome ? o_o.stack.replace(/at eval [\s\S]+$/m, "")
-                                 : o_o + "");
-            throw new TypeError("ASSERTION");
-        }
-    }
-
-    function _msg(name, caller, nickname, asserter) {
-        var rv = "",
-            line   = ">>> " + nickname + " in " + asserter + "(";
-            indent = " ".repeat(line.length);
-
-        //rv = Function_help_url(caller) + "\n\n" +
-        rv = mm.help.url(caller) + "\n\n" +
-             line +
-             name + ", " + judge + ")\n" +
-             indent + "~".repeat(name.length) + "\n" +
-             indent + Dump(mix, 0) + "\n";
-        return rv;
-    }
-}
-
-function _judgeInterface(mix, spec) {
-    return Hash.every(spec, function(type, key) {
-        if (key in mix) { // mix has key
-            return spec[key].split("/").some(function(type) {
-                if (type in mm.Interface) {
-                    return _judgeInterface(mix[key], mm.Interface[type]);
-                }
-                return _judgeType(mix[key], type);
-            });
-        }
-        return false;
-    });
-}
-
-function _judgeType(mix, type) {
-    type = type.toLowerCase();
-    if (type === "mix") {
-        return true;
-    }
-    if (mix == null && type === mix + "") { // "null" or "undefined"
-        return true;
-    }
-    return type === "void"      ? mix === void 0
-         : type === "this"      ? !!mix.constructor.name
-         : type === "class"     ? !!mix.constructor.name
-         : type === "integer"   ? Number.isInteger(mix)
-         : type === "primitive" ? mix == null || typeof mix !== "object"
-         : type === Type(mix).toLowerCase();
-}
-
 // --- log ---
 function mm_log(ooo) { // @var_args Mix: message
                        // @help: mm.log
@@ -753,16 +462,7 @@ if (typeof module !== "undefined") { // is modular
     module.exports = { mm: HashFactory };
 }
 
-_extendNativeObjects(global.Monogram.mixin, global.Monogram.wiz);
 _defineLibraryAPIs(global.Monogram.mixin);
-_defineHashPrototype(global.Monogram.mixin);
-
-/*
-mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "Object,Array,String,Boolean,Number,Date,RegExp,Function".split(","));
-mm.help.add("http://code.google.com/p/mofmof-js/wiki/",
-            "mm,Class,Hash,Await,Msg".split(","));
- */
 
 })(this.self || global,
    Monogram.Hash, Monogram.Type, Monogram.Cast, Monogram.Dump, Monogram.Clone);

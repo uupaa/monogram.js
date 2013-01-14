@@ -1,13 +1,23 @@
-// logic.type.js: type detection
+// logic.type.js: type detection, assertion and dump
+// @need: Monogram.Help (in logic.help.js)
 
 //{@type
 (function(global) {
 
 // --- header ----------------------------------------------
-// Type(mix):String
-Type.name = "Type";
-Type.alias = alias;     // Type.alias({ fullTypeName: shortTypeName, ... }):void
-Type.complex = complex; // Type.complex(arg1:String/Object = undefined, arg2:String/Number = undefined):Integer
+                              // Type(mix):String
+Type.alias   = Type_alias;    // Type.alias({ fullTypeName: shortTypeName, ... }):void
+Type.complex = Type_complex;  // Type.complex(arg1:String/Object = undefined, arg2:String/Number = undefined):Integer
+Type.allow   = Type_allow;    // Type.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
+Type.deny    = Type_deny;     // Type.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
+Type.dump    = Dump;          // Type.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
+Type.cast    = Cast;          // Type.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
+Type.cast.attr  = Cast_attr;  // Type.cast.attr(mix:NamedNodeMap):Object
+Type.cast.style = Cast_style; // Type.cast.style(mix:CSSStyleDeclaration):Object
+
+Type.name      = "Type";
+Type.dump.name = "Type.dump";
+Type.cast.name = "Type.cast";
 
 // --- library scope vars ----------------------------------
 var _strict = (function() { return !this; })(), // true is strict mode
@@ -18,7 +28,8 @@ var _strict = (function() { return !this; })(), // true is strict mode
         "HTMLCollection": "List",
         "StaticNodeList": "List", // [IE8]
         "CSSStyleDeclaration": "Style",
-    };
+    },
+    _prettyPrint = /Chrome\//.test((global.navigator || "").userAgent);
 
 // --- implement -------------------------------------------
 function Type(mix,   // @arg Mix: search
@@ -91,19 +102,19 @@ function Type(mix,   // @arg Mix: search
     return "Object";
 }
 
-function alias(obj) { // @arg Object: { RawTypeName: TypeName, ... }
-                      // @help: Type.alias
-                      // @desc: add type alias
+function Type_alias(obj) { // @arg Object: { RawTypeName: TypeName, ... }
+                           // @help: Type.alias
+                           // @desc: add type alias
     for (var key in obj) {
         _alias[ "[object " + key + "]" ] = obj[key];
     }
 }
 
-function complex(arg1,   // @arg String/Object(= undefined):
-                 arg2) { // @arg String/Number(= undefined):
-                         // @ret Integer: 1 ~ 4
-                         // @help: Type.complex
-                         // @desc: detect argument combinations
+function Type_complex(arg1,   // @arg String/Object(= undefined):
+                      arg2) { // @arg String/Number(= undefined):
+                              // @ret Integer: 1 ~ 4
+                              // @help: Type.complex
+                              // @desc: detect argument combinations
     //  [1][get all items]  Type.complex() -> 1
     //  [2][get one item]   Type.complex(key:String) -> 2
     //  [3][set one item]   Type.complex(key:String, value:Mix) -> 3
@@ -112,6 +123,328 @@ function complex(arg1,   // @arg String/Object(= undefined):
     return arg1 === void 0 ? 1
          : arg2 !== void 0 ? 3
          : arg1 && typeof arg1 === "string" ? 2 : 4;
+}
+
+function Type_deny(name,    // @arg String: argument name, function spec
+                   mix,     // @arg Mix:
+                   judge) { // @arg Function/Boolean/TypeNameString:
+                            // @help: Type.deny
+                            // @desc: raise an assertion in a type match
+    Type_allow(mix, judge, name, true);
+}
+
+function Type_allow(name,         // @arg String: argument name, function spec
+                    mix,          // @arg Mix:
+                    judge,        // @arg Function/Boolean/InterfaceNameString/TypeNameString:
+                                  //          types: "Global/List/Node"
+                                  //                 "Null/Undefined/Boolean/Number/String"
+                                  //                 "Date/Object/Array/Function/RegExp/Array"
+                    __negate__) { // @hidden Boolean(= false):
+                                  // @help: Type.allow
+                                  // @desc: raise an assertion in a type mismatch
+    __negate__ = __negate__ || false;
+
+    var assert = false; // origin = "";
+
+    if (judge == null) { // Type.allow(mix, undefined or null) -> nop
+        return;
+    }
+
+    switch (typeof judge) {
+    // judge fn(mix):boolean value
+    case "function":
+        assert = !(judge(mix) ^ __negate__);
+        break;
+
+    // judge boolean value
+    case "boolean":
+        assert = !(judge ^ __negate__);
+        break;
+
+    // judge type
+    case "string":
+        assert = !(judge.split("/").some(function(type) {
+/*
+            if (mix) {
+                if (Monogram.Interface && Monogram.Interface.has(type)) {
+                    // http://uupaa.hatenablog.com/entry/2012/10/05/173226
+                    origin = "interface";
+                    return _judgeInterface(mix, Monogram.Interface.getSpec(type));
+                }
+                if (Monogram.Class && Monogram.Class.has(type)) {
+                    return true;
+                }
+            }
+ */
+            return _judgeType(mix, type);
+        }) ^ __negate__);
+        break;
+    default:
+        throw new TypeError("BAD_ARG");
+    }
+    if (assert) { // http://uupaa.hatenablog.com/entry/2011/11/18/115409
+        debugger;
+        try {
+            var caller   = _strict ? null : (arguments.callee || 0).caller,
+                nickname = caller ? _nickname(caller) : "???",
+                asserter = __negate__ ? "Type.deny" : "Type.allow",
+                msg      = "";
+
+            msg = _msg(name, caller, nickname, asserter);
+
+/*
+            if (origin === "interface" && Monogram.Interface) {
+                msg += "\ninterface " + judge + " "
+                     + Monogram.Dump(Monogram.Interface[judge]) + "\n";
+            }
+ */
+            throw new TypeError(msg);
+        } catch (o_o) {
+            console.log(_prettyPrint ? o_o.stack.replace(/at eval [\s\S]+$/m, "")
+                                     : o_o + "");
+            throw new TypeError("ASSERTION");
+        }
+    }
+
+    function _msg(name, caller, nickname, asserter) {
+        var rv = "",
+            line   = ">>> " + nickname + " in " + asserter + "(";
+            indent = Array(line.length + 1).join(" "); // String#repeat
+
+        rv = Monogram.Help.url(caller) + "\n\n" +
+             line +
+             name + ", " + judge + ")\n" +
+             indent + Array(name.length + 1).join("~") + "\n" + // String#repeat
+             indent + Dump(mix, 0) + "\n";
+        return rv;
+    }
+}
+
+/*
+function _judgeInterface(mix, spec) {
+    return Hash.every(spec, function(type, key) {
+        if (key in mix) { // mix has key
+            return spec[key].split("/").some(function(type) {
+                if (type in Monogram.Interface) {
+                    return _judgeInterface(mix[key], Monogram.Interface[type]);
+                }
+                return _judgeType(mix[key], type);
+            });
+        }
+        return false;
+    });
+}
+ */
+
+function _judgeType(mix, type) {
+    type = type.toLowerCase();
+    if (type === "mix") {
+        return true;
+    }
+    if (mix == null && type === mix + "") { // "null" or "undefined"
+        return true;
+    }
+    return type === "void" ? mix === void 0
+         : type === Type(mix).toLowerCase();
+}
+
+// --- Type.dump -------------------------------------------
+function Dump(mix,     // @arg Mix: data
+              spaces,  // @arg Integer(= 4): spaces, -1, 0 to 8
+              depth) { // @arg Integer(= 5): max depth, 0 to 100
+                       // @ret String:
+                       // @help: Type.dump
+                       // @desc: Dump Object
+    spaces = spaces === void 0 ? 4 : spaces;
+    depth  = depth || 5;
+
+//{@debug
+    //mm.deny("spaces", spaces, (spaces < -1 || spaces > 8  ));
+    //mm.deny("depth",  depth,  (depth  <  1 || depth  > 100));
+//}@debug
+
+    return _recursiveDump(mix, spaces, depth, 1);
+}
+
+function _recursiveDump(mix,    // @arg Mix: value
+                        spaces, // @arg Integer: spaces
+                        depth,  // @arg Integer: max depth
+                        nest) { // @arg Integer: nest count from 1
+                                // @ret String:
+                                // @inner:
+    function _dumpArray(mix) {
+        if (!mix.length) {
+            return "[]";
+        }
+        var ary = [], i = 0, iz = mix.length;
+
+        for (; i < iz; ++i) {
+            ary.push(indent + _recursiveDump(mix[i], spaces, depth, nest + 1)); // recursive call
+        }
+        return "[" + lf + ary.join("," + lf) +
+                     lf + _spaces(" ", spaces * (nest - 1)) + "]";
+    }
+
+    function _dumpObject(mix) {
+        var ary = [], key, minify = spaces === -1,
+            keys = Object.keys(mix).sort(), i = 0, iz = keys.length,
+            skip = /^__[\w]+__$/;
+
+        if (!iz) {
+            return _getClassOrFunctionName(mix) + "{}"; // empty member
+        }
+        for (; i < iz; ++i) {
+            key = keys[i];
+            if (!skip.test(key)) {
+                ary.push(indent + (minify ? (      key +  ':')
+                                          : ('"' + key + '":')) + sp +
+                         _recursiveDump(mix[key], spaces, depth, nest + 1)); // recursive call
+            }
+        }
+        return _getClassOrFunctionName(mix) +
+                    "{" + lf + ary.join("," + lf) +
+                          lf + _spaces(" ", spaces * (nest - 1)) + "}";
+
+        function _getClassOrFunctionName(mix) {
+            if (typeof mix === "function") { // mix is function
+                return _nickname(mix) + "()" + sp;
+            }
+            // Class name detection
+            if (mix.constructor && mix.constructor.name &&
+                mix.constructor.name !== "Object") {
+                return "mm." + mix.constructor.name + sp;
+            }
+            return "";
+        }
+    }
+
+    function _dumpNode(node) { // @arg: Node:
+                               // @ret: String: "<body>"
+                               //               "<div body>div:nth-child(1)>div>"
+                               // @ref: HTMLElement#path
+        var name = node.nodeName ? node.nodeName.toLowerCase() : "",
+            roots = /^(?:html|head|body)$/;
+
+        if (typeof node.path === "function") {
+            // /^<(\w+) ?(.*)?>$/.exec( "<div body>div:nth-child(1)>div>" )
+            return "<" + name + (roots.test(name) ? "" : " " + node.path()) + ">";
+        }
+        return name ? '<' + name + '>'
+                    : node === document ? '<document>'
+                                        : '<node>';
+    }
+
+    if (depth && nest > depth) {
+        return "...";
+    }
+
+    var lf = spaces > 0 ? "\n" : "", // line feed
+        sp = spaces > 0 ? " "  : "", // a space
+        indent = _spaces(" ", spaces * nest);
+
+    switch (Type(mix)) {
+    case "Null":
+    case "Global":
+    case "Number":
+    case "Boolean":
+    case "Undefined":   return "" + mix;
+    case "Date":        return mix.toJSON();
+    case "Node":        return _dumpNode(mix);
+    case "List":
+    case "Array":       return _dumpArray(mix);
+    case "RegExp":      return "/" + mix.source + "/";
+    case "Hash":        return _dumpObject(mix.valueOf());
+    case "Object":
+    case "Function":    return _dumpObject(mix);
+    case "String":      return '"' + _toJSONEscapedString(mix) + '"';
+    case "Attr":        return _dumpObject(Cast_attr(mix));
+    case "Style":       return _dumpObject(Cast_style(mix));
+    }
+    return "";
+}
+
+function _toJSONEscapedString(str) { // @arg String:
+                                     // @ret String:
+                                     // @inner: to JSON escaped string
+    var JSON_ESCAPE = {
+            '\b': '\\b',    // backspace       U+0008
+            '\t': '\\t',    // tab             U+0009
+            '\n': '\\n',    // line feed       U+000A
+            '\f': '\\f',    // form feed       U+000C
+            '\r': '\\r',    // carriage return U+000D
+            '"':  '\\"',    // quotation mark  U+0022
+            '\\': '\\\\'    // reverse solidus U+005C
+        };
+
+    return str.replace(/(?:[\b\t\n\f\r\"]|\\)/g, function(_) {
+                return JSON_ESCAPE[_];
+            }).replace(/(?:[\x00-\x1f])/g, function(_) {
+                return "\\u00" +
+                       ("0" + _.charCodeAt(0).toString(16)).slice(-2);
+            });
+}
+
+function _nickname(fn) { // copy from Function#nickname
+    var name = fn.name || (fn + "").split("\x28")[0].trim().slice(9);
+
+    return name ? name.replace(/^mm_/, "mm.") : "";
+}
+
+function _spaces(chr, count) { // copy from String#repeat
+    count = count | 0;
+    return (chr.length && count > 0) ? Array(count + 1).join(chr) : "";
+}
+
+// --- Type.cast -------------------------------------------
+function Cast(mix) { // @arg Attr/Hash/List/FakeArray/Style/DateString/Mix:
+                     // @ret Object/Array/Date/Mix:
+                     // @help: Type.cast
+                     // @desc: remove the characteristic
+    switch (Type(mix)) {
+    case "Attr":    return Cast_attr(mix);   // Type.cast(Attr) -> Object
+    case "Hash":    return mix.valueOf();    // Type.cast(Hash) -> Object
+    case "List":    return Array.from(mix);  // Type.cast(List) -> Array
+    case "Style":   return Cast_style(mix);  // Type.cast(Style) -> Object
+    case "String":  return Date.from(mix) || mix; // Type.cast(DateString) -> Date/String
+    }
+    return mix;
+}
+
+function Cast_attr(mix) { // @arg Attr: NamedNodeMap
+                          // @ret Object:
+                          // @inner:
+    var rv = {}, i = 0, attr;
+
+    for (; attr = mix[i++]; ) {
+        rv[attr.name] = attr.value;
+    }
+    return rv;
+}
+
+function Cast_style(mix) { // @arg Style: CSSStyleDeclaration
+                           // @ret Object:
+                           // @inner:
+    var rv = {}, key, value, i = 0, iz = mix.length;
+
+    if (iz) { // [Firefox][WebKit][IE]
+        for (; i < iz; ++i) {
+            key = mix.item(i);
+            value = mix[key];
+            if (value && typeof value === "string") { // skip methods
+                rv[key] = value;
+            }
+        }
+    } else {
+//{@opera
+        for (key in mix) {
+            value = mix[key];
+            if (value && typeof value === "string") {
+                rv[key] = value;
+            }
+        }
+//}@opera
+    }
+    return rv;
 }
 
 // --- build -----------------------------------------------
