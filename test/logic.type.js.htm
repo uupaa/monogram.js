@@ -5,11 +5,15 @@
 <script src="../js/logic.env.js"></script>
 <script src="../js/logic.uid.js"></script>
 <script src="../js/logic.type.js"></script>
+<!--
+<script src="../js/logic.help.js"></script>
+ -->
 <script src="../js/mm.js"></script>
 <script>
 
     if (this.require) {
-        var Type = require("./logic.type").Type;
+        require("../js/logic.help");
+        var Type = require("../js/logic.type").Type;
     } else {
         var Type = Monogram.Type;
     }
@@ -57,6 +61,64 @@
             console.log( Type(getComputedStyle(document.body), true) === "CSSStyleDeclaration" );
         }
     }
+
+    (function(global) {
+        console.log( Type.clone(null)    === null );
+        console.log( Type.clone(void 0)  === undefined );
+        console.log( Type.clone(true)    === true );
+        console.log( Type.clone(false)   === false );
+        console.log( Type.clone(123)     === 123 );
+        console.log( Type.clone(Infinity)=== Infinity );
+        console.log( Type.clone(NaN)+""  === NaN+"");
+        console.log( Type.clone("a")     === "a" );
+        console.log((Type.clone(/a/)+"") ===(/a/+""));
+        console.log((Type.clone([1])+"") ===([1]+""));
+        console.log( Type.clone({}) );
+        console.log( Type.clone({a:1,b:{c:{d:2}}}) );
+        console.log( Type.clone(new Date()) );
+        console.log( Type.clone(function a(){}) );
+
+        // --- other and host objects ---
+        console.log( Type.clone(new Error()) );
+        console.log( Type.clone(new TypeError("!!"))+"" === new TypeError("!!")+"" );
+
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(arguments) ); // ArrayLike
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })(1, 2, 3);
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(global) ); // global
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })();
+        if (global.document) {
+            global.onload = function() {
+                console.log( Type.clone(document.body) );
+
+                if (document.querySelectorAll) {
+                    console.log( Type.clone(document.querySelector("*")) );
+                    console.log( Type.clone(document.querySelectorAll("*")) );
+                }
+
+                console.log( Type.clone(document.body.attributes) );
+                console.log( Type.clone(document.getElementsByTagName("*")) );
+
+                if (global.getComputedStyle) {
+                    console.log( Type.clone(getComputedStyle(document.body)) );
+                }
+            };
+        }
+    })(this.self || global);
+
+    (function(global) {
+        Type.allow("arg", false, "Boolean");
+        Type.allow("arg", false, "Function");
+    })(this.self || global);
 
 </script></body></html>
 

@@ -69,7 +69,7 @@ function Help_add(url,   // @arg URLString: help url string
 }
 
 // --- build -----------------------------------------------
-help.add("http://code.google.com/p/mofmof-js/wiki/",
+Help_add("http://code.google.com/p/mofmof-js/wiki/",
          ("Object,Array,String,Boolean,Number,Date,RegExp,Function," +
           "mm,Class,Hash,Await,Msg,UID,Help,Env,Script," +
           "Base64,SHA1,MD5,HMAC,UTF16,CRC32").split(","));

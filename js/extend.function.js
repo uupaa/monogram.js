@@ -1,8 +1,6 @@
 // extend.function.js:
 // @need: Monogram.wiz (in mixin.js)
 //        Monogram.Type (in logic.type.js)
-//        Monogram.Cast (in logic.cast.js)
-//        Monogram.CloneEx (in logic.clone.js)
 
 (function(global, wiz) {
 
@@ -366,7 +364,7 @@ function Array_copy(deep) { // @arg Boolean(= false): true is deep copy
                             // @help: Array#copy
                             // @desc: has non-copyable object -> shallow copy
                             //        copyable object -> deep copy
-    return deep ? Monogram.CloneEx(this) // deep copy
+    return deep ? Monogram.Type.clone(this) // deep copy
                 : this.concat(); // shallow copy
 }
 
@@ -621,7 +619,7 @@ function Array_fill(value, // @arg Primitive/Object/Array/Date(= undefined): fil
     switch (Monogram.Type(value)) {
     case "Date":   for (; i < iz; ++i) { rv[i] = new Date(value); } break;
     case "Array":  for (; i < iz; ++i) { rv[i] = value.concat();  } break;
-    case "Object": for (; i < iz; ++i) { rv[i] = Monogram.CloneEx(value); } break;
+    case "Object": for (; i < iz; ++i) { rv[i] = Monogram.Type.clone(value); } break;
     default:       for (; i < iz; ++i) { rv[i] = value; }
     }
     return rv;
@@ -1211,9 +1209,9 @@ function Hash_like(lval,   // @arg Mix: left value
         if (alike[ltype] &&
             alike[ltype] === alike[rtype]) {
             if (rtype === "String" || rtype === "List" || rtype === "Hash") {
-                return Hash_like(lval, Monogram.Cast(rval));
+                return Hash_like(lval, Monogram.Type.cast(rval));
             }
-            return Hash_like(Monogram.Cast(lval), rval);
+            return Hash_like(Monogram.Type.cast(lval), rval);
         }
         return false;
     }

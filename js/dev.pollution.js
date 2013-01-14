@@ -1,5 +1,5 @@
 // dev.pollution.js: pollution detection API
-// @need: mm.js
+// @need: Array#xor (in extend.function.js)
 
 //{@perf
 (function(global) { // @arg Global: window or global

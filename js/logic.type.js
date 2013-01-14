@@ -1,23 +1,24 @@
-// logic.type.js: type detection, assertion and dump
-// @need: Monogram.Help (in logic.help.js)
+// logic.type.js: type detection, assertion, structured clone and dump
 
 //{@type
 (function(global) {
 
 // --- header ----------------------------------------------
-                              // Type(mix):String
-Type.alias   = Type_alias;    // Type.alias({ fullTypeName: shortTypeName, ... }):void
-Type.complex = Type_complex;  // Type.complex(arg1:String/Object = undefined, arg2:String/Number = undefined):Integer
-Type.allow   = Type_allow;    // Type.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-Type.deny    = Type_deny;     // Type.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
-Type.dump    = Dump;          // Type.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
-Type.cast    = Cast;          // Type.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
-Type.cast.attr  = Cast_attr;  // Type.cast.attr(mix:NamedNodeMap):Object
-Type.cast.style = Cast_style; // Type.cast.style(mix:CSSStyleDeclaration):Object
+                                // Type(mix):String
+Type.alias      = Type_alias;   // Type.alias({ fullTypeName: shortTypeName, ... }):void
+Type.complex    = Type_complex; // Type.complex(arg1:String/Object = undefined, arg2:String/Number = undefined):Integer
+Type.allow      = Type_allow;   // Type.allow(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
+Type.deny       = Type_deny;    // Type.deny(name:String, mix:Mix, judge:Function/Boolean/TypeNameString):void
+Type.dump       = Dump;         // Type.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
+Type.cast       = Cast;         // Type.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
+Type.cast.attr  = Cast_attr;    // Type.cast.attr(mix:NamedNodeMap):Object
+Type.cast.style = Cast_style;   // Type.cast.style(mix:CSSStyleDeclaration):Object
+Type.clone      = Clone;        // Type.clone(mix:Mix, depth:Integer = 0, hook:Function = null):Mix
 
-Type.name      = "Type";
-Type.dump.name = "Type.dump";
-Type.cast.name = "Type.cast";
+Type.name       = "Type";
+Type.dump.name  = "Type.dump";
+Type.cast.name  = "Type.cast";
+Type.clone.name = "Type.clone";
 
 // --- library scope vars ----------------------------------
 var _strict = (function() { return !this; })(), // true is strict mode
@@ -126,7 +127,7 @@ function Type_complex(arg1,   // @arg String/Object(= undefined):
 }
 
 function Type_deny(name,    // @arg String: argument name, function spec
-                   mix,     // @arg Mix:
+                   mix,     // @arg Mix: value
                    judge) { // @arg Function/Boolean/TypeNameString:
                             // @help: Type.deny
                             // @desc: raise an assertion in a type match
@@ -134,7 +135,7 @@ function Type_deny(name,    // @arg String: argument name, function spec
 }
 
 function Type_allow(name,         // @arg String: argument name, function spec
-                    mix,          // @arg Mix:
+                    mix,          // @arg Mix: value
                     judge,        // @arg Function/Boolean/InterfaceNameString/TypeNameString:
                                   //          types: "Global/List/Node"
                                   //                 "Null/Undefined/Boolean/Number/String"
@@ -207,11 +208,14 @@ function Type_allow(name,         // @arg String: argument name, function spec
     }
 
     function _msg(name, caller, nickname, asserter) {
-        var rv = "",
+        var rv = "", help = "",
             line   = ">>> " + nickname + " in " + asserter + "(";
             indent = Array(line.length + 1).join(" "); // String#repeat
 
-        rv = Monogram.Help.url(caller) + "\n\n" +
+        if ((global.Monogram || {}).Help) {
+            help = Monogram.Help.url(caller);
+        }
+        rv = help + "\n\n" +
              line +
              name + ", " + judge + ")\n" +
              indent + Array(name.length + 1).join("~") + "\n" + // String#repeat
@@ -447,6 +451,87 @@ function Cast_style(mix) { // @arg Style: CSSStyleDeclaration
     return rv;
 }
 
+// --- Type.clone -----------------------------------------------
+function Clone(mix,    // @arg Mix: source object
+               depth,  // @arg Integer(= 0): max depth, 0 is infinity
+               hook) { // @arg Function(= null): handle the unknown object
+                       // @ret Mix: copied object
+                       // @throw: TypeError("DataCloneError: ...")
+                       // @help: Type.clone
+                       // @desc: Object with the reference -> deep copy
+                       //        Object without the reference -> shallow copy
+                       //        do not look prototype chain.
+    return _recursiveClone(mix, depth || 0, hook, 0);
+}
+
+function _recursiveClone(mix, depth, hook, nest) { // @inner:
+    if (depth && nest > depth) {
+        throw new TypeError("DataCloneError: " + mix);
+    }
+
+    if (mix == null) { // null or undefined
+        return mix;
+    }
+
+    var rv, key, keys, i = 0, iz;
+
+    switch (mix.constructor.name) {
+    case "Function":
+        return mix; // not clone
+    case "String":
+    case "Number":
+    case "Boolean":
+        return mix.valueOf(); // not String(value), not Number(value)
+    case "RegExp":
+        return RegExp(mix.source, (mix + "").slice(mix.source.length + 2));
+    case "Date":
+        return new Date(+mix);
+    case "Array":
+        for (rv = [], iz = mix.length; i < iz; ++i) {
+            rv[i] = _recursiveClone(mix[i], depth, hook, nest + 1);
+        }
+        return rv;
+    case "Object":
+        keys = Object.keys(mix);
+        for (rv = {}, iz = keys.length; i < iz; ++i) {
+            key = keys[i];
+            rv[key] = _recursiveClone(mix[key], depth, hook, nest + 1);
+        }
+        return rv;
+    case "File":
+    case "Blob":
+    case "FileList":
+    case "ImageData":
+    case "ImageBitmap":
+        // TODO: impl
+        break;
+    }
+    if (mix instanceof Error) {
+        return new mix.constructor(mix.message);
+    }
+    // --- Node, Attr, Style, Host Objects ---
+    if (mix.nodeType) {
+        return mix.cloneNode(true);
+    }
+    if (mix instanceof NamedNodeMap) {
+        return Cast.attr(mix);
+    }
+    if (mix instanceof CSSStyleDeclaration) {
+        return Cast.style(mix);
+    }
+    // --- ArrayLike(Arguments, NodeList, HTMLCollection) Object ---
+    if ("length" in mix && typeof mix.item === "function") {
+        for (rv = [], iz = mix.length; i < iz; ++i) {
+            rv[i] = _recursiveClone(mix[i], depth, hook, nest + 1);
+        }
+        return rv;
+    }
+    if (hook) {
+        return hook(mix, depth, hook, nest);
+    }
+    return mix;
+}
+
 // --- build -----------------------------------------------
 
 // --- export ----------------------------------------------
@@ -461,33 +546,16 @@ global.Monogram.Type = Type;
 
 // --- test ------------------------------------------------
 /*
-    var Type = require("./logic.type").Type;
-
-    console.log( Type(null)     === "Null" );
-    console.log( Type(void 0)   === "Undefined" );
-    console.log( Type(true)     === "Boolean" );
-    console.log( Type(123)      === "Number" );
-    console.log( Type("a")      === "String" );
-    console.log( Type(/a/)      === "RegExp" );
-    console.log( Type([1])      === "Array"  );
-    console.log( Type(new Date) === "Date" );
-    console.log( Type(new Error) === "Error" );
-    console.log( Type(function a() {}) === "Function" );
-
-    (function args(global) {
-        console.log( Type(global)    === "Global" );
-        console.log( Type(arguments) === "List" );
-    })(this.self || global);
- */
-/*
 <!DOCTYPE html><html><head><meta charset="utf-8"><script src="logic.type.js"></script>
 <script>
+
     if (this.require) {
-        var Type = require("./logic.type").Type;
+        var Type = require("../js/logic.type").Type;
     } else {
         var Type = Monogram.Type;
     }
 
+    console.log("Basic types ---");
     console.log( Type(null)     === "Null" );
     console.log( Type(void 0)   === "Undefined" );
     console.log( Type(true)     === "Boolean" );
@@ -500,31 +568,89 @@ global.Monogram.Type = Type;
     console.log( Type(new Error) === "Error" );
     console.log( Type(function a() {}) === "Function" );
 
+    console.log("Global, List, Arguments ---");
     (function args(global) {
         console.log( Type(global)    === "Global" );
         console.log( Type(arguments) === "List" );
         console.log( Type(arguments, true) === "Arguments" );
     })(this.self || global);
 
-    // --- for DOM ---
+    console.log("DOM ---");
     if (this.document) {
         console.log( Type(document.body) === "Node" );
 
+        console.log("NodeList ---");
         if (document.querySelectorAll) {
             console.log( Type(document.querySelectorAll("*")) === "List" );
             console.log( Type(document.querySelectorAll("*"), true) === "NodeList" ); // [IE8] "StaticNodeList"
         }
 
+        console.log("Attr ---");
         console.log( Type(document.body.attributes) === "Attr" );
         console.log( Type(document.body.attributes, true) === "NamedNodeMap" );
+        console.log("HTMLCollections/NodeList ---");
         console.log( Type(document.getElementsByTagName("*")) === "List" );
         console.log( Type(document.getElementsByTagName("*"), true) === "NodeList" ) // [Firefox][IE] "HTMLCollection", [WebKit] "NodeList"
 
+        console.log("Style ---");
         if (this.getComputedStyle) {
             console.log( Type(getComputedStyle(document.body)) === "Style" );
             console.log( Type(getComputedStyle(document.body), true) === "CSSStyleDeclaration" );
         }
     }
+
+    (function(global) {
+        console.log( Type.clone(null)    === null );
+        console.log( Type.clone(void 0)  === undefined );
+        console.log( Type.clone(true)    === true );
+        console.log( Type.clone(false)   === false );
+        console.log( Type.clone(123)     === 123 );
+        console.log( Type.clone(Infinity)=== Infinity );
+        console.log( Type.clone(NaN)+""  === NaN+"");
+        console.log( Type.clone("a")     === "a" );
+        console.log((Type.clone(/a/)+"") ===(/a/+""));
+        console.log((Type.clone([1])+"") ===([1]+""));
+        console.log( Type.clone({}) );
+        console.log( Type.clone({a:1,b:{c:{d:2}}}) );
+        console.log( Type.clone(new Date()) );
+        console.log( Type.clone(function a(){}) );
+
+        // --- other and host objects ---
+        console.log( Type.clone(new Error()) );
+        console.log( Type.clone(new TypeError("!!"))+"" === new TypeError("!!")+"" );
+
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(arguments) ); // ArrayLike
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })(1, 2, 3);
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(global) ); // global
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })();
+        if (global.document) {
+            global.onload = function() {
+                console.log( Type.clone(document.body) );
+
+                if (document.querySelectorAll) {
+                    console.log( Type.clone(document.querySelector("*")) );
+                    console.log( Type.clone(document.querySelectorAll("*")) );
+                }
+
+                console.log( Type.clone(document.body.attributes) );
+                console.log( Type.clone(document.getElementsByTagName("*")) );
+
+                if (global.getComputedStyle) {
+                    console.log( Type.clone(getComputedStyle(document.body)) );
+                }
+            };
+        }
+    })(this.self || global);
 
 </script></head><body></body></html>
  */

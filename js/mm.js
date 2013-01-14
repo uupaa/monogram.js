@@ -7,13 +7,10 @@
 //        Monogram.UID (in logic.uid.js)
 //        Monogram.Hash (in extend.function.js)
 //        Monogram.Type (in logic.type.js)
-//        Monogram.Cast (in logic.cast.js)
-//        Monogram.Dump (in logic.dump.js)
-//        Monogram.Clone (in logic.clone.js)
 
 var mm; // global.mm - monogram.js library name space
 
-mm || (function(global, Hash, Type, Cast, Dump, Clone) {
+mm || (function(global, Hash, Type) {
 
 // --- header ----------------------------------------------
 function _defineLibraryAPIs(mixin) {
@@ -47,8 +44,8 @@ function _defineLibraryAPIs(mixin) {
         each:       mm_each,            // mm.each(data:Object/Function/Array/Hash, fn:Function):void
         // --- generate ---
         uid:        mm_uid,             // mm.uid(group:String = ""):Integer
-        cast:       Cast,               // mm.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
-        clone:      Clone,              // mm.clone(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
+        cast:       Type.cast,          // mm.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
+        clone:      Type.clone,         // mm.clone(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
         pair:       mm_pair,            // mm.pair(key:Object/Integer/String, value:Mix):Object
         pack:       mm_pack,            // mm.pack(data:Object/Function/Array/Hash, glue:String = ":", joint:String = ";"):String
         wrap:       mm_wrap,            // mm.wrap(mix:Mix):Function
@@ -70,7 +67,7 @@ function _defineLibraryAPIs(mixin) {
                                         // mm.conv("Integer",    "ByteString") {     0 :"\00" ..   255 :"\ff"}
                                         // mm.conv("ByteString", "Integer")    {  "\00":   0  ..  "\ff": 255 }
                                         //                                     {"\f780": 128  .."\f7ff": 255 }
-        dump:       Dump,               // mm.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
+        dump:       Type.dump,          // mm.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
         strict:     mm_wrap(!this)(),   // mm.strict:Boolean - true is strict mode
         // --- assert / debug ---
         say:        mm_say,             // mm.say(mix:Mix):Boolean
@@ -107,7 +104,7 @@ function _defineLibraryAPIs(mixin) {
 function HashFactory(obj) { // @arg Object/Hash:
                             // @ret Hash:
                             // @help: mm
-    return obj instanceof Hash ? new Hash(Clone(obj)) // copy constructor
+    return obj instanceof Hash ? new Hash(Type.clone(obj)) // copy constructor
                                : new Hash(obj);
 }
 
@@ -339,15 +336,15 @@ function mm_say(mix) { // @arg Mix:
                        // @ret Boolean: true
                        // @help: mm.say
                        // @desc: console.log(mm.dump(mix)) short hand
-    global.console && global.console.log(Dump(mix));
+    global.console && global.console.log(Type.dump(mix));
     return true;
 }
 
 function mm_alert(mix) { // @args Mix:
                          // @ret Boolean: true
                          // @help: mm.alert
-                         // @desc: alert(Dump(mix)) short hand
-    alert(Dump(mix));
+                         // @desc: alert(Type.dump(mix)) short hand
+    alert(Type.dump(mix));
     return true;
 }
 
@@ -464,6 +461,5 @@ if (typeof module !== "undefined") { // is modular
 
 _defineLibraryAPIs(global.Monogram.mixin);
 
-})(this.self || global,
-   Monogram.Hash, Monogram.Type, Monogram.Cast, Monogram.Dump, Monogram.Clone);
+})(this.self || global, Monogram.Hash, Monogram.Type);
 
