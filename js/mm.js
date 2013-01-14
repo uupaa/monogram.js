@@ -10,83 +10,81 @@
 
 var mm; // global.mm - monogram.js library name space
 
-mm || (function(global, Hash, Type) {
+mm || (function(global, mixin, Hash, Type) {
 
 // --- header ----------------------------------------------
-function _defineLibraryAPIs(mixin) {
 
-    // --- Typical types ---
-    //  Mix: Any type
-    //  Hash: key / value store
-    //  Array: Dense or Sparse Array
-    //  Global: Window or Global Object
-    //  Integer: Number without a fractional
-    //  ModArray: Modified Array. Array + { key: value, ... }
-    //  Function: Executable Object
-    //  Primitive: undefined, null, Boolean, Number and String
-    //
-    mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
-        api:        mm_api,             // mm.api(version:Integer = 0):Object/Function
-        // --- mixin ---
-        mixin:      global.Monogram.mixin, // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
-        args:       global.Monogram.args,  // mm.args(arg:Object/Function/undefined, defaults:Object):Object
-        wiz:        global.Monogram.wiz,   // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
-        // --- match ---
-        has:        mm_has,             // mm.has(data:Mix, find:Mix):Boolean
-        like:       mm_like,            // mm.like(lval:Mix, rval:Mix):Boolean
-        some:       mm_some,            // mm.some(data:Object/Function/Array/Hash, fn:Function):Boolean
-        every:      mm_every,           // mm.every(data:Object/Function/Array/Hash, fn:Function):Boolean
-        match:      mm_match,           // mm.match(data:Object/Function/Array/Hash, fn:Function):Mix/undefined
-        filter:     mm_filter,          // mm.filter(data:Object/Function/Array/Hash, fn:Function):Array
-        // --- format ---
-        // --- iterate ---
-        map:        mm_map,             // mm.map(data:Object/Function/Array/Hash, fn:Function):Array
-        each:       mm_each,            // mm.each(data:Object/Function/Array/Hash, fn:Function):void
-        // --- generate ---
-        uid:        mm_uid,             // mm.uid(group:String = ""):Integer
-        cast:       Type.cast,          // mm.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
-        clone:      Type.clone,         // mm.clone(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
-        pair:       mm_pair,            // mm.pair(key:Object/Integer/String, value:Mix):Object
-        pack:       mm_pack,            // mm.pack(data:Object/Function/Array/Hash, glue:String = ":", joint:String = ";"):String
-        wrap:       mm_wrap,            // mm.wrap(mix:Mix):Function
-        clean:      mm_clean,           // mm.clean(data:Object/Function/Array/Hash, only:String = ""):DenseObject
-        // --- calculate ---
-        // --- enumerate ---
-        count:      mm_count,           // mm.count(data:Object/Function/Array/Hash):Object
-        keys:       mm_keys,            // mm.keys(data:Object/Function/Array/Hash/Style/Node/Global):Array
-        values:     mm_values,          // mm.values(data:Object/Function/Array/Hash/Style/Node/Global):Array
-        // --- manipulate ---
-        clear:      mm_clear,           // mm.clear(obj:Object/Function/Class/Hash):Object/Function/Class/Hash
-        // --- type detection ---
-        type:       Type,
-        // --- utility ---
-        nop:        mm_nop,             // mm.nop():void
-        conv:       mm_conv,            // mm.conv(from:CaseInsensitiveString, to:CaseInsensitiveString):Object
-                                        // mm.conv("Integer",    "HexString")  {     0 : "00" ..   255 : "ff"}
-                                        // mm.conv("HexString",  "Integer")    {   "00":   0  ..   "ff": 255 }
-                                        // mm.conv("Integer",    "ByteString") {     0 :"\00" ..   255 :"\ff"}
-                                        // mm.conv("ByteString", "Integer")    {  "\00":   0  ..  "\ff": 255 }
-                                        //                                     {"\f780": 128  .."\f7ff": 255 }
-        dump:       Type.dump,          // mm.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
-        strict:     mm_wrap(!this)(),   // mm.strict:Boolean - true is strict mode
-        // --- assert / debug ---
-        say:        mm_say,             // mm.say(mix:Mix):Boolean
-        alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
-       // --- log / log group ---
-        log:    mixin(mm_log, {           // mm.log(...:Mix):void
-            copy:   mm_log_copy,        // mm.log.copy():Object
-            dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
-            warn:   mm_log_warn,        // mm.log.warn(...:Mix):void
-            error:  mm_log_error,       // mm.log.error(...:Mix):void
-            clear:  mm_log_clear,       // mm.log.clear():void
-            limit:  0                   // mm.log.limit - Integer: stock length
-        }),
-        logg:   mixin(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
-            nest:   0                   // mm.logg.nest - Number: nest level
-        })
-    });
-    mm.env = new Monogram.Env();
-}
+// --- Typical types ---
+//  Mix: Any type
+//  Hash: key / value store
+//  Array: Dense or Sparse Array
+//  Global: Window or Global Object
+//  Integer: Number without a fractional
+//  ModArray: Modified Array. Array + { key: value, ... }
+//  Function: Executable Object
+//  Primitive: undefined, null, Boolean, Number and String
+//
+mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
+    api:        mm_api,             // mm.api(version:Integer = 0):Object/Function
+    // --- mixin ---
+    mixin:      global.Monogram.mixin, // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
+    args:       global.Monogram.args,  // mm.args(arg:Object/Function/undefined, defaults:Object):Object
+    wiz:        global.Monogram.wiz,   // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
+    // --- match ---
+    has:        mm_has,             // mm.has(data:Mix, find:Mix):Boolean
+    like:       mm_like,            // mm.like(lval:Mix, rval:Mix):Boolean
+    some:       mm_some,            // mm.some(data:Object/Function/Array/Hash, fn:Function):Boolean
+    every:      mm_every,           // mm.every(data:Object/Function/Array/Hash, fn:Function):Boolean
+    match:      mm_match,           // mm.match(data:Object/Function/Array/Hash, fn:Function):Mix/undefined
+    filter:     mm_filter,          // mm.filter(data:Object/Function/Array/Hash, fn:Function):Array
+    // --- format ---
+    // --- iterate ---
+    map:        mm_map,             // mm.map(data:Object/Function/Array/Hash, fn:Function):Array
+    each:       mm_each,            // mm.each(data:Object/Function/Array/Hash, fn:Function):void
+    // --- generate ---
+    uid:        mm_uid,             // mm.uid(group:String = ""):Integer
+    cast:       Type.cast,          // mm.cast(mix:Attr/Hash/List/FakeArray/Style/DateString/Mix):Object/Array/Date/Mix
+    clone:      Type.clone,         // mm.clone(mix:Mix, depth:Integer = 0, hook:Function/undefined = undefined):Mix
+    pair:       mm_pair,            // mm.pair(key:Object/Integer/String, value:Mix):Object
+    pack:       mm_pack,            // mm.pack(data:Object/Function/Array/Hash, glue:String = ":", joint:String = ";"):String
+    wrap:       mm_wrap,            // mm.wrap(mix:Mix):Function
+    clean:      mm_clean,           // mm.clean(data:Object/Function/Array/Hash, only:String = ""):DenseObject
+    // --- calculate ---
+    // --- enumerate ---
+    count:      mm_count,           // mm.count(data:Object/Function/Array/Hash):Object
+    keys:       mm_keys,            // mm.keys(data:Object/Function/Array/Hash/Style/Node/Global):Array
+    values:     mm_values,          // mm.values(data:Object/Function/Array/Hash/Style/Node/Global):Array
+    // --- manipulate ---
+    clear:      mm_clear,           // mm.clear(obj:Object/Function/Class/Hash):Object/Function/Class/Hash
+    // --- type detection ---
+    type:       Type,
+    // --- utility ---
+    nop:        mm_nop,             // mm.nop():void
+    conv:       mm_conv,            // mm.conv(from:CaseInsensitiveString, to:CaseInsensitiveString):Object
+                                    // mm.conv("Integer",    "HexString")  {     0 : "00" ..   255 : "ff"}
+                                    // mm.conv("HexString",  "Integer")    {   "00":   0  ..   "ff": 255 }
+                                    // mm.conv("Integer",    "ByteString") {     0 :"\00" ..   255 :"\ff"}
+                                    // mm.conv("ByteString", "Integer")    {  "\00":   0  ..  "\ff": 255 }
+                                    //                                     {"\f780": 128  .."\f7ff": 255 }
+    dump:       Type.dump,          // mm.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
+    strict:     mm_wrap(!this)(),   // mm.strict:Boolean - true is strict mode
+    // --- assert / debug ---
+    say:        mm_say,             // mm.say(mix:Mix):Boolean
+    alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
+   // --- log / log group ---
+    log:    mixin(mm_log, {           // mm.log(...:Mix):void
+        copy:   mm_log_copy,        // mm.log.copy():Object
+        dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
+        warn:   mm_log_warn,        // mm.log.warn(...:Mix):void
+        error:  mm_log_error,       // mm.log.error(...:Mix):void
+        clear:  mm_log_clear,       // mm.log.clear():void
+        limit:  0                   // mm.log.limit - Integer: stock length
+    }),
+    logg:   mixin(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
+        nest:   0                   // mm.logg.nest - Number: nest level
+    })
+});
+mm.env = new Monogram.Env();
 
 // --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
     // --- Type Detection, API Versioning ---
@@ -459,7 +457,5 @@ if (typeof module !== "undefined") { // is modular
     module.exports = { mm: HashFactory };
 }
 
-_defineLibraryAPIs(global.Monogram.mixin);
-
-})(this.self || global, Monogram.Hash, Monogram.Type);
+})(this.self || global, Monogram.mixin, Monogram.Hash, Monogram.Type);
 

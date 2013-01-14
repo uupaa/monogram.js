@@ -286,7 +286,7 @@ function _recursiveDump(mix,    // @arg Mix: value
             ary.push(indent + _recursiveDump(mix[i], spaces, depth, nest + 1)); // recursive call
         }
         return "[" + lf + ary.join("," + lf) +
-                     lf + _spaces(" ", spaces * (nest - 1)) + "]";
+                     lf + _repeat(" ", spaces * (nest - 1)) + "]";
     }
 
     function _dumpObject(mix) {
@@ -307,7 +307,7 @@ function _recursiveDump(mix,    // @arg Mix: value
         }
         return _getClassOrFunctionName(mix) +
                     "{" + lf + ary.join("," + lf) +
-                          lf + _spaces(" ", spaces * (nest - 1)) + "}";
+                          lf + _repeat(" ", spaces * (nest - 1)) + "}";
 
         function _getClassOrFunctionName(mix) {
             if (typeof mix === "function") { // mix is function
@@ -344,7 +344,7 @@ function _recursiveDump(mix,    // @arg Mix: value
 
     var lf = spaces > 0 ? "\n" : "", // line feed
         sp = spaces > 0 ? " "  : "", // a space
-        indent = _spaces(" ", spaces * nest);
+        indent = _repeat(" ", spaces * nest);
 
     switch (Type(mix)) {
     case "Null":
@@ -394,7 +394,7 @@ function _nickname(fn) { // copy from Function#nickname
     return name ? name.replace(/^mm_/, "mm.") : "";
 }
 
-function _spaces(chr, count) { // copy from String#repeat
+function _repeat(chr, count) { // copy from String#repeat
     count = count | 0;
     return (chr.length && count > 0) ? Array(count + 1).join(chr) : "";
 }
