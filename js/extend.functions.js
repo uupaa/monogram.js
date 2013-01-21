@@ -1,4 +1,4 @@
-// extend.function.js:
+// extend.functions.js:
 // @need: Monogram.wiz (in mixin.js)
 //        Monogram.Type (in logic.type.js)
 
@@ -595,16 +595,17 @@ function Array_xor(compare) { // @arg Array: compare array
                               // @ret Array: filtered array
                               // @desc: XOR operator
                               // @help: Array#xor
-    var rv = [], index, i = 0, iz = this.length;
+    var rv = [], index, i = 0, iz = this.length,
+        cmp = compare.concat();
 
     for (; i < iz; ++i) {
         if (i in this) {
-            index = compare.indexOf(this[i]);
-            index >= 0 ? compare.splice(index, 1)
+            index = cmp.indexOf(this[i]);
+            index >= 0 ? cmp.splice(index, 1)
                        : rv.push(this[i]);
         }
     }
-    return rv.concat(compare);
+    return rv.concat(cmp);
 }
 
 function Array_fill(value, // @arg Primitive/Object/Array/Date(= undefined): fill value

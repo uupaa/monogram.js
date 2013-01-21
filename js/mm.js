@@ -5,7 +5,7 @@
 //        Monogram.wiz (in mixin.js)
 //        Monogram.Env (in logic.env.js)
 //        Monogram.UID (in logic.uid.js)
-//        Monogram.Hash (in extend.function.js)
+//        Monogram.Hash (in extend.functions.js)
 //        Monogram.Type (in logic.type.js)
 
 var mm; // global.mm - monogram.js library name space

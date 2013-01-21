@@ -9,7 +9,7 @@ function RAMStorage() {
 RAMStorage.name = "RAMStorage"; // fn.constructor.name -> "RAMStorage"
 RAMStorage.prototype = {
     constructor:RAMStorage,
-    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):void
+    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):this
     has:        has,        // (ids:String/StringArray, fn:Function = null):Boolean
     get:        get,        // (ids:String/StringArray, fn:Function = null):ObjectArray
     set:        set,        // (values:Array, fn:Function = null):this

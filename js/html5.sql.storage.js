@@ -10,8 +10,6 @@ SQLStorage.name = "SQLStorage"; // fn.constructor.name -> "SQLStorage"
 SQLStorage.prototype = {
     constructor:SQLStorage,
     setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):this
-    DDL:        DDL,        // ():Object - { SETUP, TEAR_DOWN }
-    DML:        DML,        // ():Object - { HAS, GET, SET, REMOVE, FETCH, CLEAR }
     has:        has,        // (ids:String/StringArray, fn:Function):this
     get:        get,        // (ids:String/StringArray, fn:Function):this
     set:        set,        // (values:Array, fn:Function = null):this
@@ -20,7 +18,10 @@ SQLStorage.prototype = {
     clear:      clear,      // (fn:Function = null):this
     remove:     remove,     // (id:String, fn:Function = null):this
     tearDown:   tearDown,   // (fn:Await/Function = null):this
-    showTable:  showTable   // ():this
+    showTable:  showTable,  // ():this
+    // --- override ---
+    DDL:        DDL,        // ():Object - { SETUP, TEAR_DOWN }
+    DML:        DML         // ():Object - { HAS, GET, SET, REMOVE, FETCH, CLEAR }
 };
 SQLStorage.LIMIT = (1024 * 1024 * 5) - 1024; // 5MB - 1KB
 
@@ -32,8 +33,6 @@ function setup(dbName,    // @arg String: db name
                fn) {      // @arg Await/Function(= null): fn(err:Error)
                           // @ret this:
                           // @help: SQLStorage#setup
-    var isAwait = !!(fn && fn.constructor.name === "Await");
-
     this._db = null;
     this._tableName = tableName;
     this._DDL = this.DDL(tableName);
@@ -44,25 +43,28 @@ function setup(dbName,    // @arg String: db name
         this._db = global.openDatabase(dbName, "1.0", dbName, SQLStorage.LIMIT);
     }
     if (!this._db) {
-        var err = new TypeError("NOT_FUNCTION");
+        var err = new TypeError("openDatabase is not function");
         if (fn) {
-            isAwait ? fn.miss(err) : fn(err);
+            fn.miss ? fn.miss(err) : fn(err); // await.miss(err)
         }
         return this;
     }
     return _exec(this, false, this._DDL.SETUP, [], function(err, result) {
         if (fn) {
-            err ? (isAwait ? fn.miss(err) : fn(err))
-                : (isAwait ? fn.pass()    : fn());
+            err ? (fn.miss ? fn.miss(err) : fn(err))
+                : (fn.pass ? fn.pass()    : fn());
         }
     });
 }
 
 function DDL(tableName) { // @arg String: table name
-                          // @ret Object: { SETUP, TEAR_DOWN }
+                          // @ret Object: { SETUP, COLUMNS, TEAR_DOWN }
     return {
-        SETUP: "CREATE TABLE IF NOT EXISTS " + tableName +
-               " (id TEXT PRIMARY KEY,hash TEXT,time INTEGER,data TEXT)",
+        SETUP: "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+                    "id TEXT PRIMARY KEY," +
+                    "hash TEXT," +
+                    "time INTEGER," +
+                    "data TEXT)",
         TEAR_DOWN: "DROP TABLE " + tableName,
         SHOW_TABLE: "SELECT * FROM sqlite_master " +
                     "WHERE type='table' and name='" + tableName + '"'
@@ -74,7 +76,8 @@ function DML(tableName) { // @arg String: table name
     return {
         HAS:    "SELECT COUNT(*) AS length FROM " + tableName + " WHERE id=?",
         GET:    "SELECT id,hash,time,data FROM " + tableName + " WHERE id=?",
-        SET:    "INSERT OR REPLACE INTO " + tableName + " VALUES(?,?,?,?)",
+        SET:    "INSERT OR REPLACE INTO " + tableName + " VALUES",
+        VALUES: "(?,?,?,?,?)",
         LIST:   "SELECT id FROM " + tableName,
         FETCH:  "SELECT * FROM " + tableName,
         CLEAR:  "DELETE FROM " + tableName,
@@ -92,7 +95,7 @@ function has(ids,  // @arg String/StringArray:
     if (typeof ids === "string") {
         ids = [ids];
     } else {
-        sql += new Array(ids.length).join(" OR id=?");
+        sql += new Array(ids.length).join(" OR id=?"); // WHERE id=? OR id=? ...
     }
     return _exec(this, true, sql, ids, function(err, result) {
         if (err) {
@@ -118,7 +121,7 @@ function get(ids,  // @arg String/StringArray:
     if (typeof ids === "string") {
         ids = [ids];
     } else {
-        sql += new Array(ids.length).join(" OR id=?");
+        sql += new Array(ids.length).join(" OR id=?"); // WHERE id=? OR id=? ...
     }
 
     return _exec(this, true, sql, ids, function(err, result) {
@@ -140,14 +143,17 @@ function set(values, // @arg Array: [<id, hash, time, data>, <...>, ...]
                      // @ret this:
                      // @desc: add/update row
                      // @help: SQLStorage#set
-    var sql = this._DML.SET;
+    var vals = [], i = 0, iz = (values.length / this._DDL_COLUMNS) | 0;
 
-    // insert multiple rows.
-    //      INSERT OR REPLACE INTO tableName VALUES(?,?,?,?),(?,?,?,?)...
-    if (values.length > 4) {
-        sql += new Array((values.length / 4) | 0).join(",(?,?,?,?)");
+    if (values.length % this._DDL_COLUMNS) {
+        throw new TypeError("BAD_COLUMNS");
     }
-    return _exec(this, false, sql, values, fn);
+    // insert multiple rows.
+    //      INSERT OR REPLACE INTO tableName VALUES(?,?,?,?,?),(?,?,?,?,?)...
+    for (; i < iz; ++i) {
+        vals.push( this._DML.VALUES ); // ["(?,?,?,?,?)", ...]
+    }
+    return _exec(this, false, this._DML.SET + vals, values, fn);
 }
 
 function list(fn) { // @arg Function: fn(err:Error, list:Array)
@@ -206,10 +212,10 @@ function tearDown(fn) { // @arg Await/Function(= null): fn(err:Error)
                         // @help: SQLStorage#tearDown
     return _exec(this, false, this._DDL.TEAR_DOWN, [], function(err, result) {
         if (fn) {
-            if (fn.constructor.name === "Await") {
-                err ? fn.miss(err) : fn.pass();
+            if (err) {
+                fn.miss ? fn.miss(err) : fn(err);
             } else {
-                err ? fn(err) : fn();
+                fn.pass ? fn.pass() : fn();
             }
         }
     });
