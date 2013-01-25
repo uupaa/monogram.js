@@ -70,33 +70,9 @@ mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
     strict:     mm_wrap(!this)(),   // mm.strict:Boolean - true is strict mode
     // --- assert / debug ---
     say:        mm_say,             // mm.say(mix:Mix):Boolean
-    alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
-   // --- log / log group ---
-    log:    mixin(mm_log, {           // mm.log(...:Mix):void
-        copy:   mm_log_copy,        // mm.log.copy():Object
-        dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
-        warn:   mm_log_warn,        // mm.log.warn(...:Mix):void
-        error:  mm_log_error,       // mm.log.error(...:Mix):void
-        clear:  mm_log_clear,       // mm.log.clear():void
-        limit:  0                   // mm.log.limit - Integer: stock length
-    }),
-    logg:   mixin(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
-        nest:   0                   // mm.logg.nest - Number: nest level
-    })
+    alert:      mm_alert            // mm.alert(mix:Mix):Boolean
 });
 mm.env = new Monogram.Env();
-
-// --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
-    // --- Type Detection, API Versioning ---
-/*
-    wiz(Function.prototype, { ClassName: "Function",typeFunction: true, api: Object_api });
-    wiz( Boolean.prototype, { ClassName: "Boolean", typeBoolean:  true, api: Object_api });
-    wiz(  String.prototype, { ClassName: "String",  typeString:   true, api: Object_api });
-    wiz(  Number.prototype, { ClassName: "Number",  typeNumber:   true, api: Object_api });
-    wiz(  RegExp.prototype, { ClassName: "Regexp",  typeRegExp:   true, api: Object_api });
-    wiz(   Array.prototype, { ClassName: "Array",   typeArray:    true, api: Object_api });
-    wiz(    Date.prototype, { ClassName: "Date",    typeDate:     true, api: Object_api });
- */
 
 // --- Class Hash ------------------------------------------
 function HashFactory(obj) { // @arg Object/Hash:
@@ -344,112 +320,6 @@ function mm_alert(mix) { // @args Mix:
                          // @desc: alert(Type.dump(mix)) short hand
     alert(Type.dump(mix));
     return true;
-}
-
-// --- log ---
-function mm_log(ooo) { // @var_args Mix: message
-                       // @help: mm.log
-                       // @desc: push log db
-    _log_db.push({ type: 0, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_warn(ooo) { // @var_args Mix: message
-                            // @help: mm.log.warn
-                            // @desc: push log db
-    _log_db.push({ type: 1, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_error(ooo) { // @var_args Mix: message
-                             // @help: mm.log.error
-                             // @desc: push log db
-    _log_db.push({ type: 2, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_copy() { // @ret: Object { data: [log-data, ...], index: current-index }
-                         // @help: mm.log.copy
-                         // @desc: copy log
-    return { data: _log_db.copy(), index: _log_index };
-}
-
-function mm_log_dump(url) { // @arg String(= ""): "" or url(http://example.com?log=@@)
-                            // @help: mm.log.dump
-                            // @desc: dump log
-    function _stamp(db) {
-        return new Date(db.time).format(db.type & 4 ? "[D h:m:s ms]:" : "[I]:");
-    }
-    var db = _log_db, i = _log_index, iz = db.length,
-        console = global.console,
-        space = mm.env.webkit ? "  " : "";
-
-    if (!url) {
-        if (console) {
-            for (; i < iz; ++i) {
-                switch (db[i].type) {
-                case 0: console.log( space + _stamp(db[i]) + db[i].msg); break;
-                case 1: console.warn(space + _stamp(db[i]) + db[i].msg); break;
-                case 2: console.error(       _stamp(db[i]) + db[i].msg); break;
-                case 4: console.log( space + _stamp(db[i]) + db[i].msg);
-                case 6: console.error(       _stamp(db[i]) + db[i].msg); break;
-                }
-            }
-        }
-    } else if (url.indexOf("http") === 0) {
-        if (global.Image) {
-            for (; i < iz; ++i) {
-                (new Image).src = url.at(db[i].msg);
-            }
-        }
-    }
-    _log_index = i;
-}
-
-function mm_log_clear() { // @help: mm.log.clear
-                          // @desc: clear log db
-    _log_index = 0;
-    _log_db = [];
-}
-
-function mm_logg(label,  // @arg String/Function: label (group name)
-                 mode) { // @arg Integer(= 0x0): 0x4 is perf mode
-                         // @ret Object: { out, error, valueOf }
-                         // @help: mm.logg
-                         // @desc: log group
-    label = label.nickname ? label.nickname() : label;
-    mode  = mode || 0;
-
-    var now = Date.now(),
-        nest = mm_logg.nest++,
-        line = mm.env.lang === "ja" ? ["\u2502", "\u250c", "\u2502", "\u2514"]
-                                    : ["|",      "+-",     "| ",     "`-"    ];
-
-    _log_db.push({ type: mode, time: Date.now(), msg: _msg(1, "") });
-    _logg.out   = _out;
-    _logg.error = _error;
-    return _logg;
-
-    function _msg(index, msg) {
-        return "@@@@ @@( @@ )".at(line[0].repeat(nest), line[index], label, msg);
-    }
-    function _error(ooo) {
-        _log_db.push({ type: mode + 2, time: Date.now(),
-                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
-    }
-    function _logg(ooo) {
-        _log_db.push({ type: mode, time: Date.now(),
-                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
-    }
-    function _out() {
-        _log_db.push({ type: mode, time: Date.now(),
-                       msg:  _msg(3, (new Date).diff(now)) });
-        --mm_logg.nest;
-        _log_db.length > mm_log.limit && mm_log_dump();
-    }
 }
 
 // --- build and export API --------------------------------
