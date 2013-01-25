@@ -3,44 +3,28 @@
 //{@log
 (function(global, wiz) {
 
+// --- header ----------------------------------------------
 function Log(ooo) { // @var_args Mix: message
                     // @help: Log
-                    // @desc: push log db
-    _log_db.push({
-        type: 0,
-        time: Date.now(),
-        msg:  [].slice.call(arguments).join(" ")
-    });
-    _log_db.length > _log_limit && Log.dump();
+    _db.push({
+        type: 1, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
+                      [].slice.call(arguments).join(" ")
+    }) > Log.stock && Log.dump();
 }
-
-function LogGroup(lable,  // @arg String/Function: label (group name)
-                  mode) { // @arg Interger(= 0x0): 0x4 is perf mode
-                          //     mode = 0x0 - normal
-                          //     mode = 0x1 - warn
-                          //     mode = 0x2 - error
-    if (typeof label === "function") {
-        label = _nickname(label);
-    }
-
-    var now = Date.now();
-
-    this._nest = _log_nest++;
-    this._mode = mode || 0;
-
-    _log_db.push({
-        type: this._mode,
-        time: Date.now(),
-        msg:  this._raw(1, "")
-    });
-}
-
 Log.name  = "Log";
 Log.copy  = Log_copy;   // Log.copy():Object
-Log.dump  = Log_dump;   // Log.dump(url:String = ""):void
+Log.dump  = Log_dump;   // Log.dump():void
 Log.warn  = Log_warn;   // Log.warn(...:Mix):void
 Log.error = Log_error;  // Log.error(...:Mix):void
 Log.clear = Log_clear;  // Log.clear():void
+Log.stock = 0;          // Log.stock - Integer: log stock length
+
+function LogGroup(tag) { // @arg String/Function: tag (group name)
+    this._tag = (typeof tag === "function" ? _nickname(tag) : tag) + " ";
+    this._now = Date.now();
+
+    _db.push({ type: 0x10, msg: this._tag + "()" }) > Log.stock && Log.dump();
+}
 Log.group = LogGroup;
 Log.group.name = "LogGroup";
 LogGroup.prototype = {
@@ -48,135 +32,83 @@ LogGroup.prototype = {
     log:        LogGroup_log,
     warn:       LogGroup_warn,
     error:      LogGroup_error,
-    close:      LogGroup_close,
-    _raw:       LogGroup_raw
+    close:      LogGroup_close
 };
 
-// --- header ----------------------------------------------
-
 // --- library scope vars ----------------------------------
-var _log_db = [],
-    _log_nest = 0,
-    _log_index = 0,
-    _log_limit = 0,  // Integer: stock length
-    _parts = (function(nav) {
-        var lang = nav.language || nav.browserLanguage || "";
-
-        return lang === "ja" ? ["\u2502", "\u250c", "\u2502", "\u2514"]
-                             : ["|",      "+-",     "| ",     "`-"    ];
-    })(global.navigator || {});
+var _db = [],
+    _log_index = 0;
 
 // --- implement -------------------------------------------
+function LogGroup_log(ooo) {
+    _db.push({ type: 0x11, msg: this._tag + [].slice.call(arguments).join(" ") });
+}
+
+function LogGroup_warn(ooo) {
+    _db.push({ type: 0x12, msg: this._tag + [].slice.call(arguments).join(" ") });
+}
+
+function LogGroup_error(ooo) {
+    _db.push({ type: 0x13, msg: this._tag + [].slice.call(arguments).join(" ") });
+}
+
+function LogGroup_close() {
+    _db.push({
+        type: 0x14,
+        msg: this._tag +
+             "(" + new Date(Date.now() - this._now).toJSON().slice(-10, -1) + ")"
+    }) > Log.stock && Log.dump();
+}
+
+function Log_warn(ooo) {
+    _db.push({
+        type: 2, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
+                      [].slice.call(arguments).join(" ")
+    }) > Log.stock && Log_dump();
+}
+
+function Log_error(ooo) {
+    _db.push({
+        type: 3, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
+                      [].slice.call(arguments).join(" ")
+    }) > Log.stock && Log_dump();
+}
+
 function Log_copy() { // @ret: Object { data: [log-data, ...], index: current-index }
                       // @help: Log.copy
                       // @desc: copy log
-    return { data: _log_db.concat(), index: _log_index };
+    return { data: _db.concat(), index: _log_index };
 }
 
-function Log_dump(url) { // @arg String(= ""): "" or url(http://example.com?log=@@)
-                         // @help: Log.dump
-                         // @desc: dump log
-    function _stamp(db) {
-        return new Date(db.time).format(db.type & 4 ? "[D h:m:s ms]:" : "[I]:");
-    }
+function Log_dump() { // @help: Log.dump
+                      // @desc: dump log
+    var i = _log_index, iz = _db.length, console = global.console;
 
-    var db = _log_db, i = _log_index, iz = db.length,
-        console = global.console,
-        //space = mm.env.webkit ? "  " : "";
-        space = "  ";
-
-    if (!url) {
-        if (console) {
-            for (; i < iz; ++i) {
-                switch (db[i].type) {
-                case 0: console.log( space + _stamp(db[i]) + db[i].msg); break;
-                case 1: console.warn(space + _stamp(db[i]) + db[i].msg); break;
-                case 2: console.error(       _stamp(db[i]) + db[i].msg); break;
-                case 4: console.log( space + _stamp(db[i]) + db[i].msg);
-                case 6: console.error(       _stamp(db[i]) + db[i].msg); break;
-                }
-            }
-        }
-    } else if (url.indexOf("http") === 0) {
-        if (global.Image) {
-            for (; i < iz; ++i) {
-              //(new Image).src = url.at(db[i].msg);
-                (new Image).src = url.repace(/@@/, db[i].msg);
-            }
+    for (; i < iz; ++i) {
+        switch (_db[i].type & 0xF) {
+        case 0x0: console.group(_db[i].msg); break;
+        case 0x1: console.log(  _db[i].msg); break;
+        case 0x2: console.warn( _db[i].msg); break;
+        case 0x3: console.error(_db[i].msg); break;
+        case 0x4: console.log(  _db[i].msg); console.groupEnd();
         }
     }
     _log_index = i;
 }
 
-function Log_warn(ooo) { // @var_args Mix: message
-                            // @help: Log.warn
-                            // @desc: push log db
-    _log_db.push({
-        type: 1,
-        time: Date.now(),
-        msg:  [].slice.call(arguments).join(" ")
-    });
-    _log_db.length > _log_limit && Log_dump();
-}
-
-function Log_error(ooo) { // @var_args Mix: message
-                          // @help: Log.error
-                          // @desc: push log db
-    _log_db.push({
-        type: 2,
-        time: Date.now(),
-        msg:  [].slice.call(arguments).join(" ")
-    });
-    _log_db.length > _log_limit && Log_dump();
-}
-
 function Log_clear() { // @help: Log.clear
                        // @desc: clear log db
+    _db = [];
     _log_index = 0;
-    _log_db = [];
 }
 
-// --- LogGroup ---
-function LogGroup_log(ooo) {
-    _log_db.push({
-        type: this._mode,
-        time: Date.now(),
-        msg:  this._raw(2, [].slice.call(arguments).join(" "))
-    });
-}
-
-function LogGroup_error(ooo) {
-    _log_db.push({
-        type: this._mode + 2,
-        time: Date.now(),
-        msg:  this._raw(2, [].slice.call(arguments).join(" "))
-    });
-}
-
-function LogGroup_out() {
-    _log_db.push({
-        type: this._mode,
-        time: Date.now(),
-        msg:  this._raw(3, (new Date).diff(now))
-    });
-    --_log_nest;
-    _log_db.length > _log_limit && Log.dump();
-}
-
-function LogGroup_raw(index, msg) {
-    return _repeat(_parts[0], this._nest) +
-           _parts[index] + " " + label + "( " + msg + " )";
-}
-
-function _nickname(fn) { // copy from Function#nickname
-    var name = fn.name || (fn + "").split("\x28")[0].trim().slice(9);
+function _nickname(that) { // copy from Function#nickname
+    var name = that.name || (that + "").split("\x28")[0].trim().slice(9);
 
     return name ? name.replace(/^mm_/, "mm.") : "";
 }
 
-function _repeat(chr, count) { // copy from String#repeat
-    count = count | 0;
-    return (chr.length && count > 0) ? Array(count + 1).join(chr) : "";
+function nop() {
 }
 
 // --- build -----------------------------------------------
@@ -187,6 +119,14 @@ if (typeof module !== "undefined") { // is modular
 }
 global.Monogram || (global.Monogram = {});
 global.Monogram.Log = Log;
+
+// polyfill
+global.console          || (global.console = {});
+global.console.log      || (global.console.log = nop);
+global.console.warn     || (global.console.warn = nop);
+global.console.error    || (global.console.error = nop);
+global.console.group    || (global.console.group = nop);
+global.console.groupEnd || (global.console.groupEnd = nop);
 
 })(this.self || global);
 //}@log
