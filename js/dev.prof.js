@@ -356,7 +356,7 @@ function _mm_allow(mix,      // @arg Mix:
 
 function _dump(mix) {
     if (typeof mm !== "undefined") {
-        return mm.dump(mix, 0);
+        return Type.dump(mix, 0);
     }
     return JSON.stringify(mix, function(k, v) {
         if (k === "") { return v; }

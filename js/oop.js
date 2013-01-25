@@ -159,7 +159,7 @@ function ClassFactory(specs,      // @arg String: "Class:Traits:Interface:BaseCl
             }
             Hash.clear(that); // destroy them all
             that.gc = function GCSentinel() {
-//              mm_log("GC_BAD_CALL");
+//              Log("GC_BAD_CALL");
             };
         };
     }
