@@ -7,8 +7,7 @@
 function Log(ooo) { // @var_args Mix: message
                     // @help: Log
     _db.push({
-        type: 1, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
-                      [].slice.call(arguments).join(" ")
+        type: 1, msg: _diff() + " " + [].slice.call(arguments).join(" ")
     }) > Log.stock && Log.dump();
 }
 Log.name  = "Log";
@@ -21,7 +20,7 @@ Log.stock = 0;          // Log.stock - Integer: log stock length
 
 function LogGroup(tag) { // @arg String/Function: tag (group name)
     this._tag = (typeof tag === "function" ? _nickname(tag) : tag) + " ";
-    this._now = Date.now();
+    this._lastTime = Date.now();
 
     _db.push({ type: 0x10, msg: this._tag + "()" }) > Log.stock && Log.dump();
 }
@@ -37,9 +36,20 @@ LogGroup.prototype = {
 
 // --- library scope vars ----------------------------------
 var _db = [],
-    _log_index = 0;
+    _lastTime = 0,
+    _lastIndex = 0;
 
 // --- implement -------------------------------------------
+function _diff() {
+    var now = Date.now(), diff;
+
+    _lastTime || (_lastTime = now);
+    diff = new Date(now - _lastTime).toJSON().slice(-10, -1);
+
+    _lastTime = now;
+    return new Date(now).toJSON().slice(-13, -1) + " (" + diff + ")";
+}
+
 function LogGroup_log(ooo) {
     _db.push({ type: 0x11, msg: this._tag + [].slice.call(arguments).join(" ") });
 }
@@ -56,33 +66,31 @@ function LogGroup_close() {
     _db.push({
         type: 0x14,
         msg: this._tag +
-             "(" + new Date(Date.now() - this._now).toJSON().slice(-10, -1) + ")"
+             "(" + new Date(Date.now() - this._lastTime).toJSON().slice(-10, -1) + ")"
     }) > Log.stock && Log.dump();
 }
 
 function Log_warn(ooo) {
     _db.push({
-        type: 2, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
-                      [].slice.call(arguments).join(" ")
+        type: 2, msg: _diff() + " " + [].slice.call(arguments).join(" ")
     }) > Log.stock && Log_dump();
 }
 
 function Log_error(ooo) {
     _db.push({
-        type: 3, msg: new Date(Date.now()).toJSON().slice(-13, -1) + " " +
-                      [].slice.call(arguments).join(" ")
+        type: 3, msg: _diff() + " " + [].slice.call(arguments).join(" ")
     }) > Log.stock && Log_dump();
 }
 
-function Log_copy() { // @ret: Object { data: [log-data, ...], index: current-index }
+function Log_copy() { // @ret: Object { logs: [log-data, ...], index: current-index }
                       // @help: Log.copy
                       // @desc: copy log
-    return { data: _db.concat(), index: _log_index };
+    return { logs: _db.concat(), lastIndex: _lastIndex };
 }
 
 function Log_dump() { // @help: Log.dump
                       // @desc: dump log
-    var i = _log_index, iz = _db.length, console = global.console;
+    var i = _lastIndex, iz = _db.length, console = global.console;
 
     for (; i < iz; ++i) {
         switch (_db[i].type & 0xF) {
@@ -93,13 +101,13 @@ function Log_dump() { // @help: Log.dump
         case 0x4: console.log(  _db[i].msg); console.groupEnd();
         }
     }
-    _log_index = i;
+    _lastIndex = i;
 }
 
 function Log_clear() { // @help: Log.clear
                        // @desc: clear log db
     _db = [];
-    _log_index = 0;
+    _lastIndex = 0;
 }
 
 function _nickname(that) { // copy from Function#nickname

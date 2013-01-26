@@ -7,30 +7,58 @@
     } else {
         var Log = Monogram.Log;
     }
-    Log.stock = 100;
 
-    // single
-    Log("log");
-    Log.warn("warn");
-    Log.error("error");
+    function test1() {
+        Log.stock = 0;
 
-    // group
-    var lv1 = new Log.group("level1");
-        var lv2 = new Log.group("level2");
-            var lv3 = new Log.group("level3");
-                lv3.log("log");
-                lv3.warn("warn");
-                lv3.error("error");
-                lv3.close();
-        lv2.close();
-    lv1.close();
-    Log("log");
-    Log("log");
-    Log("log");
-    Log("log");
+        // single
+        Log("log");
+        Log.warn("warn");
+        Log.error("error");
 
-    Log.dump();
-    Log.clear();
+        // group
+        var lv1 = new Log.group("level1");
+            var lv2 = new Log.group("level2");
+                var lv3 = new Log.group("level3");
+                    lv3.log("log");
+                    lv3.warn("warn");
+                    lv3.error("error");
+                    lv3.close();
+            lv2.close();
+        lv1.close();
+        Log("log");
+        Log("log");
+        Log("log");
+        Log("log");
+    }
+
+    function test2() {
+        Log.stock = 100; // stocked
+
+        // single
+        Log("log");
+        Log.warn("warn");
+        Log.error("error");
+
+        // group
+        var lv1 = new Log.group("level1");
+            var lv2 = new Log.group("level2");
+                var lv3 = new Log.group("level3");
+                    lv3.log("log");
+                    lv3.warn("warn");
+                    lv3.error("error");
+                    lv3.close();
+            lv2.close();
+        lv1.close();
+        Log("log");
+        Log("log");
+        Log("log");
+        Log("log");
+
+        console.log(JSON.stringify(Log.copy(), "", 1));
+    }
+    test1();
+    test2();
 
 </script>
 </head><body>
