@@ -7,7 +7,12 @@
 function Log(ooo) { // @var_args Mix: message
                     // @help: Log
     _db.push({
-        type: 1, msg: _diff() + " " + [].slice.call(arguments).join(" ")
+        tag:    "",
+        type:   "log",
+        group:  false,
+        diff:   _diff(),
+        time:   Date.now(),
+        args:   [].slice.call(arguments)
     }) > Log.stock && Log.dump();
 }
 Log.name  = "Log";
@@ -19,10 +24,16 @@ Log.clear = Log_clear;  // Log.clear():void
 Log.stock = 0;          // Log.stock - Integer: log stock length
 
 function LogGroup(tag) { // @arg String/Function: tag (group name)
-    this._tag = (typeof tag === "function" ? _nickname(tag) : tag) + " ";
-    this._lastTime = Date.now();
+    this._tag = typeof tag === "function" ? _nickname(tag) : tag;
 
-    _db.push({ type: 0x10, msg: this._tag + "()" }) > Log.stock && Log.dump();
+    _db.push({
+        tag:    this._tag,
+        type:   "group",
+        group:  true,
+        diff:   0,
+        time:   Date.now(),
+        args:   []
+    });
 }
 Log.group = LogGroup;
 Log.group.name = "LogGroup";
@@ -44,41 +55,75 @@ function _diff() {
     var now = Date.now(), diff;
 
     _lastTime || (_lastTime = now);
-    diff = new Date(now - _lastTime).toJSON().slice(-10, -1);
+    diff = new Date(now - _lastTime).getTime();
 
     _lastTime = now;
-    return new Date(now).toJSON().slice(-13, -1) + " (" + diff + ")";
+    return diff;
 }
 
 function LogGroup_log(ooo) {
-    _db.push({ type: 0x11, msg: this._tag + [].slice.call(arguments).join(" ") });
+    _db.push({
+        tag:    this._tag,
+        type:   "log",
+        group:  true,
+        diff:   _diff(),
+        time:   0,
+        args:   [].slice.call(arguments)
+    });
 }
 
 function LogGroup_warn(ooo) {
-    _db.push({ type: 0x12, msg: this._tag + [].slice.call(arguments).join(" ") });
+    _db.push({
+        tag:    this._tag,
+        type:   "warn",
+        group:  true,
+        diff:   _diff(),
+        time:   0,
+        args:   [].slice.call(arguments)
+    });
 }
 
 function LogGroup_error(ooo) {
-    _db.push({ type: 0x13, msg: this._tag + [].slice.call(arguments).join(" ") });
+    _db.push({
+        tag:    this._tag,
+        type:   "error",
+        group:  true,
+        diff:   _diff(),
+        time:   0,
+        args:   [].slice.call(arguments)
+    });
 }
 
 function LogGroup_close() {
     _db.push({
-        type: 0x14,
-        msg: this._tag +
-             "(" + new Date(Date.now() - this._lastTime).toJSON().slice(-10, -1) + ")"
+        tag:    this._tag,
+        type:   "close",
+        group:  true,
+        diff:   _diff(),
+        time:   Date.now(),
+        args:   []
     }) > Log.stock && Log.dump();
 }
 
 function Log_warn(ooo) {
     _db.push({
-        type: 2, msg: _diff() + " " + [].slice.call(arguments).join(" ")
+        tag:    "",
+        type:   "warn",
+        group:  false,
+        diff:   _diff(),
+        time:   Date.now(),
+        args:   [].slice.call(arguments)
     }) > Log.stock && Log_dump();
 }
 
 function Log_error(ooo) {
     _db.push({
-        type: 3, msg: _diff() + " " + [].slice.call(arguments).join(" ")
+        tag:    "",
+        type:   "error",
+        group:  false,
+        diff:   _diff(),
+        time:   Date.now(),
+        args:   [].slice.call(arguments)
     }) > Log.stock && Log_dump();
 }
 
@@ -90,15 +135,33 @@ function Log_copy() { // @ret: Object { logs: [log-data, ...], index: current-in
 
 function Log_dump() { // @help: Log.dump
                       // @desc: dump log
+    function _msg(db) {
+        var rv = "";
+
+        if (db.tag) {
+            rv += db.tag + ":";
+        }
+        if (db.time) {
+            rv += "["  + new Date(db.time).toJSON().slice(-13, -1) + "]";
+        }
+        if (db.diff) {
+            rv += "(+" + new Date(db.diff).toJSON().slice(-10, -1) + ")";
+        }
+        if (db.args) {
+            rv += " " + db.args.join(", ");
+        }
+        return rv;
+    }
+
     var i = _lastIndex, iz = _db.length, console = global.console;
 
     for (; i < iz; ++i) {
-        switch (_db[i].type & 0xF) {
-        case 0x0: console.group(_db[i].msg); break;
-        case 0x1: console.log(  _db[i].msg); break;
-        case 0x2: console.warn( _db[i].msg); break;
-        case 0x3: console.error(_db[i].msg); break;
-        case 0x4: console.log(  _db[i].msg); console.groupEnd();
+        switch (_db[i].type) {
+        case "group":   console.group(_msg(_db[i])); break;
+        case "log":     console.log(  _msg(_db[i])); break;
+        case "warn":    console.warn( _msg(_db[i])); break;
+        case "error":   console.error(_msg(_db[i])); break;
+        case "close":   console.log(  _msg(_db[i])); console.groupEnd();
         }
     }
     _lastIndex = i;

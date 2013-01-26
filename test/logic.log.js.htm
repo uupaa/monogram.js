@@ -12,24 +12,24 @@
         Log.stock = 0;
 
         // single
-        Log("log");
-        Log.warn("warn");
-        Log.error("error");
+        Log("log", 1, 2, 3);
+        Log.warn("warn", 1, 2, 3);
+        Log.error("error", 1, 2, 3);
 
         // group
         var lv1 = new Log.group("level1");
             var lv2 = new Log.group("level2");
                 var lv3 = new Log.group("level3");
-                    lv3.log("log");
-                    lv3.warn("warn");
-                    lv3.error("error");
+                    lv3.log("log", 1, 2, 3);
+                    lv3.warn("warn", 1, 2, 3);
+                    lv3.error("error", 1, 2, 3);
                     lv3.close();
             lv2.close();
         lv1.close();
-        Log("log");
-        Log("log");
-        Log("log");
-        Log("log");
+        Log("log", 1, 2, 3);
+        Log("log", 1, 2, 3);
+        Log("log", 1, 2, 3);
+        Log("log", 1, 2, 3);
     }
 
     function test2() {
@@ -58,7 +58,7 @@
         console.log(JSON.stringify(Log.copy(), "", 1));
     }
     test1();
-    test2();
+//    test2();
 
 </script>
 </head><body>
