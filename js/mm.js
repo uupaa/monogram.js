@@ -10,9 +10,7 @@
 
 var mm; // global.mm - monogram.js library name space
 
-mm || (function(global, mixin, Hash, Type) {
-
-// --- header ----------------------------------------------
+mm || (function(global, wiz, mixin, Hash, Type) {
 
 // --- Typical types ---
 //  Mix: Any type
@@ -20,16 +18,15 @@ mm || (function(global, mixin, Hash, Type) {
 //  Array: Dense or Sparse Array
 //  Global: Window or Global Object
 //  Integer: Number without a fractional
-//  ModArray: Modified Array. Array + { key: value, ... }
 //  Function: Executable Object
 //  Primitive: undefined, null, Boolean, Number and String
-//
-mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
+
+// --- header ----------------------------------------------
+mm = mixin(HashFactory, {           // mm(obj:Object/Hash):Hash
     api:        mm_api,             // mm.api(version:Integer = 0):Object/Function
     // --- mixin ---
-    mixin:      global.Monogram.mixin, // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
-    args:       global.Monogram.args,  // mm.args(arg:Object/Function/undefined, defaults:Object):Object
-    wiz:        global.Monogram.wiz,   // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
+    mixin:      mixin,              // mm.mixin(base:Object/Function, extend:Object, override:Boolean = false):Object/Function
+    wiz:        wiz,                // mm.wiz(base:Object/Function, extend:Object, override:Boolean = false):void
     // --- match ---
     has:        mm_has,             // mm.has(data:Mix, find:Mix):Boolean
     like:       mm_like,            // mm.like(lval:Mix, rval:Mix):Boolean
@@ -60,43 +57,13 @@ mm = mixin(HashFactory, {             // mm(obj:Object/Hash):Hash
     type:       Type,
     // --- utility ---
     nop:        mm_nop,             // mm.nop():void
-    conv:       mm_conv,            // mm.conv(from:CaseInsensitiveString, to:CaseInsensitiveString):Object
-                                    // mm.conv("Integer",    "HexString")  {     0 : "00" ..   255 : "ff"}
-                                    // mm.conv("HexString",  "Integer")    {   "00":   0  ..   "ff": 255 }
-                                    // mm.conv("Integer",    "ByteString") {     0 :"\00" ..   255 :"\ff"}
-                                    // mm.conv("ByteString", "Integer")    {  "\00":   0  ..  "\ff": 255 }
-                                    //                                     {"\f780": 128  .."\f7ff": 255 }
     dump:       Type.dump,          // mm.dump(mix:Mix, spaces:Integer = 4, depth:Integer = 5):String
     strict:     mm_wrap(!this)(),   // mm.strict:Boolean - true is strict mode
     // --- assert / debug ---
     say:        mm_say,             // mm.say(mix:Mix):Boolean
-    alert:      mm_alert,           // mm.alert(mix:Mix):Boolean
-   // --- log / log group ---
-    log:    mixin(mm_log, {           // mm.log(...:Mix):void
-        copy:   mm_log_copy,        // mm.log.copy():Object
-        dump:   mm_log_dump,        // mm.log.dump(url:String = ""):void
-        warn:   mm_log_warn,        // mm.log.warn(...:Mix):void
-        error:  mm_log_error,       // mm.log.error(...:Mix):void
-        clear:  mm_log_clear,       // mm.log.clear():void
-        limit:  0                   // mm.log.limit - Integer: stock length
-    }),
-    logg:   mixin(mm_logg, {          // mm.logg(label:String/Function, mode:Integer = 0x0):Object
-        nest:   0                   // mm.logg.nest - Number: nest level
-    })
+    alert:      mm_alert            // mm.alert(mix:Mix):Boolean
 });
 mm.env = new Monogram.Env();
-
-// --- Boolean, Date, Array, String, Number, Function, RegExp, Math ---
-    // --- Type Detection, API Versioning ---
-/*
-    wiz(Function.prototype, { ClassName: "Function",typeFunction: true, api: Object_api });
-    wiz( Boolean.prototype, { ClassName: "Boolean", typeBoolean:  true, api: Object_api });
-    wiz(  String.prototype, { ClassName: "String",  typeString:   true, api: Object_api });
-    wiz(  Number.prototype, { ClassName: "Number",  typeNumber:   true, api: Object_api });
-    wiz(  RegExp.prototype, { ClassName: "Regexp",  typeRegExp:   true, api: Object_api });
-    wiz(   Array.prototype, { ClassName: "Array",   typeArray:    true, api: Object_api });
-    wiz(    Date.prototype, { ClassName: "Date",    typeDate:     true, api: Object_api });
- */
 
 // --- Class Hash ------------------------------------------
 function HashFactory(obj) { // @arg Object/Hash:
@@ -107,9 +74,6 @@ function HashFactory(obj) { // @arg Object/Hash:
 }
 
 // --- library scope vars ----------------------------------
-var _log_db  = [],
-    _log_index = 0,
-    _conv_db;
 
 // --- implement -------------------------------------------
 function mm_api(version) { // @arg Integer: API version
@@ -117,12 +81,6 @@ function mm_api(version) { // @arg Integer: API version
                            // @help: mm.api
                            // @desc: API Versioning
     return mm_api["ver" + version] ? mm_api["ver" + version] : mm;
-}
-
-function Object_api(version) { // @arg Integer API version
-                               // @ret Object/Function:
-                               // @desc: API Versioning
-    return this["ver" + version] ? this["ver" + version](this) : this;
 }
 
 // --- match ---
@@ -246,44 +204,6 @@ function mm_uid(group) { // @arg String(= ""): uid group name.
     return global.Monogram.UID.create(group);
 }
 
-function mm_conv(from, // @arg CaseInsensitiveString: "Integer", "HexString", "ByteString"
-                 to) { // @arg CaseInsensitiveString: "Integer", "HexString", "ByteString"
-                       // @ret Object:
-                       // @help: mm.conv
-                       // @desc: convert tables
-//{@debug
-    mm.allow("from", from, ["integer", "hexstring", "bytestring"].has(from.toLowerCase()));
-    mm.allow("to",   to,   ["integer", "hexstring", "bytestring"].has(  to.toLowerCase()));
-//}@debug
-
-    var num = { "integer": 1, hexstring: 2, bytestring: 4 },
-        code = (num[from.toLowerCase()]) << 4 |
-               (num[  to.toLowerCase()]);
-
-    _conv_db || _mm_conv_init();
-
-    return _conv_db[code] || {};
-
-    function _mm_conv_init() {
-        _conv_db = { 0x12: {}, 0x21: {}, 0x14: {}, 0x41: {} };
-
-        var i = 0, hex, bin;
-
-        for (; i < 0x100; ++i) {
-            hex = (i + 0x100).toString(16).slice(1);
-            bin = String.fromCharCode(i);
-            _conv_db[0x12][i]   = hex;    // {   255 :   "ff" }
-            _conv_db[0x21][hex] = i;      // {   "ff":   255  }
-            _conv_db[0x14][i]   = bin;    // {   255 : "\255" }
-            _conv_db[0x41][bin] = i;      // { "\255":   255  }
-        }
-        // http://twitter.com/edvakf/statuses/15576483807
-        for (i = 0x80; i < 0x100; ++i) { // [Webkit][Gecko]
-            _conv_db[0x41][String.fromCharCode(0xf700 + i)] = i; // "\f780" -> 0x80
-        }
-    }
-}
-
 function mm_pair(key,     // @arg Object/Integer/String: key
                  value) { // @arg Mix: value
                           // @ret Object: { key: value }
@@ -306,7 +226,6 @@ function mm_pack(data,    // @arg Object/Function/Array/Hash:
                           // @desc: pack Object to String
     return typeof data.pack === "function" ? data.pack(glue, joint)
                                            : Hash.pack(data, glue, joint);
-
 }
 
 function mm_wrap(mix) { // @arg Mix: result value
@@ -346,116 +265,10 @@ function mm_alert(mix) { // @args Mix:
     return true;
 }
 
-// --- log ---
-function mm_log(ooo) { // @var_args Mix: message
-                       // @help: mm.log
-                       // @desc: push log db
-    _log_db.push({ type: 0, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_warn(ooo) { // @var_args Mix: message
-                            // @help: mm.log.warn
-                            // @desc: push log db
-    _log_db.push({ type: 1, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_error(ooo) { // @var_args Mix: message
-                             // @help: mm.log.error
-                             // @desc: push log db
-    _log_db.push({ type: 2, time: Date.now(),
-                   msg:  [].slice.call(arguments).join(" ") });
-    _log_db.length > mm_log.limit && mm_log_dump();
-}
-
-function mm_log_copy() { // @ret: Object { data: [log-data, ...], index: current-index }
-                         // @help: mm.log.copy
-                         // @desc: copy log
-    return { data: _log_db.copy(), index: _log_index };
-}
-
-function mm_log_dump(url) { // @arg String(= ""): "" or url(http://example.com?log=@@)
-                            // @help: mm.log.dump
-                            // @desc: dump log
-    function _stamp(db) {
-        return new Date(db.time).format(db.type & 4 ? "[D h:m:s ms]:" : "[I]:");
-    }
-    var db = _log_db, i = _log_index, iz = db.length,
-        console = global.console,
-        space = mm.env.webkit ? "  " : "";
-
-    if (!url) {
-        if (console) {
-            for (; i < iz; ++i) {
-                switch (db[i].type) {
-                case 0: console.log( space + _stamp(db[i]) + db[i].msg); break;
-                case 1: console.warn(space + _stamp(db[i]) + db[i].msg); break;
-                case 2: console.error(       _stamp(db[i]) + db[i].msg); break;
-                case 4: console.log( space + _stamp(db[i]) + db[i].msg);
-                case 6: console.error(       _stamp(db[i]) + db[i].msg); break;
-                }
-            }
-        }
-    } else if (url.indexOf("http") === 0) {
-        if (global.Image) {
-            for (; i < iz; ++i) {
-                (new Image).src = url.at(db[i].msg);
-            }
-        }
-    }
-    _log_index = i;
-}
-
-function mm_log_clear() { // @help: mm.log.clear
-                          // @desc: clear log db
-    _log_index = 0;
-    _log_db = [];
-}
-
-function mm_logg(label,  // @arg String/Function: label (group name)
-                 mode) { // @arg Integer(= 0x0): 0x4 is perf mode
-                         // @ret Object: { out, error, valueOf }
-                         // @help: mm.logg
-                         // @desc: log group
-    label = label.nickname ? label.nickname() : label;
-    mode  = mode || 0;
-
-    var now = Date.now(),
-        nest = mm_logg.nest++,
-        line = mm.env.lang === "ja" ? ["\u2502", "\u250c", "\u2502", "\u2514"]
-                                    : ["|",      "+-",     "| ",     "`-"    ];
-
-    _log_db.push({ type: mode, time: Date.now(), msg: _msg(1, "") });
-    _logg.out   = _out;
-    _logg.error = _error;
-    return _logg;
-
-    function _msg(index, msg) {
-        return "@@@@ @@( @@ )".at(line[0].repeat(nest), line[index], label, msg);
-    }
-    function _error(ooo) {
-        _log_db.push({ type: mode + 2, time: Date.now(),
-                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
-    }
-    function _logg(ooo) {
-        _log_db.push({ type: mode, time: Date.now(),
-                       msg:  _msg(2, [].slice.call(arguments).join(" ")) });
-    }
-    function _out() {
-        _log_db.push({ type: mode, time: Date.now(),
-                       msg:  _msg(3, (new Date).diff(now)) });
-        --mm_logg.nest;
-        _log_db.length > mm_log.limit && mm_log_dump();
-    }
-}
-
 // --- build and export API --------------------------------
 if (typeof module !== "undefined") { // is modular
     module.exports = { mm: HashFactory };
 }
 
-})(this.self || global, Monogram.mixin, Monogram.Hash, Monogram.Type);
+})(this.self || global, Monogram.wiz, Monogram.mixin, Monogram.Hash, Monogram.Type);
 

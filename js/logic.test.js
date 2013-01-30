@@ -1,5 +1,6 @@
 // logic.test.js
-// @need: mm.js
+// @need: mm.like (mm.js)
+//        Log.group (in logic.log.js)
 
 //{@test
 (function(global, wiz, mixin) {
@@ -29,7 +30,7 @@ function Array_test(label, // @arg String(= ""): label
     plan  = _streamTokenizer( nicknames.array.join(" > ") );
     group = plan.shift();
     param = mixin(nicknames.object, { arg: arg, pass: 0, miss: 0,
-                                      logg: mm.logg(label || "") });
+                                      logg: Log.group(label || "") });
 
     group && _recursiveTestCase( plan, group, param );
 }
@@ -49,7 +50,7 @@ function _recursiveTestCase(plan,    // @arg StringArrayArray: [[fn1, fn2, ...],
             jfn, // judge function name
             msg;
 
-        switch (mm.type(param[action])) {
+        switch (Type(param[action])) {
         case "array": // [ left-values, right-value, override-judge-function ]
             try {
                 lval = param[action][0];
@@ -57,8 +58,8 @@ function _recursiveTestCase(plan,    // @arg StringArrayArray: [[fn1, fn2, ...],
                 jfn = param[action][2] || mm.like;
                 jrv = jfn(lval, rval);
                 msg = "= @@( @@ )".at( jfn.nickname(),
-                                       mm.dump(lval, 0) + ", " +
-                                       mm.dump(rval, 0) );
+                                       Type.dump(lval, 0) + ", " +
+                                       Type.dump(rval, 0) );
             } catch (O_o) {
                 msg = O_o + "";
             }
