@@ -195,7 +195,7 @@ global.Monogram.UTF16 = UTF16;
         console.log(ary.join() === "12354,12356,12358");
     }
 
-    function test2() { // UTF16String to UTF8Array
+    function test2() { // UTF16String to UTF8Array (UTF8 encode)
         // A,I,U in Japanese
         var str = String.fromCharCode.apply(null, [12354, 12356, 12358]);
 
@@ -204,7 +204,7 @@ global.Monogram.UTF16 = UTF16;
         console.log(ary.join() === "227,129,130,227,129,132,227,129,134");
     }
 
-    function test3() { // UTF8Array to UTF16String
+    function test3() { // UTF8Array to UTF16String (UTF8 decode)
         // A,I,U in Japanese
         var utf8 = [227,129,130,227,129,132,227,129,134];
 
