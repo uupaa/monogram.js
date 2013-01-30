@@ -5,7 +5,8 @@
 
 // --- header ----------------------------------------------
 function Await(events, // @arg Integer: event count
-               fn) {   // @arg Function: fn(err:Error, args:MixArray)
+               fn,     // @arg Function: fn(err:Error, args:MixArray)
+               tag) {  // @arg String(= ""): tag name
                        // @help: Await
     this._missable = 0;         // Integer: missable count
     this._events = events;      // Integer: event count
@@ -13,11 +14,15 @@ function Await(events, // @arg Integer: event count
     this._miss  = 0;            // Integer: miss() called count
     this._state = "progress";   // String: "progress", "done", "error", "halt"
     this._args  = [];           // MixArray: pass(arg), miss(arg) collections
+    this._tag   = tag || "";    // String: tag name
     this._fn    = fn;           // Function: callback(err:Error, args:MixArray)
 
+    this._tag && (_progress[this._tag] = this);
     _judge(this); // events is 0 -> done
 }
+
 Await.name = "Await";
+Await.dump = Await_dump;
 Await.prototype = {
     constructor:Await,
     missable:   Await_missable, // Await#missable(count:Integer):this
@@ -29,8 +34,14 @@ Await.prototype = {
 };
 
 // --- library scope vars ----------------------------------
+var _progress = {}; // [DEBUG] keep progress instances
 
 // --- implement -------------------------------------------
+function Await_dump(tag) { // @arg String(= ""): find tag. "" is all
+    return tag ? JSON.stringify(_progress[tag], "", 4)
+               : JSON.stringify(_progress, "", 4);
+}
+
 function Await_missable(count) { // @arg Integer: missable count
                                  // @ret this:
                                  // @help: Await#missable
@@ -102,11 +113,13 @@ function _judge(that) { // @arg this:
                      that._args);
             that._fn = null;
             that._args = []; // free
+            that._tag && (_progress[that._tag] = null);
             break;
         case "done":
             that._fn(null, that._args);
             that._fn = null;
             that._args = []; // free
+            that._tag && (_progress[that._tag] = null);
         }
     }
     return that;
@@ -142,7 +155,11 @@ global.Monogram.Await = Await;
 
 // --- test ------------------------------------------------
 /*
-    var Await = require("./logic.await").Await;
+    if (this.require) {
+        var Await = require("./logic.await").Await;
+    } else {
+        var Await = global.Monogram.Await;
+    }
 
     function test1() { // await sync 4 events
         var await = new Await(4, callback);
@@ -181,6 +198,26 @@ global.Monogram.Await = Await;
                 console.log("goo!", args.join()); // eg: "goo! 2,3,1,4"
             }
         }
+    }
+
+    function test3() { // debug
+        function callback() {
+        }
+
+        var a = new Await(10, callback, "test3.await1");
+        var b = new Await(10, callback, "test3.await2");
+        var c = new Await(10, callback, "test3.await3");
+
+        for (var i = 0; i < 30; ++i) {
+            switch ((Math.random() * 3) | 0) {
+            case 0: a.pass(); break;
+            case 1: b.pass(); break;
+            case 2: c.pass(); break;
+            }
+        }
+
+        // -> Explore why the process is not completed.
+        console.log( Await.dump() );
     }
  */
 
