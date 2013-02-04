@@ -1,0 +1,154 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../js/logic.await.js"></script>
+<script>
+
+    if (this.require) {
+        var Await = require("./logic.await").Await;
+    } else {
+        var Await = Monogram.Await;
+    }
+
+    // 基本的な使い方の例。
+    // 同期/非同期にかかわらず、pass を4回呼び出すとcallbackが呼ばれる
+    // pass には引数を一つだけ渡す事ができる
+    function test1() { // await sync 4 events
+        var await = new Await(4, callback);
+
+        [1,2,3].forEach(function(value) {
+            await.pass(value);
+        });
+        setTimeout(function() {
+            await.pass(4); // fire callback
+        }, 1000);
+
+        function callback(err, args) { // err = null, args = [1,2,3,4]
+            if (err) {
+                switch (err.message) {
+                case "halt":  console.log("halt",  args.join()); break;
+                case "error": console.log("error", args.join()); break;
+                }
+            } else {
+                // err is null
+                console.log(args.join() === "1,2,3,4" ? "test ok" : "test ng"); // "1,2,3,4"
+            }
+        }
+    }
+
+    // 不定期に実行されるAwaitで先に4回passが実行されたら成功、2回missが実行されたら失敗する
+    function test2() { // await async 4 events (missable 1)
+        var await = new Await(4, callback).missable(1);
+
+        setTimeout(function() { await.pass(1); }, Math.random() * 1000);
+        setTimeout(function() { await.pass(2); }, Math.random() * 1000);
+        setTimeout(function() { await.pass(3); }, Math.random() * 1000);
+        setTimeout(function() { await.miss(4); }, Math.random() * 1000);
+        setTimeout(function() { await.miss(5); }, Math.random() * 1000);
+
+        function callback(err, args) { // random result
+            if (err) {
+                console.log("test ok", args.join()); // eg: "test ok 4,1,5"
+            } else {
+                console.log("test ok", args.join()); // eg: "test ok 2,3,1,4"
+            }
+        }
+    }
+
+    // Await の第三引数(tag) を設定し、どのAwait が進行中かダンプする
+    // 処理が完了しない原因を特定するために有用
+    function test3() { // find blocker
+        function callback() {
+        }
+
+        var a = new Await(10, callback, "test3.await1");
+        var b = new Await(10, callback, "test3.await2");
+        var c = new Await(10, callback, "test3.await3");
+
+        for (var i = 0; i < 30; ++i) {
+            switch ((Math.random() * 3) | 0) {
+            case 0: a.pass(); break;
+            case 1: b.pass(); break;
+            case 2: c.pass(); break;
+            }
+        }
+
+        // -> Explore why the process is not completed.
+        console.log( Await.dump() );
+//          {
+//              "test3.await1": {
+//                  "_missable": 0,
+//                  "_events": 10,
+//                  "_pass": 9,
+//                  "_miss": 0,
+//                  "_state": "progress",
+//                  "_args": [],
+//                  "_tag": "test3.await1"
+//              },
+//              "test3.await2": null,
+//              "test3.await3": {
+//                  "_missable": 0,
+//                  "_events": 10,
+//                  "_pass": 9,
+//                  "_miss": 0,
+//                  "_state": "progress",
+//                  "_args": [],
+//                  "_tag": "test3.await3"
+//              }
+//          }
+    }
+
+    // pass の第二引数にkeyを与え、args.key でアクセスする
+    function test4() { // args has keys
+        var await = new Await(3, function(err, args) {
+
+            console.log(args.join(",") === "value1,value2,value3" ? "test ok"
+                                                                  : "test ng");
+
+            console.log(args.key1 === "value1" ? "test ok" : "test ng");
+            console.log(args.key3 === "value3" ? "test ok" : "test ng");
+        });
+
+        await.pass("value1", "key1"); // { key1: value1 }
+        await.pass("value2");
+        await.pass("value3", "key3"); // { key1: value1 }
+    }
+
+    // master はアニメーション1(anim1)とアニメーション2(anim2)の両方の終了を待つ
+    function test5() { // nested await
+        var master = new Await(2, function(err, args) {
+            if (err) {
+                console.log("test ng");
+            } else {
+                console.log("test ok"); // anim1 and anim2 finished
+            }
+        });
+
+        var anim1 = new Await(2, master);
+        var anim2 = new Await(2, master);
+
+        setTimeout(function() { anim1.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim1.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim2.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim2.pass(); }, Math.random() * 1000);
+    }
+
+    // test5 とほぼ同じだが必ず失敗する版
+    function test6() { // nested await
+        var master = new Await(2, function(err, args) {
+            if (err) {
+                console.log("test ok");
+            } else {
+                console.log("test ng");
+            }
+        });
+
+        var anim1 = new Await(2, master);
+        var anim2 = new Await(2, master);
+
+        setTimeout(function() { anim1.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim1.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim2.pass(); }, Math.random() * 1000);
+        setTimeout(function() { anim2.miss(); }, Math.random() * 1000); // error
+    }
+
+</script></body></html>
+
