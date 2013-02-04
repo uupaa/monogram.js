@@ -5,7 +5,7 @@
 
 // --- header ----------------------------------------------
 function Await(events, // @arg Integer: event count
-               fn,     // @arg Function: fn(err:Error, args:MixArray)
+               fn,     // @arg Await/Function: await.fn(err:Error, args:MixArray)
                tag) {  // @arg String(= ""): tag name
                        // @help: Await
     this._missable = 0;         // Integer: missable count
@@ -13,9 +13,9 @@ function Await(events, // @arg Integer: event count
     this._pass  = 0;            // Integer: pass() called count
     this._miss  = 0;            // Integer: miss() called count
     this._state = "progress";   // String: "progress", "done", "error", "halt"
-    this._args  = [];           // MixArray: pass(arg), miss(arg) collections
+    this._args  = [];           // ExArray: #pass(arg), #miss(arg) collections
     this._tag   = tag || "";    // String: tag name
-    this._fn    = fn;           // Function: callback(err:Error, args:MixArray)
+    this._fn    = fn;           // Await/Function: callback(err:Error, args:ExArray)
 
     this._tag && (_progress[this._tag] = this);
     _judge(this); // events is 0 -> done
@@ -28,8 +28,8 @@ Await.prototype = {
     missable:   Await_missable, // Await#missable(count:Integer):this
     add:        Await_add,      // Await#add(count:Integer):this
     halt:       Await_halt,     // Await#halt():this
-    pass:       Await_pass,     // Await#pass(value:Mix = undefined):this
-    miss:       Await_miss,     // Await#miss(value:Mix = undefined):this
+    pass:       Await_pass,     // Await#pass(value:Mix = undefined, key:String = ""):this
+    miss:       Await_miss,     // Await#miss(value:Mix = undefined, key:String = ""):this
     getStatus:  Await_getStatus // Await#getStatus():Object
 };
 
@@ -65,24 +65,28 @@ function Await_add(count) { // @arg Integer: event count
     return this;
 }
 
-function Await_pass(value) { // @arg Mix(= undefined): value
-                             // @ret this:
-                             // @help: Await#pass
-                             // @desc: pass a process
+function Await_pass(value, // @arg Mix(= undefined): value
+                    key) { // @arg String(= ""): key
+                           // @ret this:
+                           // @help: Await#pass
+                           // @desc: pass a process
     ++this._pass;
     if (value !== void 0) {
-        this._args.push(value);
+        this._args.push(value);           // [].push(value)
+        key && (this._args[key] = value); // { key: value }
     }
     return _judge(this);
 }
 
-function Await_miss(value) { // @arg Mix(= undefined): value
-                             // @ret this:
-                             // @help: Await#miss
-                             // @desc: miss a process
+function Await_miss(value, // @arg Mix(= undefined): value
+                    key) { // @arg String(= ""): key
+                           // @ret this:
+                           // @help: Await#miss
+                           // @desc: miss a process
     ++this._miss;
     if (value !== void 0) {
-        this._args.push(value);
+        this._args.push(value);           // [].push(value)
+        key && (this._args[key] = value); // { key: value }
     }
     return _judge(this);
 }
@@ -109,15 +113,23 @@ function _judge(that) { // @arg this:
         case "progress": break;
         case "error":
         case "halt":
-            that._fn(new TypeError(that._state), // err.message: "error" or "halt"
-                     that._args);
-            that._fn = null;
+            if (that._fn.miss) {
+                that._fn.miss();
+            } else {
+                that._fn(new TypeError(that._state), // err.message: "error" or "halt"
+                         that._args);
+                that._fn = null;
+            }
             that._args = []; // free
             that._tag && (_progress[that._tag] = null);
             break;
         case "done":
-            that._fn(null, that._args);
-            that._fn = null;
+            if (that._fn.pass) {
+                that._fn.pass();
+            } else {
+                that._fn(null, that._args);
+                that._fn = null;
+            }
             that._args = []; // free
             that._tag && (_progress[that._tag] = null);
         }
@@ -152,72 +164,4 @@ global.Monogram.Await = Await;
 
 })(this.self || global);
 //}@await
-
-// --- test ------------------------------------------------
-/*
-    if (this.require) {
-        var Await = require("./logic.await").Await;
-    } else {
-        var Await = global.Monogram.Await;
-    }
-
-    function test1() { // await sync 4 events
-        var await = new Await(4, callback);
-
-        [1,2,3].forEach(function(value) {
-            await.pass(value);
-        });
-        await.pass(4); // fire callback
-
-        function callback(err, args) { // err = null, args = [1,2,3,4]
-            if (err) {
-                switch (err.message) {
-                case "halt":  console.log("halt",  args.join()); break;
-                case "error": console.log("error", args.join()); break;
-                }
-            } else {
-                // err is null
-                console.log(args.join()); // "1,2,3,4"
-            }
-        }
-    }
-
-    function test2() { // await async 4 events (missable 1)
-        var await = new Await(4, callback).missable(1);
-
-        setTimeout(function() { await.pass(1); }, Math.random() * 1000); // goo
-        setTimeout(function() { await.pass(2); }, Math.random() * 1000); // goo
-        setTimeout(function() { await.pass(3); }, Math.random() * 1000); // goo
-        setTimeout(function() { await.miss(4); }, Math.random() * 1000); // boo?
-        setTimeout(function() { await.miss(5); }, Math.random() * 1000); // boo?
-
-        function callback(err, args) { // random result
-            if (err) {
-                console.log("boo!", args.join()); // eg: "boo! 4,1,5"
-            } else {
-                console.log("goo!", args.join()); // eg: "goo! 2,3,1,4"
-            }
-        }
-    }
-
-    function test3() { // debug
-        function callback() {
-        }
-
-        var a = new Await(10, callback, "test3.await1");
-        var b = new Await(10, callback, "test3.await2");
-        var c = new Await(10, callback, "test3.await3");
-
-        for (var i = 0; i < 30; ++i) {
-            switch ((Math.random() * 3) | 0) {
-            case 0: a.pass(); break;
-            case 1: b.pass(); break;
-            case 2: c.pass(); break;
-            }
-        }
-
-        // -> Explore why the process is not completed.
-        console.log( Await.dump() );
-    }
- */
 
