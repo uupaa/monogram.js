@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../js/mixin.js"></script>
+<script src="../js/logic.async.js"></script>
+<script src="../js/logic.stream.js"></script>
+<script>
+
+    if (this.require) {
+        require("../js/mixin");
+        require("../js/logic.async");
+        require("../js/logic.stream");
+    } else {
+    }
+
+    [1,2,3].async(null, 1000, 1).each(function(value) {
+        console.log(value);
+    });
+
+
+</script></body></html>
+

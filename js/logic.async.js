@@ -40,7 +40,7 @@ function Array_async(callback, // @arg Function(= undefined): callback(result:Mi
  */
 //}@debug
 
-    callback = callback || mm_nop;
+    callback = callback || nop;
     wait = ((wait || 0) / 1000) | 0;
     unit = unit || 0;
 
@@ -117,6 +117,9 @@ function _async_iter(ary,      // @arg Array:
             return true; // -> next stream
         };
     }
+}
+
+function nop() {
 }
 
 // --- build -----------------------------------------------
