@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/html5.script.js"></script>
+<script src="../js/html5.ajax.js"></script>
+<script>
+window.onload = function() {
+    var Ajax = Monogram.Ajax;
+
+    new Ajax().load("../js/html5.script.js", { type: "text" },
+                    function(err, expr, time) {
+        if (!err) {
+            Monogram.Script.run(expr);
+            alert(new Date(time));
+        }
+    });
+};
+</script>
+</head><body> </body></html>
+
+

@@ -1,0 +1,124 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../js/mixin.js"></script>
+<script src="../js/polyfill.es5.js"></script>
+<script src="../js/polyfill.es6.js"></script>
+<script src="../js/logic.env.js"></script>
+<script src="../js/logic.uid.js"></script>
+<script src="../js/logic.type.js"></script>
+<!--
+<script src="../js/logic.help.js"></script>
+ -->
+<script src="../js/mm.js"></script>
+<script>
+
+    if (this.require) {
+        require("../js/logic.help");
+        var Type = require("../js/logic.type").Type;
+    } else {
+        var Type = Monogram.Type;
+    }
+
+    console.log("Basic types ---");
+    console.log( Type(null)     === "Null" );
+    console.log( Type(void 0)   === "Undefined" );
+    console.log( Type(true)     === "Boolean" );
+    console.log( Type(123)      === "Number" );
+    console.log( Type("a")      === "String" );
+    console.log( Type(/a/)      === "RegExp" );
+    console.log( Type([1])      === "Array"  );
+    console.log( Type({})       === "Object" );
+    console.log( Type(new Date) === "Date" );
+    console.log( Type(new Error) === "Error" );
+    console.log( Type(function a() {}) === "Function" );
+
+    console.log("Global, List, Arguments ---");
+    (function args(global) {
+        console.log( Type(global)    === "Global" );
+        console.log( Type(arguments) === "List" );
+        console.log( Type(arguments, true) === "Arguments" );
+    })(this.self || global);
+
+    console.log("DOM ---");
+    if (this.document) {
+        console.log( Type(document.body) === "Node" );
+
+        console.log("NodeList ---");
+        if (document.querySelectorAll) {
+            console.log( Type(document.querySelectorAll("*")) === "List" );
+            console.log( Type(document.querySelectorAll("*"), true) === "NodeList" ); // [IE8] "StaticNodeList"
+        }
+
+        console.log("Attr ---");
+        console.log( Type(document.body.attributes) === "Attr" );
+        console.log( Type(document.body.attributes, true) === "NamedNodeMap" );
+        console.log("HTMLCollections/NodeList ---");
+        console.log( Type(document.getElementsByTagName("*")) === "List" );
+        console.log( Type(document.getElementsByTagName("*"), true) === "NodeList" ) // [Firefox][IE] "HTMLCollection", [WebKit] "NodeList"
+
+        console.log("Style ---");
+        if (this.getComputedStyle) {
+            console.log( Type(getComputedStyle(document.body)) === "Style" );
+            console.log( Type(getComputedStyle(document.body), true) === "CSSStyleDeclaration" );
+        }
+    }
+
+    (function(global) {
+        console.log( Type.clone(null)    === null );
+        console.log( Type.clone(void 0)  === undefined );
+        console.log( Type.clone(true)    === true );
+        console.log( Type.clone(false)   === false );
+        console.log( Type.clone(123)     === 123 );
+        console.log( Type.clone(Infinity)=== Infinity );
+        console.log( Type.clone(NaN)+""  === NaN+"");
+        console.log( Type.clone("a")     === "a" );
+        console.log((Type.clone(/a/)+"") ===(/a/+""));
+        console.log((Type.clone([1])+"") ===([1]+""));
+        console.log( Type.clone({}) );
+        console.log( Type.clone({a:1,b:{c:{d:2}}}) );
+        console.log( Type.clone(new Date()) );
+        console.log( Type.clone(function a(){}) );
+
+        // --- other and host objects ---
+        console.log( Type.clone(new Error()) );
+        console.log( Type.clone(new TypeError("!!"))+"" === new TypeError("!!")+"" );
+
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(arguments) ); // ArrayLike
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })(1, 2, 3);
+        (function(a, b, c) {
+            try {
+                console.log( Type.clone(global) ); // global
+            } catch (err) {
+                console.log("catch DataCloneError: " + err);
+            }
+        })();
+        if (global.document) {
+            global.onload = function() {
+                console.log( Type.clone(document.body) );
+
+                if (document.querySelectorAll) {
+                    console.log( Type.clone(document.querySelector("*")) );
+                    console.log( Type.clone(document.querySelectorAll("*")) );
+                }
+
+                console.log( Type.clone(document.body.attributes) );
+                console.log( Type.clone(document.getElementsByTagName("*")) );
+
+                if (global.getComputedStyle) {
+                    console.log( Type.clone(getComputedStyle(document.body)) );
+                }
+            };
+        }
+    })(this.self || global);
+
+    (function(global) {
+        Type.allow("arg", false, "Boolean");
+        Type.allow("arg", false, "Function");
+    })(this.self || global);
+
+</script></body></html>
+

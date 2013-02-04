@@ -1,0 +1,22 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/logic.css.selector.tokenizer.js"></script>
+<script src="../js/logic.css.selector.js"></script>
+</head><body>
+<script>
+window.onload = function() {
+    var token = new Monogram.CSSSelectorTokenizer("body *");
+    var nodes = new Monogram.CSSSelector(token);
+
+    nodes.forEach(function(node) {
+        console.log(node.nodeName); // SCRIPT, DIV, DIV, P
+    });
+};
+</script>
+<div>
+    <div>
+        <p>text node</p>
+    </div>
+</div>
+</body></html>
+
+
