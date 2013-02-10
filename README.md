@@ -4,6 +4,9 @@ Monogram.js
 Monogram.js - Write once, run anywhere :) JavaScript Library
 
 ====
+http://uupaa.github.com/monogram.js/
+
+====
 ```html
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <!-- mixin and extend -->
