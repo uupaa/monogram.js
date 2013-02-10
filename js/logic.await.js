@@ -1,6 +1,5 @@
 // logic.await.js: awaiting async/sync events
 
-//{@await
 (function(global) {
 
 // --- header ----------------------------------------------
@@ -13,9 +12,9 @@ function Await(events, // @arg Integer: event count
     this._pass  = 0;            // Integer: pass() called count
     this._miss  = 0;            // Integer: miss() called count
     this._state = "progress";   // String: "progress", "done", "error", "halt"
-    this._args  = [];           // ExArray: #pass(arg), #miss(arg) collections
+    this._args  = [];           // ModArray: #pass(arg), #miss(arg) collections
     this._tag   = tag || "";    // String: tag name
-    this._fn    = fn;           // Await/Function: callback(err:Error, args:ExArray)
+    this._fn    = fn;           // Await/Function: callback(err:Error, args:ModArray)
 
     this._tag && (_progress[this._tag] = this);
     _judge(this); // events is 0 -> done
@@ -48,7 +47,7 @@ function Await_missable(count) { // @arg Integer: missable count
                                  // @desc: set missable counts
 //{@debug
     if (count < 0 || count >= this._events) {
-        throw new Error("BAD_ARG");
+        throw new Error("BAD_ARG: Await#missable");
     }
 //}@debug
     this._missable = count;
@@ -73,7 +72,7 @@ function Await_pass(value, // @arg Mix(= undefined): value
     ++this._pass;
     if (value !== void 0) {
         this._args.push(value);           // [].push(value)
-        key && (this._args[key] = value); // { key: value }
+        key && (this._args[key] = value); // [] + { key: value }
     }
     return _judge(this);
 }
@@ -86,7 +85,7 @@ function Await_miss(value, // @arg Mix(= undefined): value
     ++this._miss;
     if (value !== void 0) {
         this._args.push(value);           // [].push(value)
-        key && (this._args[key] = value); // { key: value }
+        key && (this._args[key] = value); // [] + { key: value }
     }
     return _judge(this);
 }
@@ -103,37 +102,33 @@ function Await_halt() { // @ret this:
 function _judge(that) { // @arg this:
                         // @ret this:
                         // @inner: judge state and callback function
+    // update state
     if (that._state === "progress") {
         that._state = that._miss > that._missable ? "error"
                     : that._pass + that._miss >= that._events ? "done"
                     : that._state;
     }
-    if (that._fn) {
-        switch (that._state) {
-        case "progress": break;
-        case "error":
-        case "halt":
-            if (that._fn.miss) {
-                that._fn.miss();
-            } else {
-                that._fn(new TypeError(that._state), // err.message: "error" or "halt"
-                         that._args);
-                that._fn = null;
-            }
-            that._args = []; // free
-            that._tag && (_progress[that._tag] = null);
-            break;
-        case "done":
-            if (that._fn.pass) {
-                that._fn.pass();
-            } else {
-                that._fn(null, that._args);
-                that._fn = null;
-            }
-            that._args = []; // free
-            that._tag && (_progress[that._tag] = null);
+    if (that._state === "progress" || !that._fn) { // progress or finished
+        return that;
+    }
+    if (that._state === "done") {
+        if (that._fn.pass) {
+            that._fn.pass();
+        } else {
+            that._fn(null, that._args);
+            that._fn = null;
+        }
+    } else { // error or halt
+        if (that._fn.miss) {
+            that._fn.miss();
+        } else {
+            that._fn(new TypeError(that._state), // err.message: "error" or "halt"
+                     that._args);
+            that._fn = null;
         }
     }
+    that._args = []; // free
+    that._tag && (_progress[that._tag] = null);
     return that;
 }
 
@@ -163,5 +158,4 @@ global.Monogram || (global.Monogram = {});
 global.Monogram.Await = Await;
 
 })(this.self || global);
-//}@await
 

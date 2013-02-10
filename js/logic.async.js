@@ -39,6 +39,9 @@ function Array_async(callback, // @arg Function(= undefined): callback(result:Mi
     mm.allow("unit", unit, unit ? unit > 0 : true);
  */
 //}@debug
+    if (wait <= 0 || unit <= 0) {
+        throw new TypeError("BAD_ARG: Array_async");
+    }
 
     callback = callback || nop;
     wait = ((wait || 0) / 1000) | 0;

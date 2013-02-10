@@ -1,45 +1,41 @@
 // html5.script.js: eval JavaScript
 
-//{@script
 (function(global) {
 
 // --- header ----------------------------------------------
-function Script() {
-}
+function Script() {}
 Script.load = Script_load;  // load(src:String, fn:Function = null)
-Script.run  = Script_run;   // run(expression:String, fn:Function = null)
+Script.run  = Script_run;   // run(expression:String)
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
 function Script_load(src,  // @arg String: JavaScript source
                      fn) { // @arg Function(= null): fn(err: Error)
-    var script = document.createElement("script");
+    var script = document.createElement("script"),
+        head = document.head ||
+               document.getElementsByTagName("head")[0];
 
     script.onload = function() {
-        fn && fn(null); // ok
+        fn && fn(null);
     };
     script.onerror = function() {
-        fn && fn( new TypeError("Bad Request") );
+        fn && fn(new TypeError("Bad Request"));
     };
     script.charset = "utf-8";
     script.src = src;
-    (document.head || _headTag()).appendChild(script);
+    head.appendChild(script);
 }
 
-function Script_run(expression, // @arg String: JavaScript Expression
-                    fn) {       // @arg Function(= null): fn(err: Error)
-                                // @desc: blocking api
-    var script = document.createElement("script");
+function Script_run(expression) { // @arg String: JavaScript Expression
+                                  // @desc: blocking api
+    var script = document.createElement("script"),
+        head = document.head ||
+               document.getElementsByTagName("head")[0];
 
     script.charset = "utf-8";
     script.text = expression;
-    (document.head || _headTag()).appendChild(script);
-    fn && fn(null); // ok
-}
-
-function _headTag() {
-    return document.getElementsByTagName("head")[0] || document.body;
+    head.appendChild(script);
 }
 
 // --- build -----------------------------------------------
@@ -52,10 +48,4 @@ global.Monogram || (global.Monogram = {});
 global.Monogram.Script = Script;
 
 })(this.self || global);
-//}@script
 
-/*
-    var Script = require("./html5.script").Script;
-
-    Script.run("alert(123)");
- */
