@@ -1,4 +1,4 @@
-// RPC.js: remote procedure call
+// html5.iframe.rpc.js: <body> <-> <iframe> remote procedure call
 
 (function(global) {
 
