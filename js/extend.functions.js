@@ -705,12 +705,12 @@ function String_trimQuote() { // @ret String: trimed string
                               // @help: String#trimQuote
                               // @desc: trim both spaces and strip single/double quotes.
                               //        does not remove the quotes that are not symmetric.
-    var str = this.trim(), m = /^["']/.exec(str);
+    var str = this.trim(), l = str[0], r = str[str.length - 1];
 
-    if (m) {
-        m = RegExp(m[0] + "$").exec(str);
-        if (m) {
-            return str.trims(m[0]);
+    if (str) {
+        if ((l === "'" && r === "'") ||
+            (l === '"' && r === '"')) {
+            return str.slice(1, -1);
         }
     }
     return str;

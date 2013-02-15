@@ -16,7 +16,7 @@ function Await(events, // @arg Integer: event count
     this._tag   = tag || "";    // String: tag name
     this._fn    = fn;           // Await/Function: callback(err:Error, args:ModArray)
 
-    this._tag && (_progress[this._tag] = this);
+    tag && (_progress[tag] = this);
     _judge(this); // events is 0 -> done
 }
 
