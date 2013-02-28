@@ -9,7 +9,7 @@ function RAMStorage() {
 RAMStorage.name = "RAMStorage"; // fn.constructor.name -> "RAMStorage"
 RAMStorage.prototype = {
     constructor:RAMStorage,
-    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):void
+    setup:      setup,      // (dbName:String, tableName:String, fn:Await/Function = null):this
     has:        has,        // (ids:String/StringArray, fn:Function = null):Boolean
     get:        get,        // (ids:String/StringArray, fn:Function = null):ObjectArray
     set:        set,        // (values:Array, fn:Function = null):this
@@ -124,12 +124,12 @@ function fetch(fn) { // @arg Function(= null): fn(err:Error, result:ObjectArray)
     for (key in this._db) {
         if (key.indexOf(this._tableName) === 0) {
             ary = this._db[key].split("\v");
-            rv.push( {
+            rv.push({
                 id:     ary[0],
                 hash:   ary[1],
                 time:  +ary[2],
                 data:   ary[3]
-            };
+            });
         }
     }
     fn && fn(null, rv);

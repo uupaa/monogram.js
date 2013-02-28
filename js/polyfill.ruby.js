@@ -1,39 +1,38 @@
 // polyfill.ruby.js: extend ruby functions
+// @need: Monogram.wiz (in mixin.js)
 
 //{@ruby
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-function _extendRubyLikeMethods() {
-    wiz(Array.prototype, {
-        assoc:      Array_assoc,        // [].assoc(find:Mix):Array/undefined
-        index:      Array_index,        // [].index(mix:Mix):Number/undefined
-        uniq:       Array.prototype.unique,
-        collect:    Array.prototype.map,
-        delete_at:  Array_delete_at     // [].delete_at(index):Mix/undefined
-    });
-    wiz(String.prototype, {
-        to_f:       function()          { return parseFloat(this); },
-        to_i:       function(radix)     { return parseInt(this, radix || 10); },
-        to_s:       String.prototype.toString,
-        sub:        String_sub,         // "".sub(pattern:RegExp, replace:String/Function):String
-        gsub:       String_gsub,        // "".gsub(pattern:RegExp, replace:String/Function):String
-        scan:       String_scan,        // "".scan(pattern:RegExp):StringArray
-        strip:      String.prototype.trim,
-        upcase:     String.prototype.toUpperCase,
-        downcase:   String.prototype.toLowerCase,
-        swapcase:   String_swapcase,    // "".swapcase():String
-        ljust:      String_ljust,       // "".ljust(width:Number, padding:String = " "):String
-        rjust:      String_rjust,       // "".rjust(width:Number, padding:String = " "):String
-        center:     String_center       // "".center(width:Number, padding:String = " "):String
-    });
-    wiz(Number.prototype, {
-        to_s:       Number_to_s,        // 0..to_s(radix:Number):String
-        upto:       Number_upto,        // 0..upto(max:Number, fn:Function)
-        downto:     Number_upto,        // 9..downto(min:Number, fn:Function)
-        step:       Number_step         // 0..step(limit:Number, step:Number, fn:Function)
-    });
-}
+wiz(Array.prototype, {
+    assoc:      Array_assoc,        // [].assoc(find:Mix):Array/undefined
+    index:      Array_index,        // [].index(mix:Mix):Number/undefined
+    uniq:       Array.prototype.unique,
+    collect:    Array.prototype.map,
+    delete_at:  Array_delete_at     // [].delete_at(index):Mix/undefined
+});
+wiz(String.prototype, {
+    to_f:       function()          { return parseFloat(this); },
+    to_i:       function(radix)     { return parseInt(this, radix || 10); },
+    to_s:       String.prototype.toString,
+    sub:        String_sub,         // "".sub(pattern:RegExp, replace:String/Function):String
+    gsub:       String_gsub,        // "".gsub(pattern:RegExp, replace:String/Function):String
+    scan:       String_scan,        // "".scan(pattern:RegExp):StringArray
+    strip:      String.prototype.trim,
+    upcase:     String.prototype.toUpperCase,
+    downcase:   String.prototype.toLowerCase,
+    swapcase:   String_swapcase,    // "".swapcase():String
+    ljust:      String_ljust,       // "".ljust(width:Number, padding:String = " "):String
+    rjust:      String_rjust,       // "".rjust(width:Number, padding:String = " "):String
+    center:     String_center       // "".center(width:Number, padding:String = " "):String
+});
+wiz(Number.prototype, {
+    to_s:       Number_to_s,        // 0..to_s(radix:Number):String
+    upto:       Number_upto,        // 0..upto(max:Number, fn:Function)
+    downto:     Number_upto,        // 9..downto(min:Number, fn:Function)
+    step:       Number_step         // 0..step(limit:Number, step:Number, fn:Function)
+});
 
 // --- library scope vars ----------------------------------
 
@@ -178,18 +177,8 @@ function Number_to_s(radix) { // @arg Integer: 2 - 36
 }
 
 // --- build -----------------------------------------------
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        if (override || !(key in object)) {
-            Object.defineProperty(object, key, {
-                configurable: true, writable: true, value: extend[key]
-            });
-        }
-    }
-}
 
 // --- export ----------------------------------------------
-_extendRubyLikeMethods();
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@ruby

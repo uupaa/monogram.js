@@ -1,7 +1,7 @@
-// json.js: polyfill JSON.parse and JSON.stringify
+// polyfill.json.js: polyfill JSON.parse and JSON.stringify
 
 //{@json
-(function(global) { // @arg Global: window or global
+(function(global) {
 
 // --- header ----------------------------------------------
 global.JSON || (global.JSON = {

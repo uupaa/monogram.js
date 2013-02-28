@@ -1,107 +1,118 @@
 // polyfill.es5.js: polyfill ECMAScript 262-3rd and 5th method and properties
+// @need: Monogram.wiz (in mixin.js)
 
 //{@es
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-function _polyfill() {
-    if (!Object.keys) {
-         Object.keys = Object_keys;     // Object.keys(obj:Mix):Array
-    }
-//{@ie8
-    if (!Object.defineProperties) {
-         Object.__defineProperty__ = Object.defineProperty; // keep original
-         Object.defineProperty = Object_defineProperty; // Object.defineProperty
-    }
-    if (!Object.freeze) {
-         Object.freeze = function(obj) {};
-    }
-    // --- force override Date#toJSON result ---
-    // [IE8] (original) "2012-09-16T21:53:39Z"
-    //       (fix to)   "2012-09-16T21:53:39.000Z" (supply Milliseconds)
-    if (Date.prototype.toJSON && (new Date).toJSON().length < 24) {
-        Date.prototype.toJSON = Date_toJSON;
-    }
-//}@ie8
-
-    wiz(Date, {
-        now:        Date_now            // Date.now():Integer
-    });
-    wiz(Date.prototype, {
-        toJSON:     Date_toJSON         // Date#toJSON():JSONObject
-    });
-    wiz(Array, {
-        isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
-    });
-    wiz(Array.prototype, {
-        map:        Array_map,          // [].map(fn:Function, that:this):Array
-        forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
-        some:       Array_some,         // [].some(fn:Function, that:this):Boolean
-        every:      Array_every,        // [].every(fn:Function, that:this):Boolean
-        indexOf:    Array_indexOf,      // [].indexOf(mix:Mix, index:Integer = 0):Integer
-        lastIndexOf:Array_lastIndexOf,  // [].lastIndexOf(mix:Mix, index:Integer = 0):Integer
-        filter:     Array_filter,       // [].filter(fn:Function, that:this):Array
-        reduce:     Array_reduce,       // [].reduce(fn:Function, init:Mix):Mix
-        reduceRight:Array_reduceRight   // [].reduceRight(fn:Function, init:Mix):Mix
-    });
-    wiz(String.prototype, {
-        trim:       String_trim         // "".trim():String
-    });
-    wiz(Function.prototype, {
-        bind:       Function_bind       // Function#bind():Function
-    });
+//{@ie
+if (!Object.keys) {
+     Object.keys = Object_keys; // Object.keys(obj:Mix):Array
 }
+if (Object.defineProperty && !Object.defineProperties) { // [IE8]
+    Object.__defineProperty__ = Object.defineProperty; // keep native
+}
+if (!Object.defineProperty) { // for legacy browser
+     Object.defineProperty = Object_defineProperty; // Object.defineProperty
+}
+if (!Object.freeze) {
+     Object.freeze = function(obj) {};
+}
+// --- force override Date#toJSON result ---
+// [IE8] (original) "2012-09-16T21:53:39Z"
+//       (fix to)   "2012-09-16T21:53:39.000Z" (supply Milliseconds)
+if (Date.prototype.toJSON && new Date().toJSON().length < 24) {
+    Date.prototype.toJSON = Date_toJSON;
+}
+//}@ie
+
+wiz(Date, {
+    now:        Date_now            // Date.now():Integer
+});
+wiz(Date.prototype, {
+    toJSON:     Date_toJSON         // Date#toJSON():JSONObject
+});
+wiz(Array, {
+    isArray:    Array_isArray       // Array.isArray(mix:Mix):Boolean
+});
+wiz(Array.prototype, {
+    forEach:    Array_forEach,      // [].forEach(fn:Function, that:this):void
+    map:        Array_map,          // [].map(fn:Function, that:this):Array
+    some:       Array_some,         // [].some(fn:Function, that:this):Boolean
+    every:      Array_every,        // [].every(fn:Function, that:this):Boolean
+    indexOf:    Array_indexOf,      // [].indexOf(mix:Mix, index:Integer = 0):Integer
+    lastIndexOf:Array_lastIndexOf,  // [].lastIndexOf(mix:Mix, index:Integer = 0):Integer
+    filter:     Array_filter,       // [].filter(fn:Function, that:this):Array
+    reduce:     Array_reduce,       // [].reduce(fn:Function, init:Mix):Mix
+    reduceRight:Array_reduceRight   // [].reduceRight(fn:Function, init:Mix):Mix
+});
+wiz(String.prototype, {
+    trim:       String_trim         // "".trim():String
+});
+wiz(Function.prototype, {
+    bind:       Function_bind       // Function#bind():Function
+});
+// alias
+Array.prototype.each = Array_forEach;
+
+//{@ie
+wiz(Date,       { name: "Date" });
+wiz(Array,      { name: "Array" });
+wiz(Error,      { name: "Error" });
+wiz(Number,     { name: "Number" });
+wiz(Object,     { name: "Object" });
+wiz(RegExp,     { name: "RegExp" });
+wiz(String,     { name: "String" });
+wiz(Boolean,    { name: "Boolean" });
+wiz(Function,   { name: "Function" });
+wiz(TypeError,  { name: "TypeError" });
+wiz(SyntaxError,{ name: "SyntaxError" });
+//}@ie
 
 // --- library scope vars ----------------------------------
 
 // --- implement -------------------------------------------
+//{@ie
 function Object_keys(obj) { // @arg Object/Function/Array:
                             // @ret KeyStringArray: [key, ... ]
                             // @help: Object.keys
     var rv = [], key, i = 0;
 
-//{@ie
+    // [IE6][IE7][IE8] host-objects has not hasOwnProperty
     if (!obj.hasOwnProperty) {
-        // [IE6][IE7][IE8] host-objects has not hasOwnProperty
         for (key in obj) {
             rv[i++] = key;
         }
-    } else
-//}@ie
-    {
+    } else {
         for (key in obj) {
             obj.hasOwnProperty(key) && (rv[i++] = key);
         }
     }
     return rv;
 }
+//}@ie
 
-//{@ie8
+//{@ie
 function Object_defineProperty(obj,          // @arg Object:
                                prop,         // @arg String: property name
                                descriptor) { // @arg Hash: { writable, get, set,
                                              //              value, enumerable,
                                              //              configurable }
+                                             // @ret Object:
                                              // @help: Object.defineProperty
-    if (obj.nodeType) {
-        Object.__defineProperty__(obj, prop, descriptor); // call original
-        return;
+    if (obj.nodeType && Object.__defineProperty__) { // [IE8]
+        return Object.__defineProperty__(obj, prop, descriptor); // call native
     }
 
-    var type = 0;
+    // data descriptor
+    "value" in descriptor && (obj[prop] = descriptor.value);
 
-    "value" in descriptor && (type |= 0x1); // data descriptor
-    "get"   in descriptor && (type |= 0x2); // accessor descriptor
-    "set"   in descriptor && (type |= 0x4); // accessor descriptor
-
-    if (type & 0x1 && type & 0x6) {
-        throw new TypeError("BAD_DESCRIPTOR");
-    }
-    type & 0x1 && (obj[prop] = descriptor.value);
-    type & 0x2 && obj.__defineGetter__(prop, descriptor.get);
-    type & 0x4 && obj.__defineSetter__(prop, descriptor.set);
+    // accessor descriptor
+    descriptor.get && obj.__defineGetter__(prop, descriptor.get);
+    descriptor.set && obj.__defineSetter__(prop, descriptor.set);
+    return obj;
 }
-//}@ie8
+//}@ie
 
 function Date_now() { // @ret Integer: milli seconds
                       // @desc: get current time
@@ -270,20 +281,20 @@ function String_trim() { // @ret String:
 
 function Date_toJSON() { // @ret String: "2000-01-01T00:00:00.000Z"
                          // @help: Date#toJSON
-    var dates = { y:  this.getUTCFullYear(),         // 1970 -
-                  m:  this.getUTCMonth() + 1,        //    1 - 12
-                  d:  this.getUTCDate() },           //    1 - 31
-        times = { h:  this.getUTCHours(),            //    0 - 23
-                  m:  this.getUTCMinutes(),          //    0 - 59
-                  s:  this.getUTCSeconds(),          //    0 - 59
-                  ms: this.getUTCMilliseconds() };   //    0 - 999
+    var dy = this.getUTCFullYear(),         // 1970 -
+        dm = this.getUTCMonth() + 1,        //    1 - 12
+        dd = this.getUTCDate(),             //    1 - 31
+        th = this.getUTCHours(),            //    0 - 23
+        tm = this.getUTCMinutes(),          //    0 - 59
+        ts = this.getUTCSeconds(),          //    0 - 59
+        tms = this.getUTCMilliseconds();    //    0 - 999
 
-    return dates.y + "-" + (dates.m < 10 ? "0" : "") + dates.m + "-" +
-                           (dates.d < 10 ? "0" : "") + dates.d + "T" +
-                           (times.h < 10 ? "0" : "") + times.h + ":" +
-                           (times.m < 10 ? "0" : "") + times.m + ":" +
-                           (times.s < 10 ? "0" : "") + times.s + "." +
-                           ("00" + times.ms).slice(-3) + "Z";
+    return dy + "-" + (dm < 10 ? "0" : "") + dm + "-" +
+                      (dd < 10 ? "0" : "") + dd + "T" +
+                      (th < 10 ? "0" : "") + th + ":" +
+                      (tm < 10 ? "0" : "") + tm + ":" +
+                      (ts < 10 ? "0" : "") + ts + "." +
+                      ("00" + tms).slice(-3) + "Z";
 }
 
 function Function_bind(context, // @arg that: context
@@ -306,19 +317,9 @@ function Function_bind(context, // @arg that: context
 }
 
 // --- build -----------------------------------------------
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        if (override || !(key in object)) {
-            Object.defineProperty(object, key, {
-                configurable: true, writable: true, value: extend[key]
-            });
-        }
-    }
-}
 
 // --- export ----------------------------------------------
-_polyfill();
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@es
 

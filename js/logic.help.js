@@ -9,68 +9,67 @@ function Help(that) { // @arg Function:
     return that.help();
 }
 Help.name = "Help";
+Help.add = Help_add; // fn#help.add(url:URLString, rex:String/StringArray/RegExp):void
+Help.url = Help_url; // fn#help.url(fn:Function):String
 
-Object.defineProperty(Function.prototype, "help", {
-    value: help      // fn#help(that:Object = null):String
-});
-help.add = help_add; // fn#help.add(url:URLString, word:String/StringArray/RegExp):void
-help.url = help_url; // fn#help.url(fn:Function):String
+if (!Object.defineProperty) {
+    Function.prototype.help = help;
+} else {
+    Object.defineProperty(Function.prototype, "help", {
+        value: Help_help  // fn#help(that:Object = null):String
+    });
+}
 
 // --- library scope vars ----------------------------------
-var _help_db = [];
+var _help_db = []; // { url, rex }
 
 // --- implement -------------------------------------------
-function help(that) { // @arg this:
-                      // @ret String:
-                      // @help: Function#help
-                      // @desc: show help url
+function Help_help(that) { // @arg this:
+                           // @ret String:
+                           // @help: Function#help
+                           // @desc: show help url
     that = that || this;
-    var url = help_url(that),
-        src = that.__SRC__ ? that.__SRC__ : that;
+    var url = Help_url(that);
 
     return url + "\n\n" + that + "\n\n" + url;
 }
 
-function help_url(fn) { // @arg Function/undefined:
+function Help_url(fn) { // @arg Function/undefined:
                         // @ret String:
                         // @desc: get help url
-    var src  = fn.__SRC__ ? fn.__SRC__ : fn,
-        help = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + src + "\n");
+    var path,
+        m = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + fn + "\n");
 
-    return help ? _findHelp(help[1].trim()) : "";
-}
-
-function _findHelp(help) {
-    var ary = _help_db, i = 0, iz = ary.length, url, rex, m;
-
-    for (; i < iz; i += 2) {
-        url = ary[i];
-        rex = ary[i + 1];
-        m   = rex.exec(help);
-
-        if (m) {
-            return m[2] === "#" ? url + m[1] + "#" + m[1] + ".prototype." + m[3]
-                 : m[2] === "." ? url + m[1] + "#" + m[1] + "."           + m[3]
-                                : url + m[1];
-        }
+    if (!m) {
+        return "";
     }
-    return "";
+    path = m[1].trim();
+
+    return _help_db.map(function(obj) {
+        var m = obj.rex.exec(path);
+
+        return !m ? ""
+             : m[2] === "#" ? obj.url + m[1] + "#" + m[1] + ".prototype." + m[3]
+             : m[2] === "." ? obj.url + m[1] + "#" + m[1] + "."           + m[3]
+                            : obj.url + m[1];
+    }).join("");
 }
 
-function help_add(url,    // @arg URLString: help url string
-                  word) { // @arg String/StringArray/RegExp: keywords or pattern
+function Help_add(url,   // @arg URLString: help url string
+                  rex) { // @arg String/StringArray/RegExp: keywords or pattern
                           // @desc: add help chain
-    if (typeof word === "string") {
-        word = [word];
+    if (typeof rex === "string") {
+        rex = [rex];
     }
-    if (Array.isArray(word)) {
-        word = RegExp("^(" + word.join("|") + ")(?:([#\\.])([\\w\\,]+))?$");
+    if (Array.isArray(rex)) {
+        //            ^(Type)(?:([#\.])([\w,]+))?$
+        rex = RegExp("^(" + rex.join("|") + ")(?:([#\\.])([\\w,]+))?$");
     }
-    _help_db.push(url, word);
+    _help_db.push({ url: url, rex: rex });
 }
 
 // --- build -----------------------------------------------
-help.add("http://code.google.com/p/mofmof-js/wiki/",
+Help_add("http://code.google.com/p/mofmof-js/wiki/",
          ("Object,Array,String,Boolean,Number,Date,RegExp,Function," +
           "mm,Class,Hash,Await,Msg,UID,Help,Env,Script," +
           "Base64,SHA1,MD5,HMAC,UTF16,CRC32").split(","));

@@ -1,0 +1,50 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script src="../js/codec.base64.js"></script>
+</head><body>
+<script>
+    if (this.require) {
+        // var Base64 = require("./codec.base64").Base64;
+    } else {
+        var Base64 = Monogram.Base64;
+    }
+
+    function test1() { // encode/decode String <-> Base64String
+        var base64String = new Base64("abc").toBase64String(); // -> "YWJj"
+        var decode = new Base64(base64String, true).toString(); // -> "abc"
+
+        console.log( base64String === "YWJj" );
+        console.log( decode === "abc" );
+    }
+
+    function test2() { // some case
+        console.log(new Base64("abc").toBase64String() === "YWJj" );
+        console.log(new Base64("abcd").toBase64String() === "YWJjZA==" );
+        console.log(new Base64("abcde").toBase64String() === "YWJjZGU=" );
+        console.log(new Base64("abcdef").toBase64String() === "YWJjZGVm" );
+    }
+
+    function test3() { // BinaryData to Base64String
+        function xhr(url) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, false); // false is sync
+            xhr.overrideMimeType("text/plain; charset=x-user-defined");
+            xhr.send(null);
+            return xhr.responseText + "";
+        }
+        var binary = xhr("uupaa.jpg"), point1 = Date.now(), rv1;
+        for (var i = 0; i < 100; ++i) { rv1 = Base64.btoa(binary, true); }
+        console.log(Date.now() - point1); // 27ms (quick)
+
+        var binary = xhr("uupaa.jpg"), point2 = Date.now(), rv2;
+        for (var i = 0; i < 100; ++i) { rv2 = new Base64(binary).toBase64String(); }
+        console.log(Date.now() - point2); // 44ms (slow)
+
+        if (rv1 === rv2) {
+            console.log("ok");
+        } else {
+            console.log("ng");
+        }
+    }
+</script>
+</body></html>
+

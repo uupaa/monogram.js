@@ -1,5 +1,5 @@
 // logic.messaging.js: Messaging API
-// @need: UID in (logic.uid.js)
+// @need: Monogram.UID in (logic.uid.js)
 
 //{@msg
 (function(global) {
@@ -12,7 +12,7 @@ function Msg() {
 
 Msg.name = "Msg";
 Msg.prototype = {
-    constructor:MSg,
+    constructor:Msg,
     bind:       Msg_bind,           // Msg#bind(...):this
     unbind:     Msg_unbind,         // Msg#unbind(...):this
     list:       Msg_list,           // Msg#list():ClassNameStringArray

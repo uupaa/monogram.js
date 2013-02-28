@@ -4,11 +4,11 @@
 (function(global) {
 
 // --- header ----------------------------------------------
-function UID() {
+function UID() { // @ret Integer:
+    return create();
 }
 UID.name = "UID";           // fn.constructor.name -> "UID"
 UID.create = create;        // (group:String = ""):Integer
-UID.prototype.constructor = UID;
 
 // --- library scope vars ----------------------------------
 var _uids = {};

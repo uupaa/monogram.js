@@ -1,18 +1,13 @@
 // codec.md5.js: calc MD5 hash
-// @need: Monogram. in codec.utf16.js
+// @need: Monogram.UTF16 (in codec.utf16.js)
 
 //{@md5
 (function(global) {
 
 // --- header --------------------------------
 function MD5(data) {
-    this._data = [];
-
-    if (Array.isArray(data)) {
-        this._data = data;
-    } else {
-        this._data = new global.Monogram.UTF16(data).toUTF8Array();
-    }
+    this._data = Array.isArray(data) ? data
+                                     : new global.Monogram.UTF16(data).toUTF8Array();
 }
 MD5.name = "MD5";
 MD5.prototype = {

@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>rpc</title>
+<meta name="viewport" content="width=320, initial-scale=1, user-scalable=yes">
+
+<script src="js/lib/logic.rpc.js"></script>
+</head>
+<body style="background-color:#FEF9EF;text-shadow: #CCC 1px 0px 3px;">
+
+<script>
+    if (/client/.test(location.hash)) {
+        RPC.client(function(event, msg, result) {
+            switch (msg) {
+            case "hello":
+                event.response("world");
+                break;
+            case "oneway hello":
+                if (!event.response) { console.log("oneway hello OK"); }
+                RPC.post.toServer("hello from client", {}, function(event, msg, result) {
+                    console.log(msg, result === "world" ? "OK" : "NG");
+                });
+                break;
+            }
+        });
+    } else { // server
+        RPC.server(function(event, msg, result) {
+            switch (msg) {
+            case "hello from client":
+                event.response("world");
+                break;
+            }
+        });
+        RPC.client.join(1, "http://hoge.uupaa.net/logoc.rpc.js.htm#client",
+            function(index) {
+                RPC.post(index, "hello", {}, function(event, msg, result) {
+                    console.log(msg, result === "world" ? "OK" : "NG");
+                });
+                RPC.post(index, "oneway hello");
+            });
+    }
+</script>
+</body></html>
+

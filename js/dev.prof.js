@@ -211,7 +211,7 @@ function _hook(spec) { // @arg Object: { `_spec_db properties` }
         return result;
     };
 
-    wiz(owobj[fnname], "__SRC__", spec.fnobj);
+    wiz(owobj[fnname], "__SOURCE__", spec.fnobj);
 
     _adoptFunctions(owobj[fnname], spec.fnobj);
 }
@@ -356,7 +356,7 @@ function _mm_allow(mix,      // @arg Mix:
 
 function _dump(mix) {
     if (typeof mm !== "undefined") {
-        return mm.dump(mix, 0);
+        return Type.dump(mix, 0);
     }
     return JSON.stringify(mix, function(k, v) {
         if (k === "") { return v; }
@@ -445,14 +445,14 @@ function _mm_type(mix) {
 function Function_help(that) {
     that = that || this;
     var url = Function_help_url(that),
-        src = that.__SRC__ ? that.__SRC__ : that;
+        src = that.__SOURCE__ ? that.__SOURCE__ : that;
 
     return url + "\n\n" + src + "\n\n" + url;
 }
 
 // copy from monogram.js
 function Function_help_url(fn) {
-    var src  = fn.__SRC__ ? fn.__SRC__ : fn,
+    var src  = fn.__SOURCE__ ? fn.__SOURCE__ : fn,
         help = /@help:\s*([^ \n\*]+)\n?/.exec("\n" + src + "\n");
 
     return help ? _findHelp(help[1].trim()) : "";

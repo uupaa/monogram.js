@@ -1,17 +1,16 @@
 // logic.async.js: extend Async/Sync Array methods
-// @need: logic.stream.js
+// @need: Monogram.wiz (in mixin.js)
+//        Monogram.Stream (in logic.stream.js)
 
 //{@async
-(function(global) {
+(function(global, wiz) {
 
 // --- header ----------------------------------------------
-function _extendNativeObjects() {
-    wiz(Array.prototype, {
-        sync:       Array_sync,         // [].sync():ModArray { each, map, some, every }
-        async:      Array_async         // [].async(callback:Function, wait:Integer = 0,
-                                        //          unit:Integer = 1000):ModArray { each, map, some, every }
-    });
-}
+wiz(Array.prototype, {
+    sync:   Array_sync, // [].sync():ModArray { each, map, some, every }
+    async:  Array_async // [].async(callback:Function, wait:Integer = 0,
+                        //          unit:Integer = 1000):ModArray { each, map, some, every }
+});
 
 // --- library scope vars ----------------------------------
 
@@ -35,11 +34,16 @@ function Array_async(callback, // @arg Function(= undefined): callback(result:Mi
                                // @desc: returned (each, map, some, every) an iterator method
                                //        that handles asynchronous array divided into appropriate units.
 //{@debug
+/*
     mm.allow("wait", wait, wait ? wait > 0 : true);
     mm.allow("unit", unit, unit ? unit > 0 : true);
+ */
 //}@debug
+    if (wait <= 0 || unit <= 0) {
+        throw new TypeError("BAD_ARG: Array_async");
+    }
 
-    callback = callback || mm_nop;
+    callback = callback || nop;
     wait = ((wait || 0) / 1000) | 0;
     unit = unit || 0;
 
@@ -86,7 +90,8 @@ function _async_iter(ary,      // @arg Array:
         callback(result, error, true);
     };
     cmd.pop(); // remove last wait
-    return (cmd.join(" > ") + " > end").stream(obj); // String#stream
+    //return (cmd.join(" > ") + " > end").stream(obj); // String#stream
+    return global.Monogram.Stream(cmd.join(" > ") + " > end", obj);
 
     // --- internal ---
     function _each(ary, fn, that, i, iz, map) {
@@ -117,19 +122,13 @@ function _async_iter(ary,      // @arg Array:
     }
 }
 
-function wiz(object, extend, override) {
-    for (var key in extend) {
-        (override || !(key in object)) && Object.defineProperty(object, key, {
-            configurable: true, writable: true, value: extend[key]
-        });
-    }
+function nop() {
 }
 
 // --- build -----------------------------------------------
 
 // --- export --------------------------------
-_extendNativeObjects();
 
-})(this.self || global);
+})(this.self || global, Monogram.wiz);
 //}@async
 
