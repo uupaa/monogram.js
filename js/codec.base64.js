@@ -1,42 +1,26 @@
-// codec.base64.js: Base64
+// codec.base64.js:
 
 (function(global) {
 
 // --- header ----------------------------------------------
-function Base64(data,                 // @arg String/Array:
-                decodeBase64String) { // @arg Boolean(= false):
-    this._data = [];
-
-    if (Array.isArray(data)) {
-        this._data = data; // by ref (not copy)
-    } else if (typeof data === "string") {
-        this._data = decodeBase64String ? _decode(data)
-                                        : _toByteArray(data);
-    }
-}
-Base64.name = "Base64";             // fn.constructor.name -> "Base64"
-Base64.btoa = Base64_btoa;          // bota(binary:String, fromXHR:Boolean = false):Base64String
-Base64.atob = Base64_atob;          // atob(base64:String):BinaryString
-Base64.prototype = {
-    constructor:    Base64,
-    toArray:        toArray,        // #toArray():Array/Base64Array
-    toString:       toString,       // #toString():String
-    toBase64String: toBase64String  // #toBase64String(safe:Boolean = false):Base64String
-};
+function Base64() { }
+Base64.name = "Base64";
+Base64.btoa = Base64_btoa;  // btoa(binary:String, fromXHR:Boolean = false):Base64String
+Base64.atob = Base64_atob;  // atob(base64:String):BinaryString
+Base64.encode = encode;     // encode(ary:Array, safe:Boolean = false):Base64String
+Base64.decode = decode;     // decode(str:Base64String):Array
 
 // --- library scope vars ----------------------------------
-var _CODE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-    _DB = {
-        chars: _CODE.split(""),             // ["A", "B", ... "/"]
+var _DB = {
+        chars: [],                          // ["A", "B", ... "/"]
         codes: { "=": 0, "-": 62, "_": 63 } // { 65: 0, 66: 1 }
                                             // charCode and URLSafe64 chars("-", "_")
     };
 
 // --- implement -------------------------------------------
 function Base64_btoa(binary,    // @arg String:
-                     fromXHR) { // @arg Boolean(= false): true is non ascii values
+                     fromXHR) { // @arg Boolean(= false):
                                 // @ret Base64String:
-                                // @help: Base64.btoa
     if (global.btoa) {
         if (!fromXHR) {
             try {
@@ -45,14 +29,13 @@ function Base64_btoa(binary,    // @arg String:
                 // maybe. xhr binary has non ascii value
             }
         }
-        return global.btoa( _toAsciiString(binary) );
+        return global.btoa( _normalize(binary) );
     }
-    return _encode( _toByteArray(binary) );
+    return encode( _toArray(binary, 0xff) );
 }
 
 function Base64_atob(base64) { // @arg Base64String:
                                // @ret BinaryString:
-                               // @help: Base64.atob
     if (global.atob) {
         try {
             return global.atob(base64);
@@ -60,65 +43,13 @@ function Base64_atob(base64) { // @arg Base64String:
             // maybe. broken base64 data
         }
     }
-    return _toString( _decode(base64) );
+    return _fromArray( decode(base64) );
 }
 
-function toArray() { // @ret Array/Base64Array:
-                     // @help: Base64#toArray
-                     // @desc: get raw data
-    return this._data;
-}
-
-function toString() { // @ret String:
-                      // @help: Base64#toString
-                      // @desc: to
-    return _toString(this._data);
-}
-
-function toBase64String(safe) { // @arg Boolean(= false):
-                                // @ret Base64String:
-                                // @help: Base64#toBase64String
-    return _encode(this._data, safe);
-}
-
-function _toAsciiString(binary) { // @arg String: has non ascii value
-                                  // @ret BinaryString:
-                                  // @inner: filer
-    var rv = Array(binary.length), i = 0, iz = binary.length;
-
-    for (; i < iz; ++i) {
-        rv[i] = String.fromCharCode( binary.charCodeAt(i) & 0xFF ); // 0xffff -> 0xff
-    }
-    return rv.join("");
-}
-
-function _toString(ary) { // @arg Array:
-                          // @ret String:
-                          // @inner: UTF16Array to String
-    var rv = [], i = 0, iz = ary.length, bulkSize = 10240;
-
-    // avoid String.fromCharCode.apply(null, BigArray) exception
-    for (; i < iz; i += bulkSize) {
-        rv.push( String.fromCharCode.apply(null, ary.slice(i, i + bulkSize)) );
-    }
-    return rv.join("");
-}
-
-function _toByteArray(str) { // @arg String:
-                             // @ret ByteArray:
-                             // @inner: BinaryString to ByteArray
-    var rv = Array(str.length), i = 0, iz = str.length;
-
-    for (; i < iz; ++i) {
-        rv[i] = str.charCodeAt(i) & 0xFF; // 0xffff -> 0xff
-    }
-    return rv;
-}
-
-function _encode(ary,    // @arg Array:
-                 safe) { // @arg Boolean(= false): true is URLSafe64
-                         // @ret Base64String:
-                         // @inner: ByteArray to Base64String
+function encode(ary,    // @arg Array:
+                safe) { // @arg Boolean(= false): true is URLSafe64
+                        // @ret Base64String:
+                        // @desc: ByteArray to Base64String
     var rv = [],
         c = 0, i = -1, iz = ary.length,
         pad = [0, 2, 1][iz % 3],
@@ -144,9 +75,9 @@ function _encode(ary,    // @arg Array:
     return rv.join("");
 }
 
-function _decode(str) { // @arg Base64String:
-                        // @ret Array:
-                        // @inner: decode Base64String to array
+function decode(str) { // @arg Base64String:
+                       // @ret Array:
+                       // @desc: decode Base64String to array
     var rv = [], c = 0, i = 0, ary = str.split(""),
         iz = str.length - 1,
         codes = _DB.codes;
@@ -166,10 +97,53 @@ function _decode(str) { // @arg Base64String:
     return rv;
 }
 
+function _normalize(binary) { // @arg String: has non ascii value
+                              // @ret BinaryString:
+                              // @inner: filer
+    var i = 0, iz = binary.length, rv = Array(iz);
+
+    for (; i < iz; ++i) {
+        rv[i] = String.fromCharCode( binary.charCodeAt(i) & 0xFF ); // 0xffff -> 0xff
+    }
+    return rv.join("");
+}
+
+function _fromArray(ary) { // @arg Array:
+                           // @ret String: binary string
+                           // @inner: UTF16Array to String
+    var rv = [], i = 0, iz = ary.length, bulkSize = 32000;
+
+    // avoid String.fromCharCode.apply(null, BigArray) exception
+    for (; i < iz; i += bulkSize) {
+        rv.push( String.fromCharCode.apply(null, ary.slice(i, i + bulkSize)) );
+    }
+    return rv.join("");
+}
+
+function _toArray(binary,   // @arg String:
+                  filter) { // @arg Integer(= 0xffff):
+                            // @ret ByteArray:
+                            // @inner: BinaryString to ByteArray
+    filter = filter || 0xffff;
+
+    var i = 0, iz = binary.length, rv = Array(iz);
+
+    for (; i < iz; ++i) {
+        rv[i] = binary.charCodeAt(i) & filter; // 0xffff -> 0xff
+    }
+    return rv;
+}
+
+
 // --- build -----------------------------------------------
 (function() { // @inner: init base64
+    var CODE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+               "abcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    _DB.chars = CODE.split("");
+
     for (var i = 0; i < 64; ++i) {
-        _DB.codes[_CODE.charAt(i)] = i;
+        _DB.codes[CODE.charAt(i)] = i;
     }
 })();
 
@@ -181,4 +155,5 @@ global.Monogram || (global.Monogram = {});
 global.Monogram.Base64 = Base64;
 
 })(this.self || global);
+
 

@@ -17,19 +17,19 @@ function Await(events, // @arg Integer: event count
     this._fn    = fn;           // Await/Function: callback(err:Error, args:ModArray)
 
     tag && (_progress[tag] = this);
-    _judge(this); // events is 0 -> done
+    _judge(this); // events === 0 -> callback(null, [])
 }
 
 Await.name = "Await";
 Await.dump = Await_dump;
+Await.stat = Await_dump;
 Await.prototype = {
     constructor:Await,
     missable:   Await_missable, // Await#missable(count:Integer):this
     add:        Await_add,      // Await#add(count:Integer):this
     halt:       Await_halt,     // Await#halt():this
     pass:       Await_pass,     // Await#pass(value:Mix = undefined, key:String = ""):this
-    miss:       Await_miss,     // Await#miss(value:Mix = undefined, key:String = ""):this
-    getStatus:  Await_getStatus // Await#getStatus():Object
+    miss:       Await_miss      // Await#miss(value:Mix = undefined, key:String = ""):this
 };
 
 // --- library scope vars ----------------------------------
@@ -37,6 +37,9 @@ var _progress = {}; // [DEBUG] keep progress instances
 
 // --- implement -------------------------------------------
 function Await_dump(tag) { // @arg String(= ""): find tag. "" is all
+    for (var key in _progress) {
+        _progress[key] === null && (delete _progress[key]); // [WEED]
+    }
     return tag ? JSON.stringify(_progress[tag], "", 4)
                : JSON.stringify(_progress, "", 4);
 }
@@ -90,15 +93,6 @@ function Await_miss(value, // @arg Mix(= undefined): value
     return _judge(this);
 }
 
-function Await_halt() { // @ret this:
-                        // @help: Await#halt
-                        // @desc: end of await
-    if (this._state === "progress") {
-        this._state = "halt";
-    }
-    return _judge(this);
-}
-
 function _judge(that) { // @arg this:
                         // @ret this:
                         // @inner: judge state and callback function
@@ -108,44 +102,30 @@ function _judge(that) { // @arg this:
                     : that._pass + that._miss >= that._events ? "done"
                     : that._state;
     }
-    if (that._state === "progress" || !that._fn) { // progress or finished
+    if (that._state === "progress" || !that._fn) { // progress or already finished
         return that;
     }
     if (that._state === "done") {
-        if (that._fn.pass) {
-            that._fn.pass();
-        } else {
-            that._fn(null, that._args);
-            that._fn = null;
-        }
-    } else { // error or halt
-        if (that._fn.miss) {
-            that._fn.miss();
-        } else {
-            that._fn(new TypeError(that._state), // err.message: "error" or "halt"
-                     that._args);
-            that._fn = null;
-        }
+        that._fn.pass ? that._fn.pass()
+                      : that._fn(null, that._args);
+    } else { // "error" or "halt"
+        that._fn.miss ? that._fn.miss()
+                      : that._fn(new TypeError(that._state), // err.message: "error" or "halt"
+                                 that._args);
     }
+    that._fn = null;
     that._args = []; // free
-    that._tag && (_progress[that._tag] = null);
+    that._tag && (_progress[that._tag] = null); // [SPEED] delete -> null
     return that;
 }
 
-function Await_getStatus() { // @ret Object: { missable, events, pass, miss, state }
-                             //     missable - Integer:
-                             //     events - Integer:
-                             //     state - String: "progress", "done", "error", "halt"
-                             //     pass - Integer:
-                             //     miss - Integer:
-                             // @help: Await#getStatus
-    return {
-        missable:   this._missable,
-        events:     this._events,
-        state:      this._state,
-        pass:       this._pass,
-        miss:       this._miss
-    };
+function Await_halt() { // @ret this:
+                        // @help: Await#halt
+                        // @desc: end of await
+    if (this._state === "progress") {
+        this._state = "halt";
+    }
+    return _judge(this);
 }
 
 // --- build -----------------------------------------------
